@@ -138,7 +138,7 @@ def test_bertone_defaults(tmp_path):
     assert "--auto-overlap-params" not in ba
     assert _opt(ba, "--mapproj-dem").endswith("prior-5m.tif")
     assert "--match-first-to-last" in ba and "--solve-intrinsics" not in ba
-    assert _opt(ba, "--mapprojected-data").split()[0].endswith("prj/A.map.tif")
+    assert Path(_opt(ba, "--mapprojected-data").split()[0]).parts[-2:] == ("prj", "A.map.tif")
     assert _opt(_cmd(cmds, "bundle_adjust", 1), "--camera-position-uncertainty") == "100,100"
     s = _cmd(cmds, "parallel_sfs")
     assert _opt(s, "--shadow-threshold") == "0.002"

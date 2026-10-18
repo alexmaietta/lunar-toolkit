@@ -17,7 +17,7 @@ from lunar_toolkit.kaguya.tc import (
     tc_products,
 )
 from lunar_toolkit.ode import extract_products, parse_product, to_dataframe
-from lunar_toolkit.tools import dry_run
+from lunar_toolkit.tools import dry_run, format_command
 
 PID = "TC1W2B0_01_01601N336E0940"
 LABEL = f"""PDS_VERSION_ID = "PDS3"
@@ -184,6 +184,6 @@ def test_cli_dry_run(capsys, tmp_path, monkeypatch, stereo_df):
     args = parser.parse_args([PID, "-o", str(tmp_path), "--dry-run", "--mapproject"])
     assert cli.run(args) == 0
     out = capsys.readouterr().out
-    assert f"kaguyatc2isis from={tmp_path / PID}.lbl" in out
+    assert format_command(["kaguyatc2isis", f"from={tmp_path / PID}.lbl"]) in out
     assert "cam2map" in out and "gdal_translate" in out
     assert not list(tmp_path.iterdir())  # nothing written

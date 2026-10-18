@@ -265,7 +265,7 @@ def test_image_subset_parses_output(tmp_path, monkeypatch):
     monkeypatch.setattr(asp, "run", fake_run)
     got = asp.image_subset([Path("/m/a.tif"), Path("/m/b.tif")], out, threshold=0.002)
     assert got == [("/m/b.tif", 900), ("/m/a.tif", 12)]
-    assert (tmp_path / "sel" / "subset.txt.in.txt").read_text() == "/m/a.tif\n/m/b.tif\n"
+    assert (tmp_path / "sel" / "subset.txt.in.txt").read_text() == f"{Path('/m/a.tif')}\n{Path('/m/b.tif')}\n"
 
 
 def test_spiceinit_falls_back_to_ellipsoid(monkeypatch):

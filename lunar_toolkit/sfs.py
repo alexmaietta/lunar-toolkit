@@ -1007,7 +1007,7 @@ class SfsPipeline:
             v = r.data.ravel() if r is not None else np.full(size[0] * size[1], np.nan)
             valid = np.isfinite(v) & (v > -1e30)
             lit = valid & (v > thr)
-            im.shadow_fraction = float(1.0 - lit.sum() / valid.sum()) if valid.any() else 1.0
+            im.shadow_fraction = 1.0 - float(lit.sum()) / float(valid.sum()) if valid.any() else 1.0
             masks.append(lit)
         return np.array(masks)
 

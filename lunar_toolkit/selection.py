@@ -392,8 +392,8 @@ def selection_distances(
         inter = f[i : i + chunk] @ f.T
         c[i : i + chunk] = (counts[i : i + chunk, None] + counts[None, :] - 2.0 * inter) / max(cells, 1)
     np.fill_diagonal(c, 0.0)
-    a = a / a.max() if a.max() > 0 else a
-    c = c / c.max() if c.max() > 0 else c
+    a = a / np.max(a) if np.max(a) > 0 else a
+    c = c / np.max(c) if np.max(c) > 0 else c
     return np.hypot(weights[0] * a, weights[1] * c)
 
 

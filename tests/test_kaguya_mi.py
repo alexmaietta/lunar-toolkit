@@ -16,7 +16,7 @@ from lunar_toolkit.kaguya.mi import (
     select_mi_files,
 )
 from lunar_toolkit.ode import INSTRUMENTS, extract_products, parse_product, resolve_instrument, to_dataframe
-from lunar_toolkit.tools import dry_run
+from lunar_toolkit.tools import dry_run, format_command
 
 VIS = "MVA_2B2_01_01935N340E0939"
 NIR = "MNA_2B2_01_01935N339E0939"
@@ -173,7 +173,7 @@ def test_cli_dry_run_infers_mi(capsys, tmp_path, monkeypatch, mi_df):
     assert cli.run(args) == 0
     out = capsys.readouterr().out
     assert "2 Kaguya MI product(s)" in out
-    assert f"kaguyami2isis from={tmp_path / VIS}.lbl" in out
-    assert f"kaguyami2isis from={tmp_path / NIR}.lbl" in out
+    assert format_command(["kaguyami2isis", f"from={tmp_path / VIS}.lbl"]) in out
+    assert format_command(["kaguyami2isis", f"from={tmp_path / NIR}.lbl"]) in out
     assert "isd_generate" in out and "kaguyatc2isis" not in out
     assert not list(tmp_path.iterdir())

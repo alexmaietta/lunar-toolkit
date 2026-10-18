@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import shlex
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -94,12 +93,12 @@ def ode_filters(args: argparse.Namespace) -> dict[str, Any]:
 
 def print_dry_run(func: Callable[[], object]) -> None:
     """Call *func* with tool commands recorded instead of run, then print them."""
-    from ..tools import dry_run
+    from ..tools import dry_run, format_command
 
     with dry_run() as cmds:
         func()
     for c in cmds:
-        print(shlex.join(c))
+        print(format_command(c))
 
 
 def parse_options(items: list[str] | None) -> dict:

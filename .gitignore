@@ -79,3 +79,6 @@ print.prt
 *.duckdb
 *.duckdb.wal
 *.build.duckdb*
+
+# Test fixtures are tracked
+!tests/fixtures/**

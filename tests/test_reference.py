@@ -2,6 +2,7 @@
 
 import json
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -408,7 +409,7 @@ def test_cli_sdem_local(capsys, fake_zip, tmp_path):
         == 0
     )
     path = capsys.readouterr().out.strip()
-    assert path.endswith("A3CLR22_11_Malapert_Massif/A311_GLDELEV_005.tif")
+    assert Path(path).parts[-2:] == ("A3CLR22_11_Malapert_Massif", "A311_GLDELEV_005.tif")
     assert _cli("sdem", "malapert", "--zip", str(fake_zip), "--list") == 0
     assert "GLDSIGM" in capsys.readouterr().out
 

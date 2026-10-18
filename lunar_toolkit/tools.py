@@ -92,6 +92,11 @@ def _conda_env_vars(prefix: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in env_vars.items()} if isinstance(env_vars, dict) else {}
 
 
+def format_command(argv: Sequence[str]) -> str:
+    """*argv* as one command line, quoted for the platform's shell."""
+    return subprocess.list2cmdline(argv) if os.name == "nt" else shlex.join(argv)
+
+
 @contextlib.contextmanager
 def dry_run() -> Iterator[list[list[str]]]:
     """Record commands instead of running them.
@@ -101,7 +106,7 @@ def dry_run() -> Iterator[list[list[str]]]:
         with dry_run() as cmds:
             pipeline.run(...)
         for c in cmds:
-            print(shlex.join(c))
+            print(format_command(c))
     """
     cmds: list[list[str]] = []
     token = _DRY_RUN.set(cmds)
@@ -163,14 +168,14 @@ def run(
     recorded = _DRY_RUN.get()
     if recorded is not None:
         recorded.append([tool, *argv])
-        log.info("[dry-run] %s", shlex.join([tool, *argv]))
+        log.info("[dry-run] %s", format_command([tool, *argv]))
         return subprocess.CompletedProcess([tool, *argv], 0, "", "")
 
     path = find_tool(tool)
     if path is None:
         raise ToolError(f"{tool} not found; activate the ISIS / ASP environment or set ASP_ROOT / ISISROOT")
     log.info("▶  %s", tool)
-    log.debug("   cmd: %s", shlex.join([str(path), *argv]))
+    log.debug("   cmd: %s", format_command([str(path), *argv]))
     start = time.time()
     result = subprocess.run(
         [str(path), *argv], cwd=cwd, env=tool_env(path), text=True, capture_output=capture

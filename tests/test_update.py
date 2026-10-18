@@ -1,5 +1,8 @@
 """Volume discovery and incremental update (offline)."""
 
+from pathlib import Path
+
+import platformdirs
 import pytest
 from conftest import CUMINDEX_TAB, FIXTURES
 
@@ -78,8 +81,9 @@ def test_data_dir_resolution(tmp_path, monkeypatch):
 
     monkeypatch.delenv(c.DATA_DIR_ENV_VAR, raising=False)
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))
-    assert get_data_dir() == tmp_path / "xdg" / c.APP_NAME
-    assert find_parquet("x.parquet") == tmp_path / "xdg" / c.APP_NAME / "x.parquet"
+    user_dir = Path(platformdirs.user_data_dir(c.APP_NAME, appauthor=False))
+    assert get_data_dir() == user_dir
+    assert find_parquet("x.parquet") == user_dir / "x.parquet"
     assert find_parquet("x.parquet", tmp_path / "d") == tmp_path / "d" / "x.parquet"
     monkeypatch.setenv(c.DATA_DIR_ENV_VAR, str(tmp_path / "env"))
     assert get_data_dir() == tmp_path / "env"

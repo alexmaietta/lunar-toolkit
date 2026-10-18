@@ -17,7 +17,7 @@ from lunar_toolkit.shadowcam.sc import (
     sc_products,
     select_sc_files,
 )
-from lunar_toolkit.tools import dry_run
+from lunar_toolkit.tools import dry_run, format_command
 
 PID = "M013178466SE"
 BASE = "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/"
@@ -194,6 +194,6 @@ def test_cli_dry_run(capsys, tmp_path, monkeypatch):
     assert cli.run(args) == 0
     assert seen == [PID]
     out = capsys.readouterr().out
-    assert f"spiceinit from={tmp_path / PID}.cub" in out
+    assert format_command(["spiceinit", f"from={tmp_path / PID}.cub"]) in out
     assert "isd_generate" in out and "cam_test" in out
     assert not list(tmp_path.iterdir())  # nothing written

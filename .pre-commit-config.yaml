@@ -30,5 +30,6 @@ repos:
         additional_dependencies:
           - "numpy>=2"
           - "pandas-stubs"
+          - "pywebview>=5"
           - "types-tqdm"
           - "types-PyYAML"
