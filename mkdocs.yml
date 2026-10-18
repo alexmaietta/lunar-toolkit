@@ -1,0 +1,90 @@
+site_name: Lunar Toolkit
+site_description: Find, download and process lunar orbital imagery (LROC, ShadowCam, Kaguya TC) and build stereo and SfS DEMs
+site_author: Alex Maietta
+site_url: https://alexmaietta.github.io/lunar-toolkit/
+repo_url: https://github.com/alexmaietta/lunar-toolkit
+docs_dir: docs
+site_dir: site
+strict: true
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: [.]
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_cli.py
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            members_order: source
+            filters: ["!^_", "^__init__$"]
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+  - Install: install.md
+  - Getting started: getting-started.md
+  - Desktop app and browser: app.md
+  - DEMs with ISIS + ASP: dems.md
+  - CLI: cli.md
+  - API:
+      - LROC index (CumIndex): api/cumindex.md
+      - LROC NAC: api/nac.md
+      - Kaguya TC and MI: api/kaguya.md
+      - ShadowCam: api/shadowcam.md
+      - ODE client: api/ode.md
+      - Observation schema: api/observation.md
+      - Geometry and AOIs: api/geometry.md
+      - Stereo pairs: api/stereo.md
+      - Image selection: api/selection.md
+      - Tool runner: api/tools.md
+      - ISIS wrappers: api/isis.md
+      - ASP wrappers: api/asp.md
+      - Stereo DEM: api/stereo_dem.md
+      - Shape-from-shading: api/sfs.md
+      - SfS products: api/sfs_products.md
+      - Reference data: api/reference.md
+      - Run configuration: api/config.md
+      - Provenance: api/provenance.md
+      - SfS report: api/sfs_report.md
+      - Downloads: api/downloader.md
+      - Constants: api/constants.md
+  - References: references.md
+  - Changelog: changelog.md
+  - Coverage: https://alexmaietta.github.io/lunar-toolkit/coverage/

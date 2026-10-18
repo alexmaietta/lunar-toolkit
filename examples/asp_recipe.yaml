@@ -1,0 +1,21 @@
+work_dir: sfs_asp
+dem: LDEM_87S_5MPP_ADJ.TIF        # LOLA polar stereographic LDEM
+projwin: [-10000, 50000, 0, 40000] # ULX ULY LRX LRY in the DEM's metres
+region_id: SR01
+
+# Images: product IDs or .IMG / .cub paths, and/or a list file (one per line).
+sources: []
+from_file: images.txt
+
+preset: asp
+resolution: 5.0
+registration: residuals            # align the BA triangulated points to the DEM
+refine: true
+
+# Overrides merged onto the preset (null drops a default flag).
+bundle_adjust_options:
+  overlap_limit: 50
+sfs_options:
+  smoothness_weight: 0.08
+  initial_dem_constraint_weight: 0.0025
+  max_iterations: 5

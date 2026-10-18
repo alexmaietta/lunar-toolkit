@@ -1,0 +1,161 @@
+{
+ "ODEResults": {
+  "Products": {
+   "Product": {
+    "BB_georeferenced": "True",
+    "Bundle_lid": "urn:nasa:pds:kplo-shadowcam",
+    "Center_georeferenced": "True",
+    "Center_latitude": "-88.90629",
+    "Center_longitude": "269.69972",
+    "Collection_lid": "urn:nasa:pds:kplo-shadowcam:data-raw",
+    "Data_Set_Id": "kplo-shadowcam-data-raw",
+    "Description": "ShadowCam Raw Product",
+    "Easternmost_longitude": "278.9171",
+    "Emission_angle": "0.053",
+    "External_url": "https://data.im-ldi.com/mds/shadowcam_published/M013178466S",
+    "FilesURL": "https://ode.rsl.wustl.edu/moon/productfiles.aspx?product_id=m013178466se&product_idGeo=40929825",
+    "Footprint_C0_geometry": "POLYGON ((-97.8713 -88.7867, -90.2297 -88.7129, -81.0829 -89.0024, -90.3974 -89.0998, -97.8713 -88.7867))",
+    "Footprint_geometry": "POLYGON ((262.1287 -88.7867, 269.7703 -88.7129, 278.9171 -89.0024, 269.6026 -89.0998, 262.1287 -88.7867))",
+    "Footprint_GL_geometry": "POLYGON ((262.1287 -88.7867, 269.7703 -88.7129, 278.9171 -89.0024, 269.6026 -89.0998, 262.1287 -88.7867))",
+    "Footprint_NP_geometry": "MULTIPOLYGON EMPTY",
+    "Footprint_souce": "PDS Archive GeoCSV Table",
+    "Footprint_SP_geometry": "POLYGON ((-36446.042052185119 -5038.6998609702832, -27296.984984380495 -189.33324376175833, -29885.710309634229 4689.1159232461214, -39030.512055940184 -156.47499216606991, -36446.042052185119 -5038.6998609702832))",
+    "Footprints_cross_meridian": "False",
+    "ihid": "KPLO",
+    "iid": "shadowcam",
+    "Incidence_angle": "89.143",
+    "LabelFileName": "M013178466SE.xml",
+    "LabelURL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE.xml",
+    "Map_scale": "1.75705",
+    "Maximum_latitude": "-88.7129",
+    "Minimum_latitude": "-89.0998",
+    "Observation_time": "2023-01-04T11:49:10.439Z",
+    "ODE_notes": {
+     "ODE_note": [
+      "NOTE: Label attribute orbit_number value used for start orbit number value",
+      "NOTE: Label attribute orbit_number value used for stop orbit number value",
+      "NOTE: Map scale set from average of label horizontal (1.7563 m) and label vertical pixel (1.7578 m)",
+      "NOTE: Observation time set to mid-point between start time and stop time",
+      "NOTE: Footprint - Retrieved from GeoCSV table entry",
+      "NOTE: Source GeoCSV - https://pds.shadowcam.im-ldi.com/derived/vector/shadowcam_vector_observations_sp/shadowcam_vector_observations_sp.csv",
+      "NOTE: Center lat/lon retrieved from GeoCSV table rather than center of footprint bounding box"
+     ]
+    },
+    "pdsid": "m013178466se",
+    "PDSVolume_Id": "urn:nasa:pds:kplo-shadowcam",
+    "Phase_angle": "89.099",
+    "Pole_state": "south",
+    "Product_creation_time": "2024-08-10T01:09:29.376000Z",
+    "Product_files": {
+     "Product_file": [
+      {
+       "Description": "ISIS-COMPATIBLE DATA FILE",
+       "FileName": "M013178466SE.CUB",
+       "KBytes": "18432",
+       "Type": "Product",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE.cub"
+      },
+      {
+       "Description": "PDS4 PRODUCT LABEL FILE",
+       "FileName": "M013178466SE.XML",
+       "KBytes": "18",
+       "Type": "Product",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE.xml"
+      },
+      {
+       "Description": "RAW BROWSE PNG IMAGE",
+       "FileName": "M013178466SE_BROWSE.PNG",
+       "KBytes": "113",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_browse.png"
+      },
+      {
+       "Description": "RAW BROWSE PNG LABEL",
+       "FileName": "M013178466SE_BROWSE.XML",
+       "KBytes": "7",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_browse.xml"
+      },
+      {
+       "Description": "RAW BROWSE CLOUD OPTIMIZED GEOTIFF (COG)",
+       "FileName": "M013178466SE_COG.TIF",
+       "KBytes": "6042",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_cog.tif"
+      },
+      {
+       "Description": "RAW BROWSE COG LABEL",
+       "FileName": "M013178466SE_COG.XML",
+       "KBytes": "7",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_cog.xml"
+      },
+      {
+       "Description": "RAW HISTOGRAM BROWSE",
+       "FileName": "M013178466SE_HIST.CSV",
+       "KBytes": "20",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_hist.csv"
+      },
+      {
+       "Description": "RAW HISTOGRAM BROWSE LABEL",
+       "FileName": "M013178466SE_HIST.XML",
+       "KBytes": "12",
+       "Type": "Browse",
+       "URL": "https://pds.shadowcam.im-ldi.com/observation/2023/004/M013178466S/M013178466SE_hist.xml"
+      },
+      {
+       "Creation_date": "2025-10-15T15:02:53.295",
+       "Description": "PRODUCT KML FILE <A HREF=\"PAGEHELP/CONTENT/FREQUENTLY_ASKED_QUESTIONS/PRODUCT_FOOTPRINTS.HTM\" TARGET=\"_BLANK\">HELP</A>",
+       "FileName": "M013178466SE_XML.KML",
+       "KBytes": "3",
+       "Type": "Derived",
+       "URL": "https://ode.rsl.wustl.edu/moon/datafile/kmlfiles/kplo-shadowcam-data-raw/kplo_shadowcam/observation/2023/004/m013178466s/M013178466SE_xml.kml"
+      },
+      {
+       "Creation_date": "2025-10-15T15:02:53.026",
+       "Description": "PRODUCT FOOTPRINT SHAPEFILES (TAR.GZ) <A HREF=\"PAGEHELP/CONTENT/FREQUENTLY_ASKED_QUESTIONS/PRODUCT_FOOTPRINTS.HTM\" TARGET=\"_BLANK\">HELP</A>",
+       "FileName": "M013178466SE_XML.TAR.GZ",
+       "KBytes": "3",
+       "Type": "Derived",
+       "URL": "https://ode.rsl.wustl.edu/moon/datafile/shapefiles/kplo-shadowcam-data-raw/kplo_shadowcam/observation/2023/004/m013178466s/M013178466SE_xml.tar.gz"
+      },
+      {
+       "Creation_date": "2025-10-15T15:02:52.924",
+       "Description": "PRODUCT FOOTPRINT SHAPEFILES (ZIP) <A HREF=\"PAGEHELP/CONTENT/FREQUENTLY_ASKED_QUESTIONS/PRODUCT_FOOTPRINTS.HTM\" TARGET=\"_BLANK\">HELP</A>",
+       "FileName": "M013178466SE_XML.ZIP",
+       "KBytes": "9",
+       "Type": "Derived",
+       "URL": "https://ode.rsl.wustl.edu/moon/datafile/shapefiles/kplo-shadowcam-data-raw/kplo_shadowcam/observation/2023/004/m013178466s/M013178466SE_xml.zip"
+      }
+     ]
+    },
+    "Product_lid": "urn:nasa:pds:kplo-shadowcam:data-raw:m013178466se",
+    "Product_name": "M013178466SE.cub",
+    "Product_title": "KPLO ShadowCam Raw Product",
+    "Product_version_id": "4.0",
+    "ProductURL": "https://ode.rsl.wustl.edu/moon/indexproductpage.aspx?product_id=m013178466se&product_idGeo=40929825",
+    "pt": "RAW",
+    "RelativePathtoVol": "observation\\2023\\004\\m013178466s\\",
+    "Solar_distance": "147456227.525",
+    "Solar_longitude": "240.789366",
+    "Start_orbit_number": "42",
+    "Stop_orbit_number": "42",
+    "Target_name": "MOON",
+    "UTC_start_time": "2023-01-04T11:49:07.090942Z",
+    "UTC_stop_time": "2023-01-04T11:49:13.788248Z",
+    "Westernmost_longitude": "262.1287"
+   }
+  },
+  "QuerySummary": {
+   "Date": "2026-10-18T15:20:42.016",
+   "output": "JSON",
+   "productId": "M013178466SE",
+   "query": "PRODUCT",
+   "Query_Elapsed_Time": "00:00:00.0156336",
+   "results": "FMP",
+   "target": "moon"
+  },
+  "Status": "Success"
+ }
+}

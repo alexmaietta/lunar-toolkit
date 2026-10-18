@@ -1,0 +1,27 @@
+# 2.5 km x 2.5 km crop at the centre of the Malapert Massif region (Artemis III region 11),
+# processed as in Bertone et al. (2026, PSJ 7:118). Run with:
+#   lunar sfs --config examples/malapert_crop.yaml
+#   lunar sfs-report malapert_crop --region malapert
+
+work_dir: malapert_crop   # relative: under runs_dir (or $LUNAR_RUNS_DIR), else the current directory
+# runs_dir: ~/lunar_runs
+region: malapert        # sets projwin, region_id (A311) and the image search AOI
+crop_km: 2.5            # square window at the region centre (lunar reference crop malapert)
+dem: pgda               # PGDA LOLA 5 m site DEM (Site23), downloaded to the reference cache
+
+preset: bertone
+resolution: 5.0
+ba_resolution: 1.0      # bundle-adjust on 1 m/px mapprojected images
+registration: stereo
+max_offset_p85: 1.8     # drop images with p85 match offset > 1.8 m
+selection: coverage     # 3 Sun directions >= 30 deg apart per pixel
+
+ensemble_members: 0     # e.g. 5 for the Fig. 8 ensemble uncertainty maps
+seed: 0
+
+# Image search used without `sources`: NAC images finer than 1.5 m/px over the crop,
+# capped before download to the best stereo pairs (slewed images give the registration
+# convergence) plus nadir images covering 3 Sun directions >= 30 deg apart per cell.
+max_pixel_scale: 1.5
+max_images: 60
+max_sfs_slew: 5.0       # SfS uses nadir images only (Bertone et al. 2026, sec. 2)

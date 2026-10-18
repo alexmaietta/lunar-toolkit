@@ -1,0 +1,119 @@
+{
+ "id": 17954508,
+ "doi": "10.5281/zenodo.17954508",
+ "title": "Archived Dataset for \"Enhanced Topography Models for selected Lunar South Pole regions with Shape-from-Shading\"",
+ "files": [
+  {
+   "key": "A3CLR22_0_Amundsen_Rim.zip",
+   "size": 1775016989,
+   "checksum": "md5:d1e12877277cf9715381b8795c0873cb",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_0_Amundsen_Rim.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_12_deGerlache_Kocher_Massif.zip",
+   "size": 2108633565,
+   "checksum": "md5:78b8a042d0c6be2923abdd288e436c23",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_12_deGerlache_Kocher_Massif.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_3_Faustini_Rim_A.zip",
+   "size": 1936729230,
+   "checksum": "md5:161db71236036f7c9b98b501d353482a",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_3_Faustini_Rim_A.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_4_deGerlache_Rim_2.zip",
+   "size": 2187384204,
+   "checksum": "md5:52921a134793a6b35b0eea6f98ad79d8",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_4_deGerlache_Rim_2.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_10_Leibnitz_Beta_Plateau.zip",
+   "size": 1050441742,
+   "checksum": "md5:b0a606e6a4ce73faf2ea68c91ce0b93e",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_10_Leibnitz_Beta_Plateau.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_11_Malapert_Massif.zip",
+   "size": 2213137537,
+   "checksum": "md5:772a578b8f2ebdb078c5a04a3c07182a",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_11_Malapert_Massif.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_1_Nobile_Rim_2.zip",
+   "size": 1839070131,
+   "checksum": "md5:964310cb7f2a5033e2e12cd34e7aa7b1",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_1_Nobile_Rim_2.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_2_Haworth.zip",
+   "size": 4353812518,
+   "checksum": "md5:e83a923c41c00be51396d06ab7cf6e9e",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_2_Haworth.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_7_Nobile_Rim_1.zip",
+   "size": 1962014939,
+   "checksum": "md5:a8bcb60f432253f5fa97ff07899bd02a",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_7_Nobile_Rim_1.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_5_Connecting_Ridge_Extension.zip",
+   "size": 2225897760,
+   "checksum": "md5:9141ec5d298a3aebab4d3671f7f38a79",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_5_Connecting_Ridge_Extension.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_6_Connecting_Ridge.zip",
+   "size": 2206485514,
+   "checksum": "md5:0ad982cf42319a300f2a2cff69d39322",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_6_Connecting_Ridge.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_8_Peak_Near_Shackleton.zip",
+   "size": 1360387336,
+   "checksum": "md5:9ac25cc18b1290e679dfad9b1eaabad7",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_8_Peak_Near_Shackleton.zip/content"
+   }
+  },
+  {
+   "key": "A3CLR22_9_deGerlache_Rim.zip",
+   "size": 1340667387,
+   "checksum": "md5:a34e603e9d2c2c9a2796fc237d24b1b4",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/A3CLR22_9_deGerlache_Rim.zip/content"
+   }
+  },
+  {
+   "key": "README.md",
+   "size": 2005,
+   "checksum": "md5:02429062da29820b75e275eb52daa904",
+   "links": {
+    "self": "https://zenodo.org/api/records/17954508/files/README.md/content"
+   }
+  }
+ ]
+}

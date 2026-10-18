@@ -1,0 +1,26 @@
+# Image status summary
+# total_images: 2761
+# available_not_selected: 2435
+# not_aligned: 61
+# used_for_sfs: 265
+
+img_name,status
+M109143052LE,available_not_selected
+M109143052RE,available_not_selected
+M109156646LE,used_for_sfs
+M109156646RE,available_not_selected
+M109163402LE,available_not_selected
+M109163402RE,available_not_selected
+M109170206LE,available_not_selected
+M109183819LE,used_for_sfs
+M109183819RE,used_for_sfs
+M111499240RE,used_for_sfs
+M111506017RE,used_for_sfs
+M111519597LE,used_for_sfs
+M116305150LE,not_aligned
+M117506448LE,not_aligned
+M117506448RE,not_aligned
+M117520021LE,not_aligned
+M117520021RE,not_aligned
+M117533593LE,not_aligned
+M176388393LE,used_for_sfs

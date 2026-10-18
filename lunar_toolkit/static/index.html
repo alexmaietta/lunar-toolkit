@@ -1,0 +1,3259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lunar Toolkit Browser</title>
+  <style>
+    /* Fusion palette (light), dark variant below */
+    :root {
+      --window: #efefef;
+      --base: #ffffff;
+      --alt: #f6f6f6;
+      --text: #1b1b1b;
+      --muted: #5f5f5f;
+      --disabled: #9a9a9a;
+      --mid: #b5b5b5;
+      --dark: #8e8e8e;
+      --light: #ffffff;
+      --gridline: #dcdcdc;
+      --btn-top: #fbfbfb;
+      --btn-bot: #e6e6e6;
+      --btn-press-top: #d9d9d9;
+      --btn-press-bot: #e9e9e9;
+      --hdr-top: #fafafa;
+      --hdr-bot: #e4e4e4;
+      --highlight: #308cc6;
+      --hl-text: #ffffff;
+      --link: #0b5fa5;
+      --error: #b00020;
+      --plot-bg: #ffffff;
+      --plot-fg: #000000;
+      --plot-grid: #d9d9d9;
+      --plot-label: #303030;
+      --fp: #1f5f8b;
+      --fp-sel: #d62728;
+      --region: #008a00;
+      --view-bg: #6e6e6e;
+      --view-fg: #f0f0f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --window: #353535;
+        --base: #252525;
+        --alt: #2c2c2c;
+        --text: #ffffff;
+        --muted: #b4b4b4;
+        --disabled: #7f7f7f;
+        --mid: #232323;
+        --dark: #1b1b1b;
+        --light: #4a4a4a;
+        --gridline: #3a3a3a;
+        --btn-top: #454545;
+        --btn-bot: #393939;
+        --btn-press-top: #2e2e2e;
+        --btn-press-bot: #363636;
+        --hdr-top: #434343;
+        --hdr-bot: #383838;
+        --highlight: #2a82da;
+        --hl-text: #ffffff;
+        --link: #6cb0f5;
+        --error: #ff6b6b;
+        --plot-bg: #1e1e1e;
+        --plot-fg: #d8d8d8;
+        --plot-grid: #3c3c3c;
+        --plot-label: #cfcfcf;
+        --fp: #6fa8dc;
+        --fp-sel: #ff6b5e;
+        --region: #4fd14f;
+        --view-bg: #161616;
+        --view-fg: #b4b4b4;
+      }
+    }
+    :root[data-theme="dark"] {
+      --window: #353535; --base: #252525; --alt: #2c2c2c; --text: #ffffff; --muted: #b4b4b4;
+      --disabled: #7f7f7f; --mid: #232323; --dark: #1b1b1b; --light: #4a4a4a; --gridline: #3a3a3a;
+      --btn-top: #454545; --btn-bot: #393939; --btn-press-top: #2e2e2e; --btn-press-bot: #363636;
+      --hdr-top: #434343; --hdr-bot: #383838; --highlight: #2a82da; --hl-text: #ffffff; --link: #6cb0f5;
+      --error: #ff6b6b; --plot-bg: #1e1e1e; --plot-fg: #d8d8d8; --plot-grid: #3c3c3c; --plot-label: #cfcfcf;
+      --fp: #6fa8dc; --fp-sel: #ff6b5e; --region: #4fd14f; --view-bg: #161616; --view-fg: #b4b4b4;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font: 12px "Segoe UI", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+      background: var(--window);
+      color: var(--text);
+      overflow: hidden;
+    }
+    code, .mono, td.mono, textarea, input.ids {
+      font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 11px;
+    }
+    a { color: var(--link); }
+    [hidden] { display: none !important; }
+
+    /* Main window: title bar, control panel | workspace, status bar */
+    .app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; }
+    .titlebar {
+      display: flex; align-items: center; gap: 8px; padding: 3px 8px; min-height: 26px;
+      background: linear-gradient(var(--btn-top), var(--window)); border-bottom: 1px solid var(--mid);
+    }
+    .titlebar .name { font-weight: bold; }
+    .titlebar .sub { color: var(--muted); }
+    .titlebar .sources { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .titlebar .sources b { color: var(--text); font-weight: normal; }
+    .vsep { width: 1px; align-self: stretch; margin: 2px 2px; background: var(--mid); box-shadow: 1px 0 0 var(--light); }
+    .main { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
+
+    .controls { display: flex; flex-direction: column; min-height: 0; padding: 6px 4px 6px 6px; }
+    .tabbar { display: flex; padding-left: 4px; position: relative; z-index: 1; }
+    .tabbar button {
+      font: inherit; color: var(--text); padding: 3px 12px; margin-right: -1px; margin-top: 2px;
+      background: linear-gradient(var(--btn-bot), var(--btn-press-top)); border: 1px solid var(--mid);
+      border-radius: 2px 2px 0 0; cursor: default;
+    }
+    .tabbar button[aria-selected="true"] {
+      background: var(--window); border-bottom-color: var(--window); margin-top: 0; padding-bottom: 5px;
+      margin-bottom: -1px; position: relative; z-index: 1;
+    }
+    .tabbar button:focus-visible { outline: 1px dotted var(--text); outline-offset: -4px; }
+    .tabpane {
+      flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--mid); border-radius: 0 2px 2px 2px;
+      background: var(--window); padding: 4px 6px 6px; box-shadow: inset 1px 1px 0 var(--light);
+    }
+
+    fieldset { border: 1px solid var(--mid); border-radius: 2px; padding: 6px 7px 7px; margin-top: 6px; box-shadow: inset 1px 1px 0 var(--light), 1px 1px 0 var(--light); }
+    legend { padding: 0 3px; margin-left: 4px; }
+    .form { display: grid; grid-template-columns: 6.6em minmax(0, 1fr) minmax(0, 1fr); gap: 4px 5px; align-items: center; }
+    .form > [data-mode] { display: contents; }
+    .form > label, .form > .lbl { color: var(--text); white-space: nowrap; }
+    .form .span2 { grid-column: span 2; }
+    .form .span3 { grid-column: 1 / -1; }
+    .form .buttons { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px; }
+    .stack { display: flex; flex-direction: column; gap: 5px; }
+    .hint { color: var(--muted); font-size: 11px; line-height: 1.35; margin-top: 6px; }
+    .hint code { font-size: 10.5px; }
+
+    input, select, textarea {
+      font: inherit; color: var(--text); background: var(--base); min-width: 0; width: 100%;
+      border: 1px solid var(--mid); border-top-color: var(--dark); border-radius: 2px;
+      padding: 2px 4px; height: 22px;
+    }
+    textarea { height: auto; min-height: 5.5em; resize: vertical; line-height: 1.3; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--highlight); box-shadow: 0 0 0 1px var(--highlight) inset; }
+    input::placeholder, textarea::placeholder { color: var(--disabled); }
+    select {
+      appearance: none; padding-right: 18px; cursor: default;
+      background:
+        linear-gradient(45deg, transparent 50%, var(--text) 50%) right 10px top 9px / 4px 4px no-repeat,
+        linear-gradient(135deg, var(--text) 50%, transparent 50%) right 6px top 9px / 4px 4px no-repeat,
+        linear-gradient(var(--btn-top), var(--btn-bot));
+      border-top-color: var(--mid); border-bottom-color: var(--dark);
+    }
+    select option { background: var(--base); color: var(--text); }
+    input[type="file"] { padding: 1px; height: 24px; border: none; background: none; color: var(--muted); }
+    button, input[type="file"]::file-selector-button {
+      font: inherit; color: var(--text); white-space: nowrap; cursor: default;
+      background: linear-gradient(var(--btn-top), var(--btn-bot));
+      border: 1px solid var(--mid); border-bottom-color: var(--dark); border-radius: 2px;
+      padding: 2px 12px; min-height: 22px; min-width: 72px;
+    }
+    input[type="file"]::file-selector-button { margin-right: 6px; min-width: 0; }
+    button:hover:not(:disabled), input[type="file"]::file-selector-button:hover { background: linear-gradient(var(--light), var(--btn-top)); }
+    button:active:not(:disabled) { background: linear-gradient(var(--btn-press-top), var(--btn-press-bot)); }
+    button.default { border-color: var(--highlight); }
+    button:focus-visible { outline: 1px dotted var(--text); outline-offset: -4px; }
+    button:disabled { color: var(--disabled); }
+    button.tool { min-width: 0; padding: 0 8px; min-height: 18px; font-size: 11px; }
+
+    /* Workspace: map over (results | details), with splitters */
+    .workspace {
+      display: grid; grid-template-rows: minmax(140px, var(--map-h, 55%)) 6px minmax(0, 1fr);
+      min-height: 0; padding: 6px 6px 4px 2px;
+    }
+    .lower { display: grid; grid-template-columns: minmax(0, 1fr) 6px minmax(200px, var(--det-w, 380px)); min-height: 0; }
+    .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border: 1px solid var(--mid); background: var(--base); }
+    .panehead {
+      display: flex; align-items: center; gap: 6px; padding: 1px 2px 1px 6px; min-height: 22px;
+      background: linear-gradient(var(--hdr-top), var(--hdr-bot)); border-bottom: 1px solid var(--mid);
+    }
+    .panehead .title { font-weight: bold; }
+    .panehead .info { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .panehead .right { margin-left: auto; display: flex; gap: 3px; }
+    .panebody { flex: 1; min-height: 0; overflow: auto; position: relative; }
+    .panebody:empty::before, .mapbox:empty::before {
+      content: attr(data-empty); position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; color: var(--disabled); padding: 1em; text-align: center;
+    }
+    .splitter { position: relative; touch-action: none; }
+    .splitter.rows { cursor: row-resize; }
+    .splitter.cols { cursor: col-resize; }
+    .splitter::after { content: ''; position: absolute; inset: 0; margin: auto; }
+    .splitter.rows::after { width: 24px; height: 2px; border-top: 1px dotted var(--dark); border-bottom: 1px dotted var(--dark); }
+    .splitter.cols::after { height: 24px; width: 2px; border-left: 1px dotted var(--dark); border-right: 1px dotted var(--dark); }
+
+    /* QTableView-like grids */
+    table { border-collapse: separate; border-spacing: 0; }
+    table.grid { min-width: 100%; }
+    table.grid th {
+      position: sticky; top: 0; z-index: 1; text-align: left; font-weight: normal; white-space: nowrap;
+      padding: 2px 6px; background: linear-gradient(var(--hdr-top), var(--hdr-bot));
+      border-right: 1px solid var(--mid); border-bottom: 1px solid var(--mid); box-shadow: inset 1px 1px 0 var(--light);
+    }
+    table.grid td { padding: 1px 6px; height: 20px; white-space: nowrap; border-right: 1px solid var(--gridline); border-bottom: 1px solid var(--gridline); }
+    table.grid tbody tr:nth-child(even) td { background: var(--alt); }
+    table.grid tbody tr { cursor: default; }
+    table.grid tbody tr.selected td { background: var(--highlight); color: var(--hl-text); }
+    table.grid tbody tr.selected a { color: var(--hl-text); }
+    table.grid th.num, table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .tablewrap:focus { outline: none; }
+    .tablewrap:focus-visible tr.selected td { outline: 1px dotted var(--hl-text); outline-offset: -2px; }
+
+    .detail { border-bottom: 1px solid var(--mid); }
+    .detail h2 {
+      font: bold 11px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; padding: 3px 6px;
+      background: var(--window); border-bottom: 1px solid var(--gridline);
+    }
+    .detail table { width: 100%; table-layout: fixed; }
+    .detail th {
+      text-align: left; font-weight: normal; padding: 1px 6px; background: linear-gradient(var(--hdr-top), var(--hdr-bot));
+      border-bottom: 1px solid var(--mid); border-right: 1px solid var(--mid);
+    }
+    .detail td { padding: 1px 6px; border-bottom: 1px solid var(--gridline); vertical-align: top; overflow-wrap: anywhere; }
+    .detail td.label { width: 42%; color: var(--muted); background: var(--alt); border-right: 1px solid var(--gridline); }
+    .detail a { word-break: break-all; }
+    .not-found { padding: 4px 6px; color: var(--error); }
+
+    /* Footprint plot */
+    .mapbox { height: 100%; position: relative; }
+    .map { display: flex; flex-direction: column; height: 100%; }
+    .map svg { display: block; flex: 1 1 0; min-height: 0; width: 100%; touch-action: none; user-select: none; cursor: crosshair; }
+    .map svg.dragging { cursor: grabbing; }
+    .map .plot { fill: var(--plot-bg); }
+    .map .frame { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
+    .map .tick { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
+    .map .grid { fill: none; stroke: var(--plot-grid); stroke-width: 1; }
+    .map .fp { fill: var(--fp); fill-opacity: 0.08; fill-rule: evenodd; stroke: var(--fp); stroke-width: 0.8; cursor: pointer; }
+    .map .fp:hover { fill-opacity: 0.25; stroke-width: 1.3; }
+    .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.3; stroke: var(--fp-sel); stroke-width: 1.8; }
+    .map .region { fill: none; fill-rule: evenodd; stroke: var(--region); stroke-width: 1.4; stroke-dasharray: 6 3; pointer-events: none; }
+    .map text { fill: var(--plot-label); font-size: 10.5px; pointer-events: none; }
+    .map text.gl { fill: var(--muted); font-size: 10px; }
+    .map text.axis { font-size: 11px; }
+
+    /* Top pane: Footprints | Image tabs; the image view is a framed canvas under a tool bar */
+    .viewwrap { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+    .viewwrap > .tabbar { padding-left: 2px; }
+    .viewwrap > .pane { flex: 1; }
+    .viewbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .viewbody > .mapbox { flex: 1; min-height: 0; height: auto; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 3px; padding: 2px 4px;
+      background: var(--window); border-bottom: 1px solid var(--mid); box-shadow: inset 0 1px 0 var(--light);
+    }
+    .toolbar select, .toolbar input { width: auto; height: 20px; padding-top: 0; padding-bottom: 0; }
+    .toolbar select { max-width: 24em; background-position: right 10px top 8px, right 6px top 8px, 0 0; }
+    .toolbar input[type="number"] { width: 6em; }
+    .toolbar input:disabled { color: var(--disabled); }
+    .toolbar .lbl { color: var(--text); margin-left: 3px; }
+    .toolbar .sep { width: 1px; align-self: stretch; margin: 1px 3px; background: var(--mid); box-shadow: 1px 0 0 var(--light); }
+    .toolbar button.tool { min-height: 20px; }
+    .viewframe { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--view-bg); box-shadow: inset 1px 1px 0 var(--dark); }
+    .viewframe canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; outline: none; }
+    .viewframe canvas.dragging { cursor: grabbing; }
+    .viewframe canvas:focus-visible { box-shadow: inset 0 0 0 1px var(--highlight); }
+    .viewmsg {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1em;
+      color: var(--view-fg); text-align: center; pointer-events: none; line-height: 1.4;
+    }
+    .viewmsg:empty { display: none; }
+    .viewmsg.error {
+      inset: auto 8px 8px 8px; justify-content: flex-start; text-align: left; padding: 4px 8px;
+      color: var(--error); background: var(--base); border: 1px solid var(--mid); border-left: 3px solid var(--error);
+    }
+
+    /* Quick look in the Details pane */
+    .preview { padding: 4px 6px 5px; border-bottom: 1px solid var(--gridline); background: var(--window); }
+    .pvbox {
+      display: flex; align-items: center; justify-content: center; min-height: 48px; overflow: hidden;
+      background: var(--view-bg); border: 1px solid var(--mid); border-top-color: var(--dark);
+    }
+    .pvbox canvas, .pvbox img { display: block; max-width: 100%; max-height: 240px; }
+    .pvbox .msg { color: var(--view-fg); padding: 8px; font-size: 11px; text-align: center; }
+    .pvbox .msg.error { color: var(--error); background: var(--base); align-self: stretch; width: 100%; text-align: left; }
+    .pvcap { display: flex; align-items: center; gap: 6px; margin-top: 3px; min-width: 0; }
+    .pvcap .info { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pvcap .right { margin-left: auto; display: flex; gap: 3px; }
+    .preview.none { color: var(--muted); font-size: 11px; }
+
+    .statusbar {
+      display: flex; align-items: stretch; gap: 3px; padding: 2px 4px; min-height: 22px;
+      border-top: 1px solid var(--mid); box-shadow: inset 0 1px 0 var(--light); background: var(--window);
+    }
+    .statusbar > span { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .statusbar .status { flex: 1; min-width: 0; }
+    .statusbar .status.error { color: var(--error); }
+    .statusbar .cell { border-left: 1px solid var(--mid); box-shadow: inset 1px 0 0 var(--light); }
+    .statusbar #cursor { min-width: 22em; font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 11px; }
+
+    /* Settings view: group boxes over the whole workspace */
+    .workspace.settings-on { grid-template-rows: minmax(0, 1fr); }
+    .workspace.settings-on > .splitter, .workspace.settings-on > .lower { display: none; }
+    .settings {
+      flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; background: var(--window);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 0 10px; align-content: start;
+    }
+    .settings fieldset { min-width: 0; }
+    .settings .wide { grid-column: 1 / -1; }
+    .settings .tablebox { border: 1px solid var(--mid); border-top-color: var(--dark); background: var(--base); overflow: auto; max-height: 230px; margin-top: 5px; }
+    .settings .tablebox:empty { display: none; }
+    .settings .path { color: var(--muted); overflow-wrap: anywhere; margin-bottom: 3px; }
+    .settings .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 5px; }
+    .settings .row > .lbl { white-space: nowrap; }
+    .settings .row > input[type="text"], .settings .row > select { flex: 1 1 10em; width: auto; }
+    .settings .row > .push { margin-left: auto; display: flex; gap: 6px; }
+    .settings select[multiple] { height: auto; min-height: 7em; background: var(--base); padding: 1px; }
+    .settings td.actions { padding: 1px 2px; }
+    .settings td.actions button { margin-right: 2px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+    .checks label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    input[type="checkbox"] { width: auto; height: auto; margin: 0; accent-color: var(--highlight); }
+    .note { margin-top: 6px; padding: 4px 8px; background: var(--base); border: 1px solid var(--mid); border-left: 3px solid var(--highlight); line-height: 1.35; }
+    .settings .ok { color: var(--region); }
+    .settings .bad { color: var(--error); }
+    .settings .dim { color: var(--muted); }
+    pre.log { font: 10.5px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+    table.grid td.wrap { white-space: normal; }
+    .progress {
+      position: relative; height: 16px; min-width: 110px; overflow: hidden; border-radius: 2px;
+      border: 1px solid var(--mid); border-top-color: var(--dark); background: var(--base);
+    }
+    .progress > .bar { position: absolute; top: 0; bottom: 0; left: 0; background: linear-gradient(var(--highlight), color-mix(in srgb, var(--highlight) 78%, #000)); }
+    .progress > span { position: relative; display: block; text-align: center; font-size: 11px; line-height: 14px; }
+    .progress.busy > .bar { width: 28% !important; animation: busy 1.6s linear infinite; }
+    .progress.error > .bar { background: var(--error); }
+    @keyframes busy { from { left: -28%; } to { left: 100%; } }
+    #jobs-summary { cursor: pointer; }
+
+    @media (max-width: 800px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-rows: auto auto auto; }
+      .titlebar { flex-wrap: wrap; }
+      .titlebar .sources { margin-left: 0; flex-basis: 100%; white-space: normal; }
+      .titlebar .vsep { display: none; }
+      .main { grid-template-columns: minmax(0, 1fr); }
+      .controls { padding: 6px; }
+      .tabpane { overflow: visible; }
+      .workspace { display: flex; flex-direction: column; gap: 6px; padding: 0 6px 6px; }
+      .workspace > .viewwrap { height: 420px; flex: none; }
+      .workspace.settings-on > .viewwrap { height: auto; }
+      .settings { overflow: visible; }
+      .lower { display: flex; flex-direction: column; gap: 6px; }
+      .lower > .pane { height: 320px; flex: none; }
+      .splitter { display: none; }
+      .statusbar { position: sticky; bottom: 0; flex-wrap: wrap; }
+      .statusbar .status { flex-basis: 100%; white-space: normal; }
+      .statusbar #cursor { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="titlebar">
+    <span class="name">Lunar Toolkit Browser</span>
+    <span class="vsep"></span>
+    <span class="sub">LROC PDS index via DuckDB-WASM | ShadowCam, LROC, Kaguya via PDS ODE</span>
+    <span class="sources" id="sources">Looking for index files...</span>
+  </header>
+
+  <div class="main">
+    <aside class="controls">
+      <div class="tabbar" role="tablist">
+        <button role="tab" id="tab-index" data-for="index" aria-selected="true" aria-controls="panel-index">Local index</button>
+        <button role="tab" id="tab-ode" data-for="ode" aria-selected="false" aria-controls="panel-ode" tabindex="-1">ODE</button>
+      </div>
+
+      <section class="tabpane" id="panel-index" data-tab="index" role="tabpanel" aria-labelledby="tab-index">
+        <fieldset>
+          <legend>Index data</legend>
+          <div class="stack">
+            <input id="files" type="file" accept=".parquet" multiple aria-label="Open Parquet files">
+          </div>
+          <p class="hint">Open <code>cumindex_edr.parquet</code> / <code>_cdr</code> / <code>_rdr</code> from
+            <code>lunar build-db</code> (<code>~/.local/share/lunar_toolkit</code>); read in place, nothing is
+            uploaded. <code>lunar serve</code> loads them automatically; <code>?edr=URL&amp;cdr=URL&amp;rdr=URL</code>
+            reads hosted copies (CORS + Range required).</p>
+        </fieldset>
+
+        <form id="lookup-form">
+          <fieldset>
+            <legend>Look up product IDs</legend>
+            <div class="form">
+              <input id="ids" class="ids span3" type="text" autocomplete="off" spellcheck="false"
+                aria-label="Product IDs" placeholder="M1096757719LE M1096757719RE ...">
+              <div class="buttons"><button id="lookup-btn" class="default" type="submit" disabled>Look up</button></div>
+            </div>
+          </fieldset>
+        </form>
+
+        <form id="index-search-form">
+          <fieldset>
+            <legend>Search footprints</legend>
+            <div class="form">
+              <label for="ix-dataset">Dataset</label><select id="ix-dataset" class="span2"></select>
+              <label for="ix-camera">Camera</label>
+              <select id="ix-camera" class="span2">
+                <option value="all">All</option>
+                <option value="nac">NAC</option>
+                <option value="wac">WAC</option>
+              </select>
+              <label for="ix-limit">Limit</label><input id="ix-limit" class="span2" type="number" value="200" min="1" max="5000">
+              <label for="ix-mode">Region</label>
+              <select id="ix-mode" class="span2">
+                <option value="box">Bounding box</option>
+                <option value="point">Point + radius</option>
+                <option value="aoi">AOI polygon</option>
+              </select>
+              <div data-mode="box">
+                <span class="lbl">Lon W / E</span>
+                <input id="ix-west" type="number" step="any" value="0" aria-label="West" title="West">
+                <input id="ix-east" type="number" step="any" value="360" aria-label="East" title="East">
+                <span class="lbl">Lat S / N</span>
+                <input id="ix-south" type="number" step="any" value="-90" aria-label="South" title="South">
+                <input id="ix-north" type="number" step="any" value="-89" aria-label="North" title="North">
+              </div>
+              <div data-mode="point" hidden>
+                <label for="ix-lat">Lat</label><input id="ix-lat" class="span2" type="number" step="any" value="-89.67">
+                <label for="ix-lon">Lon</label><input id="ix-lon" class="span2" type="number" step="any" value="129.8">
+                <label for="ix-radius">Radius (km)</label><input id="ix-radius" class="span2" type="number" step="any" min="0" value="15">
+              </div>
+              <div data-mode="aoi" hidden>
+                <label for="ix-aoi-file">AOI file</label>
+                <input id="ix-aoi-file" class="span2" type="file" accept=".geojson,.json,.wkt,.txt">
+                <textarea id="ix-aoi" class="span3" spellcheck="false" aria-label="AOI polygon"
+                  placeholder="or paste WKT / GeoJSON, e.g. POLYGON((350 -5, 10 -5, 10 5, 350 5, 350 -5))"></textarea>
+              </div>
+              <span class="lbl">Incidence</span>
+              <input id="ix-inc-min" type="number" step="any" placeholder="min" aria-label="Incidence min">
+              <input id="ix-inc-max" type="number" step="any" placeholder="max" aria-label="Incidence max">
+              <span class="lbl">Emission</span>
+              <input id="ix-emi-min" type="number" step="any" placeholder="min" aria-label="Emission min">
+              <input id="ix-emi-max" type="number" step="any" placeholder="max" aria-label="Emission max">
+              <div class="buttons"><button id="ix-search-btn" class="default" type="submit" disabled>Search</button></div>
+            </div>
+            <p class="hint">Degrees, longitudes positive east (0-360 or -180-180); WEST &gt; EAST crosses the seam.
+              Same matching as <code>lunar search --bbox / --point / --aoi</code>: conservative bounding-box test
+              (polar stereographic poleward of 60 deg), and for an AOI an exact polygon intersection.</p>
+          </fieldset>
+        </form>
+      </section>
+
+      <section class="tabpane" id="panel-ode" data-tab="ode" role="tabpanel" aria-labelledby="tab-ode" hidden>
+        <form id="ode-form">
+          <fieldset>
+            <legend>Search ODE</legend>
+            <div class="form">
+              <label for="ode-instrument">Instrument</label><select id="ode-instrument" class="span2"></select>
+              <label for="ode-type">Product type</label><select id="ode-type" class="span2"></select>
+              <label for="ode-limit">Per page</label><input id="ode-limit" class="span2" type="number" value="100" min="1" max="1000">
+              <label for="ode-mode">Region</label>
+              <select id="ode-mode" class="span2">
+                <option value="box">Bounding box</option>
+                <option value="point">Point + radius</option>
+                <option value="aoi">AOI polygon</option>
+              </select>
+              <div data-mode="box">
+                <span class="lbl">Lon W / E</span>
+                <input id="ode-west" type="number" step="any" value="0" aria-label="West" title="West">
+                <input id="ode-east" type="number" step="any" value="360" aria-label="East" title="East">
+                <span class="lbl">Lat S / N</span>
+                <input id="ode-south" type="number" step="any" value="-90" aria-label="South" title="South">
+                <input id="ode-north" type="number" step="any" value="-89.5" aria-label="North" title="North">
+              </div>
+              <div data-mode="point" hidden>
+                <label for="ode-lat">Lat</label><input id="ode-lat" class="span2" type="number" step="any" value="-89.67">
+                <label for="ode-lon">Lon</label><input id="ode-lon" class="span2" type="number" step="any" value="129.8">
+                <label for="ode-radius">Radius (km)</label><input id="ode-radius" class="span2" type="number" step="any" min="0" value="15">
+              </div>
+              <div data-mode="aoi" hidden>
+                <label for="ode-aoi-file">AOI file</label>
+                <input id="ode-aoi-file" class="span2" type="file" accept=".geojson,.json,.wkt,.txt">
+                <textarea id="ode-aoi" class="span3" spellcheck="false" aria-label="AOI polygon"
+                  placeholder="or paste WKT / GeoJSON, e.g. POLYGON((350 -5, 10 -5, 10 5, 350 5, 350 -5))"></textarea>
+              </div>
+              <span class="lbl">Incidence</span>
+              <input id="ode-inc-min" type="number" step="any" placeholder="min" aria-label="Incidence min">
+              <input id="ode-inc-max" type="number" step="any" placeholder="max" aria-label="Incidence max">
+              <span class="lbl">Emission</span>
+              <input id="ode-emi-min" type="number" step="any" placeholder="min" aria-label="Emission min">
+              <input id="ode-emi-max" type="number" step="any" placeholder="max" aria-label="Emission max">
+              <label for="ode-t0">From</label><input id="ode-t0" class="span2" type="date">
+              <label for="ode-t1">To</label><input id="ode-t1" class="span2" type="date">
+              <div class="buttons"><button id="ode-btn" class="default" type="submit">Search</button></div>
+            </div>
+            <p class="hint">ODE gets the region's bounding box (a circle becomes its box); with an AOI each
+              page is then filtered by exact footprint intersection, like <code>lunar ode-search --aoi</code>.</p>
+          </fieldset>
+        </form>
+      </section>
+    </aside>
+
+    <main class="workspace" id="workspace">
+      <div class="viewwrap">
+        <div class="tabbar" role="tablist" aria-label="View">
+          <button role="tab" id="vtab-map" data-view="map" aria-selected="true" aria-controls="view-map">Footprints</button>
+          <button role="tab" id="vtab-image" data-view="image" aria-selected="false" aria-controls="view-image" tabindex="-1">Image</button>
+          <button role="tab" id="vtab-settings" data-view="settings" aria-selected="false" aria-controls="view-settings" tabindex="-1">Settings</button>
+        </div>
+        <section class="pane">
+          <div class="viewbody" id="view-map" role="tabpanel" aria-labelledby="vtab-map">
+            <div class="mapbox" id="index-map" data-tab="index" data-empty="No footprints. Look up product IDs or run a search."></div>
+            <div class="mapbox" id="ode-map" data-tab="ode" data-empty="No footprints. Run an ODE search." hidden></div>
+          </div>
+          <div class="viewbody" id="view-image" role="tabpanel" aria-labelledby="vtab-image" hidden>
+            <div class="panehead">
+              <span class="title">Image</span>
+              <span class="info" id="view-info">No image</span>
+            </div>
+            <div class="toolbar" role="toolbar" aria-label="Image view">
+              <select id="view-source" aria-label="Image source" title="Image source" disabled><option value="">(no image)</option></select>
+              <button class="tool" id="view-open" type="button" title="Open a local GeoTIFF / COG (or PNG / JPEG)">Open file...</button>
+              <input id="view-file" type="file" accept=".tif,.tiff,image/tiff,.png,.jpg,.jpeg" hidden>
+              <span class="sep"></span>
+              <button class="tool" id="view-zoom-out" type="button" title="Zoom out (-)">-</button>
+              <button class="tool" id="view-zoom-in" type="button" title="Zoom in (+)">+</button>
+              <button class="tool" id="view-1to1" type="button" title="Full resolution: one image pixel per screen pixel (0)">1:1</button>
+              <button class="tool" id="view-fit" type="button" title="Fit the whole image (F)">Fit</button>
+              <button class="tool" id="view-fit-width" type="button" title="Fit the image width (W)">Fit width</button>
+              <span class="sep"></span>
+              <label class="lbl" for="view-min">Min</label><input id="view-min" type="number" step="any" disabled>
+              <label class="lbl" for="view-max">Max</label><input id="view-max" type="number" step="any" disabled>
+              <label class="lbl" for="view-gamma">Gamma</label><input id="view-gamma" type="number" step="0.1" min="0.1" max="10" value="1" disabled>
+              <button class="tool" id="view-auto" type="button" title="Stretch the 2nd - 98th percentile of the overview" disabled>Auto 2-98%</button>
+            </div>
+            <div class="viewframe" id="view-frame">
+              <canvas id="view-canvas" tabindex="0" aria-label="Image (wheel zoom, drag pan, + - 0 F W keys)"></canvas>
+              <div class="viewmsg" id="view-msg">Select a product with a browse image (LROC NAC / WAC pyramid, ShadowCam COG,
+                Kaguya JPEG), open a local GeoTIFF, or start <code>lunar serve --images DIR</code>.</div>
+            </div>
+          </div>
+          <div class="viewbody" id="view-settings" role="tabpanel" aria-labelledby="vtab-settings" hidden>
+            <div class="panehead">
+              <span class="title">Settings</span>
+              <span class="info" id="set-info">Needs lunar serve or lunar app</span>
+              <span class="right"><button class="tool" id="set-refresh" type="button" title="Read the status again (sizes, tools)">Refresh</button></span>
+            </div>
+            <div class="settings" id="settings">
+              <p class="note wide" id="set-note" hidden></p>
+
+              <fieldset class="wide">
+                <legend>Data and indexes</legend>
+                <div class="path" id="set-data-dir"></div>
+                <div class="tablebox" id="set-indexes"></div>
+                <div class="row">
+                  <label class="lbl" for="set-release">Release</label>
+                  <input id="set-release" type="text" class="mono" style="max-width: 24em" placeholder="newest (e.g. LROLRC_0066C)" spellcheck="false" data-admin>
+                  <span class="checks"><label><input id="set-volume-only" type="checkbox" data-admin> Volume index only</label></span>
+                </div>
+                <p class="hint">Build downloads the cumulative CUMINDEX.TAB (EDR about 3.8 GB) and writes the Parquet with
+                  DuckDB; "Volume index only" uses one release's INDEX.TAB (about 20 k rows). Update appends the volumes
+                  released since the build. Same as <code>lunar build-db</code>.</p>
+              </fieldset>
+
+              <fieldset class="wide">
+                <legend>Jobs</legend>
+                <div class="tablebox" id="set-jobs"></div>
+                <p class="hint" id="set-jobs-empty">No jobs yet. Builds and downloads run here in the background (two at a time)
+                  and resume from their .part files when started again.</p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Reference data</legend>
+                <div class="row">
+                  <label class="lbl" for="set-region">Region</label>
+                  <select id="set-region" data-admin></select>
+                </div>
+                <div class="row">
+                  <span class="lbl">PGDA LOLA 5 m</span>
+                  <span class="checks" id="set-pgda-kinds"></span>
+                  <span class="push"><button id="set-pgda-btn" type="button" data-admin>Download</button></span>
+                </div>
+                <div class="row">
+                  <label class="lbl" for="set-sdem-pat">SfS DEM members</label>
+                  <input id="set-sdem-pat" type="text" class="mono" value="GLDELEV" spellcheck="false" data-admin
+                    title="Product codes / substrings or globs, e.g. GLDELEV GLDSIGM README">
+                  <span class="push">
+                    <button id="set-sdem-list" type="button" data-admin title="Read the Zenodo zip directory (HTTP Range)">List members</button>
+                    <button id="set-sdem-btn" type="button" data-admin>Extract</button>
+                  </span>
+                </div>
+                <select id="set-sdem-members" multiple aria-label="Zip members" hidden data-admin></select>
+                <div class="tablebox" id="set-reference"></div>
+                <p class="hint" id="set-ref-dir"></p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Downloads</legend>
+                <textarea id="set-dl-ids" class="ids" rows="3" spellcheck="false" aria-label="Product IDs to download"
+                  placeholder="M1096757719LE M1096757719RE ..." data-admin></textarea>
+                <div class="row">
+                  <label class="lbl" for="set-dl-product">Product</label>
+                  <select id="set-dl-product" style="flex: 0 0 auto; width: 7em" data-admin>
+                    <option value="edr">EDR</option>
+                    <option value="cdr">CDR</option>
+                  </select>
+                  <label class="lbl" for="set-dl-dest">To</label>
+                  <input id="set-dl-dest" type="text" class="mono" spellcheck="false" data-admin>
+                  <span class="push"><button id="set-dl-btn" type="button" data-admin>Download</button></span>
+                </div>
+                <div class="tablebox" id="set-downloads"></div>
+                <div class="path" id="set-cache-dir" style="margin-top: 6px"></div>
+                <div class="tablebox" id="set-cache"></div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Environment</legend>
+                <div class="tablebox" id="set-env" style="max-height: none"></div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Runs</legend>
+                <div class="path" id="set-runs-dir"></div>
+                <div class="tablebox" id="set-runs"></div>
+              </fieldset>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="splitter rows" id="split-rows" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
+      <div class="lower" id="lower">
+        <section class="pane">
+          <div class="panehead">
+            <span class="title">Results</span>
+            <span class="right" id="ode-nav" data-tab="ode" hidden></span>
+          </div>
+          <div class="panebody" id="index-results" data-tab="index" data-empty="No results"></div>
+          <div class="panebody" id="ode-results" data-tab="ode" data-empty="No results" hidden></div>
+        </section>
+        <div class="splitter cols" id="split-cols" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+        <section class="pane">
+          <div class="panehead">
+            <span class="title">Details</span>
+            <span class="right"><button class="tool" id="detail-clear" type="button">Clear</button></span>
+          </div>
+          <div class="panebody" id="index-detail" data-tab="index" data-empty="Click a row or footprint"></div>
+          <div class="panebody" id="ode-detail" data-tab="ode" data-empty="Click a row or footprint" hidden></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <footer class="statusbar">
+    <span class="status" id="index-status" data-tab="index">Initializing DuckDB...</span>
+    <span class="status" id="ode-status" data-tab="ode" hidden>Ready</span>
+    <span class="cell" id="index-count" data-tab="index">0 rows</span>
+    <span class="cell" id="ode-count" data-tab="ode" hidden>0 rows</span>
+    <span class="cell" id="view-zoom" hidden></span>
+    <span class="cell" id="jobs-summary" title="Open the Settings tab" hidden></span>
+    <span class="cell" id="cursor"></span>
+  </footer>
+</div>
+
+  <script type="module">
+    import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm';
+
+    // Mirrors lunar_toolkit.lroc.nac.METADATA_LABELS (PDS_URL is derived below);
+    // tests/test_static.py keeps the two in sync.
+    const LABELS = [
+      ['PRODUCT_ID',                          'Product'],
+      ['DATA_SET_ID',                         'PDS dataset name'],
+      ['VOLUME_ID',                           'PDS volume name'],
+      ['INSTRUMENT_HOST_ID',                  'Instrument host'],
+      ['INSTRUMENT_ID',                       'Instrument'],
+      ['ORIGINAL_PRODUCT_ID',                 'Original product'],
+      ['PRODUCT_VERSION_ID',                  'Product version'],
+      ['MISSION_PHASE_NAME',                  'Mission phase name'],
+      ['RATIONALE_DESC',                      'Rationale desc'],
+      ['DATA_QUALITY_ID',                     'Data quality'],
+      ['NAC_PREROLL_START_TIME',              'NAC preroll start time'],
+      ['START_TIME',                          'Start time'],
+      ['STOP_TIME',                           'Stop time'],
+      ['SPACECRAFT_CLOCK_PARTITION',          'SC clock partition'],
+      ['NAC_SPACECRAFT_CLOCK_PREROLL_COUNT',  'NAC SC clock preroll count'],
+      ['SPACECRAFT_CLOCK_START_COUNT',        'SC clock start count'],
+      ['SPACECRAFT_CLOCK_STOP_COUNT',         'SC clock stop count'],
+      ['TARGET_NAME',                         'Target name'],
+      ['ORBIT_NUMBER',                        'Orbit number'],
+      ['SLEW_ANGLE',                          'Slew angle'],
+      ['ORBIT_NODE',                          'LRO node crossing'],
+      ['LRO_FLIGHT_DIRECTION',                'LRO flight direction'],
+      ['NAC_LINE_EXPOSURE_DURATION',          'NAC line exposure duration'],
+      ['NAC_FRAME_ID',                        'NAC frame'],
+      ['NAC_DAC_RESET',                       'NAC DAC reset'],
+      ['NAC_CHANNEL_A_OFFSET',                'NAC channel A offset'],
+      ['NAC_CHANNEL_B_OFFSET',                'NAC channel B offset'],
+      ['INSTRUMENT_MODE_CODE',                'Instrument mode code'],
+      ['COMPAND_SELECT_CODE',                 'Compand select code'],
+      ['MODE_COMPRESSION',                    'Mode compression'],
+      ['MODE_TEST',                           'Mode test'],
+      ['NAC_TEMPERATURE_SCS',                 'NAC temperature SCS'],
+      ['NAC_TEMPERATURE_FPA',                 'NAC temperature FPA'],
+      ['NAC_TEMPERATURE_FPGA',                'NAC temperature FPGA'],
+      ['NAC_TEMPERATURE_TELESCOPE',           'NAC temperature telescope'],
+      ['IMAGE_LINES',                         'Image lines'],
+      ['LINE_SAMPLES',                        'Line samples'],
+      ['SAMPLE_BITS',                         'Sample bits'],
+      ['SCALED_PIXEL_WIDTH',                  'Scaled pixel width'],
+      ['SCALED_PIXEL_HEIGHT',                 'Scaled pixel height'],
+      ['RESOLUTION',                          'Resolution'],
+      ['EMISSION_ANGLE',                      'Emission angle'],
+      ['INCIDENCE_ANGLE',                     'Incidence angle'],
+      ['PHASE_ANGLE',                         'Phase angle'],
+      ['NORTH_AZIMUTH',                       'North azimuth'],
+      ['SUB_SOLAR_AZIMUTH',                   'Sub solar azimuth'],
+      ['SUB_SOLAR_LATITUDE',                  'Sub solar latitude'],
+      ['SUB_SOLAR_LONGITUDE',                 'Sub solar longitude'],
+      ['SUB_SPACECRAFT_LATITUDE',             'Sub spacecraft latitude'],
+      ['SUB_SPACECRAFT_LONGITUDE',            'Sub spacecraft longitude'],
+      ['SOLAR_DISTANCE',                      'Solar distance'],
+      ['SOLAR_LONGITUDE',                     'Solar longitude'],
+      ['CENTER_LATITUDE',                     'Center latitude'],
+      ['CENTER_LONGITUDE',                    'Center longitude'],
+      ['UPPER_RIGHT_LATITUDE',                'Upper right latitude'],
+      ['UPPER_RIGHT_LONGITUDE',               'Upper right longitude'],
+      ['LOWER_RIGHT_LATITUDE',                'Lower right latitude'],
+      ['LOWER_RIGHT_LONGITUDE',               'Lower right longitude'],
+      ['LOWER_LEFT_LATITUDE',                 'Lower left latitude'],
+      ['LOWER_LEFT_LONGITUDE',                'Lower left longitude'],
+      ['UPPER_LEFT_LATITUDE',                 'Upper left latitude'],
+      ['UPPER_LEFT_LONGITUDE',                'Upper left longitude'],
+      ['SPACECRAFT_ALTITUDE',                 'Spacecraft altitude'],
+      ['TARGET_CENTER_DISTANCE',              'Target center distance'],
+    ];
+
+    // Mirrors lunar_toolkit.ode.INSTRUMENTS (checked by tests/test_static.py).
+    const ODE_INSTRUMENTS = {
+      shadowcam: { label: 'ShadowCam', ihid: 'KPLO', iid: 'ShadowCam', default: 'cal',
+                   types: { raw: 'RAW', cal: 'CAL', cmos: 'CMOS', umos: 'UMOS', dtm: 'DTM' } },
+      lroc:      { label: 'LROC NAC', ihid: 'LRO', iid: 'LROC', default: 'edr',
+                   types: { edr: 'EDRNAC4', cdr: 'CDRNAC4' } },
+      kaguya_tc: { label: 'Kaguya TC', ihid: 'SLN', iid: 'TC', default: 'stereo',
+                   types: { stereo: 'TCWL2B', mono: 'TCSL2B', dtm: 'TCDTMO', ortho: 'TCORT',
+                            morning: 'TCMORM', evening: 'TCEVEM' } },
+      kaguya_mi: { label: 'Kaguya MI', ihid: 'SLN', iid: 'MI', default: 'vis',
+                   types: { vis: 'VIS2B', nir: 'NIR2B', vis2c: 'VIS2C', nir2c: 'NIR2C',
+                            l3c5: 'MI3C', map: 'MIMAP' } },
+    };
+
+    const ODE_URL = 'https://oderest.rsl.wustl.edu/live2/';
+    const PDS_BASE = 'https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/';
+    const LEGACY_PDS_BASE = 'https://pds.lroc.im-ldi.com/data/';
+    const DATASETS = ['edr', 'cdr', 'rdr'];
+    const NAC_SQL = "(PRODUCT_ID LIKE '%LE' OR PRODUCT_ID LIKE '%RE' OR PRODUCT_ID LIKE '%LC' OR PRODUCT_ID LIKE '%RC')";
+
+    // Mirror lunar_toolkit.constants and lroc.cumindex._MACROS (checked by tests/test_static.py).
+    const MOON_RADIUS_KM = 1737.4;
+    const POLAR_LAT_THRESHOLD = 60.0;
+    const FOOTPRINT_CORNERS = ['UPPER_LEFT', 'UPPER_RIGHT', 'LOWER_RIGHT', 'LOWER_LEFT'];
+    const MACROS = [
+      'CREATE OR REPLACE MACRO _lon360(x) AS ((x % 360.0) + 360.0) % 360.0',
+      'CREATE OR REPLACE MACRO _arc_overlap(w1, s1, w2, s2) AS (s1 >= 360 OR s2 >= 360 OR _lon360(w2 - w1) <= s1 OR _lon360(w1 - w2) <= s2)',
+    ];
+    const AOI_PAGE = 5000;
+    const ODE_AOI_PAGES = 10;
+
+    const $ = (id) => document.getElementById(id);
+    let db, conn;
+    const sources = {};  // dataset -> { path, label }
+    const columnCache = {};
+
+    function el(tag, attrs = {}, ...children) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'class') node.className = v;
+        else if (k === 'onclick') node.addEventListener('click', v);
+        else node.setAttribute(k, v);
+      }
+      for (const c of children) node.append(c instanceof Node ? c : String(c ?? ''));
+      return node;
+    }
+
+    function link(url, text) {
+      return el('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, text ?? url);
+    }
+
+    function setStatus(id, msg, isError = false) {
+      $(id).textContent = msg;
+      $(id).className = 'status' + (isError ? ' error' : '');
+    }
+
+    function fmt(val, digits) {
+      if (val == null) return '';
+      if (val instanceof Date) return val.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+      if (typeof val === 'bigint') return String(val);
+      if (typeof val === 'number' && digits != null) return Number.isFinite(val) ? val.toFixed(digits) : '';
+      const s = String(val).trim();
+      return s === 'null' || s === 'undefined' || s === 'NaN' ? '' : s;
+    }
+
+    // DuckDB-WASM returns TIMESTAMP columns as epoch milliseconds.
+    function cell(row, col, digits) {
+      const v = row[col];
+      return fmt(typeof v === 'number' && /TIME$/.test(col) ? new Date(v) : v, digits);
+    }
+
+    function num(id) {
+      const v = $(id).value.trim();
+      return v === '' ? null : Number(v);
+    }
+
+    function sqlStr(s) { return `'${String(s).replace(/'/g, "''")}'`; }
+
+    function setCount(p, n) {
+      $(`${p}-count`).textContent = `${n} row${n === 1 ? '' : 's'}`;
+    }
+
+    // Tabs: switch the control panel and every [data-tab] part of the workspace / status bar
+    const tabs = [...document.querySelectorAll('.controls [role="tab"]')];
+    function selectTab(tab) {
+      for (const t of tabs) {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      }
+      for (const node of document.querySelectorAll('[data-tab]')) node.hidden = node.dataset.tab !== tab.dataset.for;
+      $('cursor').textContent = '';
+    }
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', (e) => {
+        const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        if (!d) return;
+        const next = tabs[(tabs.indexOf(tab) + d + tabs.length) % tabs.length];
+        selectTab(next);
+        next.focus();
+      });
+    }
+    const activeTab = () => tabs.find((t) => t.getAttribute('aria-selected') === 'true').dataset.for;
+
+    // Splitters: map | lower pane (rows), results | details (columns)
+    function splitter(handle, onmove) {
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        handle.setPointerCapture(e.pointerId);
+        const move = (ev) => onmove(ev);
+        const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', up);
+      });
+    }
+    splitter($('split-rows'), (e) => {
+      const r = $('workspace').getBoundingClientRect();
+      const h = Math.min(Math.max(e.clientY - r.top - 6, 140), r.height - 120);
+      $('workspace').style.setProperty('--map-h', `${h}px`);
+    });
+    splitter($('split-cols'), (e) => {
+      const r = $('lower').getBoundingClientRect();
+      const w = Math.min(Math.max(r.right - e.clientX - 3, 200), r.width - 200);
+      $('lower').style.setProperty('--det-w', `${w}px`);
+    });
+    $('detail-clear').addEventListener('click', () => $(`${activeTab()}-detail`).replaceChildren());
+
+    // Geometry: ports of lunar_toolkit.geometry (query_region, aoi_region, aoi_mask), so the
+    // browser matches `lunar search` row for row.
+    const RAD = Math.PI / 180, DEG = 180 / Math.PI;
+    const mod = (a, b) => { const r = a % b; return r !== 0 && (r < 0) !== (b < 0) ? r + b : r; };
+    const wrap180 = (d) => mod(d + 180, 360) - 180;
+    const minOf = (xs) => xs.reduce((a, b) => (b < a ? b : a), Infinity);
+    const maxOf = (xs) => xs.reduce((a, b) => (b > a ? b : a), -Infinity);
+    const sumOf = (xs) => xs.reduce((a, b) => a + b, 0);
+    // Python float repr for whole numbers, so the SQL reads like region_sql's
+    const lit = (x) => (Number.isInteger(x) && Math.abs(x) < 1e16 ? x.toFixed(1) : String(x));
+
+    function psXY(lat, lon, hemi) {
+      const sgn = hemi === 'S' ? 1 : -1;
+      const rho = 2 * MOON_RADIUS_KM * 1000 * Math.tan(Math.PI / 4 + sgn * (lat * RAD) / 2);
+      return [rho * Math.sin(lon * RAD), sgn * rho * Math.cos(lon * RAD)];
+    }
+
+    const psHemis = (s, n) => [['S', s < -POLAR_LAT_THRESHOLD], ['N', n > POLAR_LAT_THRESHOLD]].filter(([, p]) => p).map(([h]) => h);
+
+    function queryRegion({ lat = null, lon = null, point = null, radiusKm = 0 }) {
+      if (point) {
+        const [plat, plon] = point;
+        const delta = (radiusKm / MOON_RADIUS_KM) * DEG;
+        let s = plat - delta, n = plat + delta, west, span;
+        if (n >= 90 || s <= -90 || (radiusKm <= 0 && Math.abs(plat) >= 90)) {
+          [west, span] = [0, 360];
+        } else {
+          const ratio = Math.sin(delta * RAD) / Math.cos(plat * RAD);
+          const dlon = ratio >= 1 ? 90 : Math.asin(ratio) * DEG;
+          [west, span] = [mod(plon - dlon, 360), Math.min(2 * dlon, 360)];
+        }
+        [s, n] = [Math.max(s, -90), Math.min(n, 90)];
+        const ps = {};
+        for (const hemi of psHemis(s, n)) {
+          const [x, y] = psXY(plat, plon, hemi);
+          // PS scale k = 2 / (1 + sin|lat|); use the largest k in the circle
+          const edge = s * n > 0 ? Math.min(Math.abs(s), Math.abs(n)) : 0;
+          const k = 2 / (1 + Math.sin(edge * RAD));
+          const r = radiusKm * 1000 * k * 1.01 + 1;
+          ps[hemi] = [x - r, x + r, y - r, y + r];
+        }
+        return { lat: [s, n], west, span, ps };
+      }
+      let [s, n] = lat ?? [-90, 90];
+      if (s > n) [s, n] = [n, s];
+      let west, span;
+      if (!lon || lon[1] - lon[0] >= 360) [west, span] = [0, 360];
+      else [west, span] = [mod(lon[0], 360), mod(lon[1] - lon[0], 360)];
+      const ps = {};
+      for (const hemi of psHemis(s, n)) ps[hemi] = psBboxOfBox(s, n, west, span, hemi);
+      return { lat: [s, n], west, span, ps };
+    }
+
+    function psBboxOfBox(s, n, west, span, hemi, samples = 181) {
+      const [s2, n2] = hemi === 'S' ? [s, Math.min(n, 0)] : [Math.max(s, 0), n];
+      const xs = [], ys = [];
+      const add = (la, lo) => { const [x, y] = psXY(la, lo, hemi); xs.push(x); ys.push(y); };
+      for (let i = 0; i < samples; i++) {
+        const f = i / (samples - 1);
+        const lo = west + span * f, la = s2 + (n2 - s2) * f;
+        add(s2, lo); add(n2, lo); add(la, west); add(la, west + span);
+      }
+      const pole = hemi === 'S' ? -90 : 90;
+      if (span >= 360 && s2 <= pole && pole <= n2) { xs.push(0); ys.push(0); }
+      const [x0, x1, y0, y1] = [minOf(xs), maxOf(xs), minOf(ys), maxOf(ys)];
+      const pad = 0.005 * Math.max(x1 - x0, y1 - y0, 1);
+      return [x0 - pad, x1 + pad, y0 - pad, y1 + pad];
+    }
+
+    function regionBbox(region) {
+      const [s, n] = region.lat;
+      if (region.span >= 360) return [0, s, 360, n];
+      return [region.west, s, mod(region.west + region.span, 360), n];
+    }
+
+    function polarHemi(region) {
+      const [s, n] = region.lat;
+      return n < -POLAR_LAT_THRESHOLD ? 'S' : s > POLAR_LAT_THRESHOLD ? 'N' : null;
+    }
+
+    // cumindex.region_sql, using the same _arc_overlap macro
+    function regionSql(region) {
+      const [s, n] = region.lat;
+      const conds = [`FP_MAX_LAT >= ${lit(s)}`, `FP_MIN_LAT <= ${lit(n)}`];
+      if (region.span < 360) conds.push(`_arc_overlap(FP_LON_WEST, FP_LON_SPAN, ${lit(region.west)}, ${lit(region.span)})`);
+      for (const [hemi, [x0, x1, y0, y1]] of Object.entries(region.ps)) {
+        conds.push(`(FP_PS_HEMI IS DISTINCT FROM '${hemi}' OR (FP_PS_XMAX >= ${lit(x0)} AND FP_PS_XMIN <= ${lit(x1)} `
+          + `AND FP_PS_YMAX >= ${lit(y0)} AND FP_PS_YMIN <= ${lit(y1)}))`);
+      }
+      return `(${conds.join(' AND ')})`;
+    }
+
+    // cumindex.footprint_wkt_sql
+    function footprintWktSql(names) {
+      const have = new Set(names);
+      const pairs = FOOTPRINT_CORNERS.map((c) => [`${c}_LATITUDE`, `${c}_LONGITUDE`]);
+      if (!pairs.every(([a, b]) => have.has(a) && have.has(b))) return 'NULL';
+      const pts = [...pairs, pairs[0]].map(([a, b]) =>
+        `CAST(round(FP_LON_WEST + _lon360(round(${b} - FP_LON_WEST, 6)), 4) AS VARCHAR) || ' ' || CAST(round(${a}, 4) AS VARCHAR)`);
+      return `'POLYGON((' || ${pts.join(" || ', ' || ")} || '))'`;
+    }
+
+    // Rings are open arrays of [lon, lat] (or [x, y] once projected); a geometry is a list
+    // of polygons, each [exterior, ...holes].
+    const openRing = (r) => (r.length > 1 && r[0][0] === r.at(-1)[0] && r[0][1] === r.at(-1)[1] ? r.slice(0, -1) : r);
+
+    function densifyRing(ring, step) {
+      const out = [];
+      ring.forEach(([lo0, la0], i) => {
+        const [lo1, la1] = ring[(i + 1) % ring.length];
+        const dlo = wrap180(lo1 - lo0), dla = la1 - la0;
+        const n = Math.max(1, Math.ceil(Math.max(Math.abs(dlo), Math.abs(dla)) / step));
+        for (let j = 0; j < n; j++) out.push([lo0 + dlo * j / n, la0 + dla * j / n]);
+      });
+      return out;
+    }
+
+    function unwrapRing(ring) {
+      const out = [ring[0]];
+      for (const [lo, la] of ring.slice(1)) out.push([out.at(-1)[0] + wrap180(lo - out.at(-1)[0]), la]);
+      return out;
+    }
+
+    const winding = (ring) => sumOf(ring.map((p, i) => wrap180(ring[(i + 1) % ring.length][0] - p[0])));
+    const enclosesPole = (ring) => Math.abs(winding(ring)) > 180;
+    const lonMid = (ring) => { const los = ring.map((p) => p[0]); return (minOf(los) + maxOf(los)) / 2; };
+
+    function shiftTo0360(rings) {
+      const k = Math.floor(minOf(rings[0].map((p) => p[0])) / 360);
+      return rings.map((r) => r.map(([lo, la]) => [lo - 360 * k, la]));
+    }
+
+    function parseWkt(text) {
+      const toks = text.replace(/^\s*SRID=\d+;/i, '').toUpperCase()
+        .match(/[A-Z]+|\(|\)|,|[-+]?(?:\d+\.?\d*|\.\d+)(?:E[-+]?\d+)?/g) ?? [];
+      let i = 0;
+      const peek = () => toks[i];
+      const take = (t) => { if (toks[i] !== t) throw new Error(`Bad WKT near token ${i}`); i++; };
+      const isNum = (t) => t != null && /^[-+.\d]/.test(t);
+      function list() {
+        take('(');
+        const out = [];
+        for (;;) {
+          if (peek() === '(') out.push(list());
+          else {
+            const p = [];
+            while (isNum(peek())) p.push(Number(toks[i++]));
+            if (p.length < 2) throw new Error('Bad WKT coordinate');
+            out.push(p);
+          }
+          if (peek() !== ',') break;
+          i++;
+        }
+        take(')');
+        return out;
+      }
+      function geom() {
+        const type = toks[i++];
+        while (['Z', 'M', 'ZM'].includes(peek())) i++;
+        if (peek() === 'EMPTY') { i++; return []; }
+        if (type === 'GEOMETRYCOLLECTION') {
+          take('(');
+          const out = [];
+          for (;;) { out.push(...geom()); if (peek() !== ',') break; i++; }
+          take(')');
+          return out;
+        }
+        const c = list();
+        if (type === 'POLYGON') return [c];
+        if (type === 'MULTIPOLYGON') return c;
+        if (['POINT', 'LINESTRING', 'MULTIPOINT', 'MULTILINESTRING'].includes(type)) return [];
+        throw new Error(`Unsupported WKT type ${type}`);
+      }
+      const polys = geom();
+      if (i !== toks.length) throw new Error('Trailing WKT');
+      return polys.map((poly) => poly.map((r) => r.map((p) => [p[0], p[1]])));
+    }
+
+    function geojsonPolygons(obj) {
+      switch (obj?.type) {
+        case 'FeatureCollection': return (obj.features ?? []).flatMap(geojsonPolygons);
+        case 'Feature': return obj.geometry ? geojsonPolygons(obj.geometry) : [];
+        case 'GeometryCollection': return (obj.geometries ?? []).flatMap(geojsonPolygons);
+        case 'Polygon': return obj.coordinates.length ? [obj.coordinates] : [];
+        case 'MultiPolygon': return obj.coordinates.filter((p) => p.length);
+        case 'Point': case 'MultiPoint': case 'LineString': case 'MultiLineString': return [];
+        default: throw new Error(`Unsupported GeoJSON type ${obj?.type}`);
+      }
+    }
+
+    // geometry.load_aoi: densified (1 deg), unwrapped, exterior west edge in [0, 360)
+    function loadAoi(text) {
+      text = text.trim();
+      if (!text) throw new Error('Load or paste an AOI polygon (GeoJSON or WKT) first.');
+      let polys;
+      if (text.startsWith('{')) polys = geojsonPolygons(JSON.parse(text));
+      else {
+        try { polys = parseWkt(text); } catch { throw new Error(`Not GeoJSON or WKT: ${text.slice(0, 80)}`); }
+      }
+      const polygons = [];
+      for (const poly of polys) {
+        let rings = poly.map((r) => openRing(r.map((p) => [Number(p[0]), Number(p[1])]))).filter((r) => r.length >= 3);
+        if (!rings.length) continue;
+        rings = rings.map((r) => unwrapRing(densifyRing(r, 1)));
+        const out = shiftTo0360(rings.slice(0, 1));
+        const extMid = lonMid(out[0]);
+        for (const h of rings.slice(1)) {
+          const kh = Math.round((lonMid(h) - extMid) / 360);
+          out.push(h.map(([lo, la]) => [lo - 360 * kh, la]));
+        }
+        polygons.push(out);
+      }
+      if (!polygons.length) throw new Error('AOI contains no Polygon or MultiPolygon geometry');
+      if (polygons.flat(2).some(([, la]) => !(Math.abs(la) <= 90))) {
+        throw new Error('AOI latitude outside +/-90 deg - coordinates must be (lon, lat)');
+      }
+      return { polygons };
+    }
+
+    function coveringArc(arcs) {
+      const pieces = [];
+      for (let [w, sp] of arcs) {
+        if (sp >= 360) return [0, 360];
+        w = mod(w, 360);
+        if (w + sp > 360) pieces.push([w, 360], [0, w + sp - 360]);
+        else pieces.push([w, w + sp]);
+      }
+      pieces.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const merged = [[...pieces[0]]];
+      for (const [a, b] of pieces.slice(1)) {
+        const last = merged.at(-1);
+        if (a <= last[1]) last[1] = Math.max(last[1], b);
+        else merged.push([a, b]);
+      }
+      const gaps = merged.slice(0, -1).map((m, i) => [merged[i + 1][0] - m[1], merged[i + 1][0]]);
+      gaps.push([merged[0][0] + 360 - merged.at(-1)[1], merged[0][0]]);
+      const [size, eastOfGap] = gaps.reduce((b, g) => (g[0] > b[0] || (g[0] === b[0] && g[1] > b[1]) ? g : b));
+      return size <= 0 ? [0, 360] : [mod(eastOfGap, 360), 360 - size];
+    }
+
+    // geometry.aoi_region
+    function aoiRegion(aoi) {
+      const exts = aoi.polygons.map((p) => p[0]);
+      const lats = exts.flat().map((p) => p[1]);
+      let s = minOf(lats), n = maxOf(lats);
+      const arcs = [];
+      for (const ext of exts) {
+        if (enclosesPole(ext)) {
+          if (sumOf(ext.map((p) => p[1])) < 0) s = -90; else n = 90;
+          arcs.push([0, 360]);
+        } else {
+          const los = ext.map((p) => p[0]);
+          arcs.push([minOf(los), maxOf(los) - minOf(los)]);
+        }
+      }
+      const [west, span] = coveringArc(arcs);
+      const ps = {};
+      for (const hemi of psHemis(s, n)) {
+        if (!lats.every((la) => (hemi === 'S' ? la <= 0 : la >= 0))) {
+          ps[hemi] = psBboxOfBox(s, n, west, span, hemi);
+          continue;
+        }
+        const xy = exts.flat().map(([lo, la]) => psXY(la, lo, hemi));
+        const xs = xy.map((p) => p[0]), ys = xy.map((p) => p[1]);
+        const [x0, x1, y0, y1] = [minOf(xs), maxOf(xs), minOf(ys), maxOf(ys)];
+        const pad = 0.005 * Math.max(x1 - x0, y1 - y0) + 1;
+        ps[hemi] = [x0 - pad, x1 + pad, y0 - pad, y1 + pad];
+      }
+      return { lat: [s, n], west, span, ps };
+    }
+
+    // Clamp away from the opposite pole, where the projection diverges
+    const psRing = (ring, hemi) => ring.map(([lo, la]) => psXY(hemi === 'S' ? Math.min(la, 89) : Math.max(la, -89), lo, hemi));
+
+    function llRing(ring) {
+      let r = unwrapRing(ring);
+      if (enclosesPole(ring)) {
+        const pole = sumOf(r.map((p) => p[1])) < 0 ? -90 : 90;
+        const loEnd = r[0][0] + winding(ring);
+        r = [...r, [loEnd, r[0][1]], [loEnd, pole], [r[0][0], pole]];
+      }
+      return r;
+    }
+
+    const polygon = (rings) => [rings[0], ...rings.slice(1).filter((h) => h.length >= 3)];
+    const shiftX = (geom, dx) => geom.map((poly) => poly.map((r) => r.map(([x, y]) => [x + dx, y])));
+
+    function aoiGeometry(aoi, hemi, replicate = true) {
+      if (hemi) return aoi.polygons.map((poly) => polygon(poly.map((r) => psRing(r, hemi))));
+      const g = aoi.polygons.map((poly) => polygon(shiftTo0360(poly.map(llRing))));
+      return replicate ? [...g, ...shiftX(g, 360), ...shiftX(g, -360)] : g;
+    }
+
+    function footprintGeometry(ringsList, hemi) {
+      const parts = [];
+      for (let rings of ringsList) {
+        rings = rings.map(openRing);
+        if (!rings.length || !rings[0].length) continue;
+        parts.push(polygon(hemi ? rings.map((r) => psRing(r, hemi))
+          : shiftTo0360(rings.map((r) => (r.length >= 3 ? llRing(r) : r)))));
+      }
+      return parts.length ? parts : null;
+    }
+
+    function boxRing(s, n, west, span, step = 1) {
+      const m = Math.max(1, Math.ceil(span / step)), k = Math.max(1, Math.ceil((n - s) / step));
+      const out = [];
+      for (let i = 0; i <= m; i++) out.push([west + span * i / m, s]);
+      for (let j = 1; j <= k; j++) out.push([west + span, s + (n - s) * j / k]);
+      for (let i = m - 1; i >= 0; i--) out.push([west + span * i / m, n]);
+      for (let j = 1; j < k; j++) out.push([west, n - (n - s) * j / k]);
+      return out;
+    }
+
+    function numOrNull(v) {
+      if (v == null || (typeof v === 'string' && !v.trim())) return null;
+      const f = Number(v);
+      return Number.isNaN(f) ? null : f;
+    }
+
+    // geometry._row_footprint: WKT column, else the four corners, else the bbox columns
+    function rowFootprint(row, wktCol, hemi) {
+      const wkt = wktCol ? row[wktCol] : null;
+      if (typeof wkt === 'string' && wkt.trim()) {
+        try { return footprintGeometry(parseWkt(wkt), hemi); } catch { /* fall back to corners / bbox */ }
+      }
+      const corners = FOOTPRINT_CORNERS.map((c) => [numOrNull(row[`${c}_LONGITUDE`]), numOrNull(row[`${c}_LATITUDE`])]);
+      if (corners.every(([lo, la]) => lo != null && la != null)) return footprintGeometry([[corners]], hemi);
+      let [s, n, west, span] = ['FP_MIN_LAT', 'FP_MAX_LAT', 'FP_LON_WEST', 'FP_LON_SPAN'].map((c) => numOrNull(row[c]));
+      if ([s, n, west, span].includes(null)) {
+        let east;
+        [s, n, west, east] = ['min_lat', 'max_lat', 'lon_west', 'lon_east'].map((c) => numOrNull(row[c]));
+        if ([s, n, west, east].includes(null)) return null;
+        span = Math.min(east >= west ? east - west : east - west + 360, 360);
+      }
+      const ring = boxRing(s, n, west, span);
+      return [[hemi ? psRing(ring, hemi) : ring]];
+    }
+
+    function bboxOf(rings) {
+      const b = [Infinity, -Infinity, Infinity, -Infinity];
+      for (const r of rings) for (const [x, y] of r) {
+        if (x < b[0]) b[0] = x; if (x > b[1]) b[1] = x;
+        if (y < b[2]) b[2] = y; if (y > b[3]) b[3] = y;
+      }
+      return b;
+    }
+
+    const disjoint = (a, b) => a[0] > b[1] || b[0] > a[1] || a[2] > b[3] || b[2] > a[3];
+
+    function segHit(a, b, c, d) {
+      const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+      const on = (p, q, r) => Math.min(p[0], q[0]) <= r[0] && r[0] <= Math.max(p[0], q[0])
+        && Math.min(p[1], q[1]) <= r[1] && r[1] <= Math.max(p[1], q[1]);
+      const o1 = o(a, b, c), o2 = o(a, b, d), o3 = o(c, d, a), o4 = o(c, d, b);
+      if (o1 !== o2 && o3 !== o4) return true;
+      return (o1 === 0 && on(a, b, c)) || (o2 === 0 && on(a, b, d)) || (o3 === 0 && on(c, d, a)) || (o4 === 0 && on(c, d, b));
+    }
+
+    function ringsCross(r, s) {
+      const bs = bboxOf([s]);
+      for (let i = 0; i < r.length; i++) {
+        const a = r[i], b = r[(i + 1) % r.length];
+        if (disjoint(bboxOf([[a, b]]), bs)) continue;
+        for (let j = 0; j < s.length; j++) if (segHit(a, b, s[j], s[(j + 1) % s.length])) return true;
+      }
+      return false;
+    }
+
+    // Even-odd over all rings, so holes count as outside
+    function inside([x, y], rings) {
+      let c = false;
+      for (const r of rings) {
+        for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+          const [xi, yi] = r[i], [xj, yj] = r[j];
+          if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+        }
+      }
+      return c;
+    }
+
+    function polysIntersect(P, Q) {
+      if (disjoint(bboxOf(P), bboxOf(Q))) return false;
+      for (const r of P) for (const s of Q) if (ringsCross(r, s)) return true;
+      return inside(Q[0][0], P) || inside(P[0][0], Q);
+    }
+
+    // geometry.aoi_mask as a row predicate; rows without any geometry are kept
+    function aoiPredicate(aoi, wktCol) {
+      const hemi = polarHemi(aoiRegion(aoi));
+      const target = aoiGeometry(aoi, hemi);
+      const boxes = target.map(bboxOf);
+      return (row) => {
+        const g = rowFootprint(row, wktCol, hemi);
+        if (!g) return true;
+        return g.some((P) => { const bp = bboxOf(P); return target.some((Q, i) => !disjoint(bp, boxes[i]) && polysIntersect(P, Q)); });
+      };
+    }
+
+    function circleRing(lat, lon, radiusKm, n = 120) {
+      const d = radiusKm / MOON_RADIUS_KM, p = lat * RAD;
+      if (d <= 0) return [[lon, lat]];
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const t = (2 * Math.PI * i) / n;
+        const p2 = Math.asin(Math.sin(p) * Math.cos(d) + Math.cos(p) * Math.sin(d) * Math.cos(t));
+        const l2 = lon * RAD + Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(p), Math.cos(d) - Math.sin(p) * Math.sin(p2));
+        out.push([l2 * DEG, p2 * DEG]);
+      }
+      return out;
+    }
+
+    // Search region from a form (prefix 'ix' or 'ode'), plus how to draw it
+    function readRegion(p) {
+      const mode = $(`${p}-mode`).value;
+      const finite = (...vs) => vs.every((v) => v != null && Number.isFinite(v));
+      if (mode === 'aoi') {
+        const aoi = loadAoi($(`${p}-aoi`).value);
+        return { aoi, region: aoiRegion(aoi), shape: (hemi) => aoiGeometry(aoi, hemi, false) };
+      }
+      if (mode === 'point') {
+        const [lat, lon, r] = [`${p}-lat`, `${p}-lon`, `${p}-radius`].map(num);
+        if (!finite(lat, lon) || Math.abs(lat) > 90) throw new Error('Enter a point latitude (-90..90) and longitude.');
+        const radiusKm = finite(r) ? Math.max(r, 0) : 0;
+        const ring = circleRing(lat, lon, radiusKm);
+        return {
+          region: queryRegion({ point: [lat, lon], radiusKm }),
+          shape: (hemi) => [[hemi ? psRing(ring, hemi) : ring.length > 2 ? llRing(ring) : ring]],
+        };
+      }
+      const [west, south, east, north] = [`${p}-west`, `${p}-south`, `${p}-east`, `${p}-north`].map(num);
+      if (!finite(west, south, east, north)) throw new Error('Fill in the box.');
+      const region = queryRegion({ lat: [south, north], lon: [west, east] });
+      return {
+        region,
+        shape: (hemi) => {
+          const [s, n] = region.lat;
+          if (hemi && region.span >= 360) {
+            // A full-longitude box is a disc or annulus around the pole
+            const circle = (la) => psRing(Array.from({ length: 360 }, (_, i) => [i, la]), hemi);
+            const [outer, inner] = hemi === 'S' ? [n, s] : [s, n];
+            return [Math.abs(inner) >= 90 ? [circle(outer)] : [circle(outer), circle(inner)]];
+          }
+          const ring = boxRing(s, n, region.west, region.span);
+          return [[hemi ? psRing(ring, hemi) : ring]];
+        },
+      };
+    }
+
+    for (const p of ['ix', 'ode']) {
+      const sync = () => {
+        for (const node of $(`${p}-mode`).closest('fieldset').querySelectorAll('[data-mode]')) {
+          node.hidden = node.dataset.mode !== $(`${p}-mode`).value;
+        }
+      };
+      $(`${p}-mode`).addEventListener('change', sync);
+      sync();
+      $(`${p}-aoi-file`).addEventListener('change', async (e) => {
+        if (e.target.files[0]) $(`${p}-aoi`).value = await e.target.files[0].text();
+      });
+    }
+
+    // Footprint map (inline SVG): lon/lat, or polar stereographic when the search region (or
+    // every footprint) lies poleward of +/-60 deg. Wheel zooms, drag pans, double click resets.
+    function niceStep(span, target = 6) {
+      const raw = span / target, p = 10 ** Math.floor(Math.log10(raw));
+      if (raw > 10) return [15, 30, 45, 90, 180].find((s) => s >= raw) ?? 180;
+      return [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw) ?? 10 * p;
+    }
+
+    const fmtDeg = (v, step) => {
+      const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+      return (Math.abs(v) < 1e-9 ? 0 : v).toFixed(d);
+    };
+
+    // Round step of 1, 2 or 5 x 10^n giving about `target` intervals
+    function step125(span, target = 6) {
+      const raw = span / target, p = 10 ** Math.floor(Math.log10(raw));
+      return [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw) ?? 10 * p;
+    }
+
+    const MARGIN = { l: 50, r: 12, t: 10, b: 34 };
+
+    function renderMap(container, { hemi, region, items }) {
+      container._resize?.disconnect();
+      container._highlight = null;
+      if (!items.length && !region) { container.replaceChildren(); return; }
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      const reset = el('button', { class: 'tool', type: 'button', title: 'Reset view (double click)' }, 'Reset view');
+      const bar = el('div', { class: 'panehead' },
+        el('span', { class: 'title' }, 'Footprints'),
+        el('span', { class: 'info' }, hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
+          : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
+        el('span', { class: 'right' }, reset));
+      container.replaceChildren(el('div', { class: 'map' }, bar, svg));
+      const clipId = `clip-${container.id}`;
+      const M = MARGIN;
+
+      // Lon/lat: center everything on the region (or the footprints) to avoid the seam
+      const regionGeom = region ? region.shape(hemi) : [];
+      let geoms = items.map((it) => it.geom);
+      let kx = 1;
+      if (!hemi) {
+        const mids = [...regionGeom, ...geoms.flat()].map((P) => { const b = bboxOf([P[0]]); return (b[0] + b[1]) / 2; });
+        const c = region ? (region.region.span < 360 ? region.region.west + region.region.span / 2 : 180)
+          : Math.atan2(sumOf(mids.map((m) => Math.sin(m * RAD))), sumOf(mids.map((m) => Math.cos(m * RAD)))) * DEG;
+        const recenter = (g) => g.map((P) => { const b = bboxOf([P[0]]); return shiftX([P], -360 * Math.round(((b[0] + b[1]) / 2 - c) / 360))[0]; });
+        geoms = geoms.map(recenter);
+        const lats = [...regionGeom, ...geoms.flat()].flatMap((P) => P[0].map((p) => p[1]));
+        kx = Math.max(0.2, Math.cos(((minOf(lats) + maxOf(lats)) / 2) * RAD));
+        regionGeom.splice(0, regionGeom.length, ...recenter(regionGeom));
+      }
+      // Data coordinates: x right, y down
+      const toXY = (g) => g.map((P) => P.map((r) => r.map(([x, y]) => (hemi ? [x, -y] : [x * kx, -y]))));
+      const reg = toXY(regionGeom);
+      const fps = geoms.map(toXY);
+      const all = [...reg, ...fps.flat()].flat();
+      let [x0, x1, y0, y1] = all.length ? bboxOf(all) : [-1, 1, -1, 1];
+      const minSpan = hemi ? 2000 : 0.05;
+      if (x1 - x0 < minSpan) [x0, x1] = [(x0 + x1 - minSpan) / 2, (x0 + x1 + minSpan) / 2];
+      if (y1 - y0 < minSpan) [y0, y1] = [(y0 + y1 - minSpan) / 2, (y0 + y1 + minSpan) / 2];
+      const home = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
+      // SW x SH: whole svg; W x H: plot area inside the axis margins
+      let view = null, SW = 0, SH = 0, W = 0, H = 0, sel = -1, touched = false;
+      const fit = () => {
+        SW = svg.clientWidth || 800; SH = svg.clientHeight || 420;
+        W = Math.max(SW - M.l - M.r, 40); H = Math.max(SH - M.t - M.b, 40);
+        view = { cx: home.cx, cy: home.cy, k: 0.92 * Math.min(W / home.w, H / home.h) };
+      };
+      const sx = (x) => W / 2 + (x - view.cx) * view.k, sy = (y) => H / 2 + (y - view.cy) * view.k;
+      const pathD = (g) => g.map((P) => P.map((r) => (r.length < 3
+        ? r.map(([x, y]) => `M${(sx(x) - 3).toFixed(1)} ${sy(y).toFixed(1)}a3 3 0 1 0 6 0a3 3 0 1 0 -6 0`).join('')
+        : 'M' + r.map(([x, y]) => `${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`).join('L') + 'Z')).join('')).join('');
+      const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+      const sgn = hemi === 'S' ? 1 : -1;
+      const rho = (la) => 2 * MOON_RADIUS_KM * 1000 * Math.tan(Math.PI / 4 + sgn * (la * RAD) / 2);
+      const latOf = (r) => sgn * (2 * Math.atan(r / (2 * MOON_RADIUS_KM * 1000)) - Math.PI / 2) * DEG;
+
+      // Grid lines (clipped), graticule labels inside the plot, ticks + tick labels on the frame
+      function axes() {
+        const lines = [], inner = [], ticks = [], labels = [];
+        const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
+        const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
+        const xTick = (x, text) => {
+          if (x < -0.5 || x > W + 0.5) return;
+          ticks.push(`M${x.toFixed(1)} ${H}v4`);
+          labels.push(`<text x="${x.toFixed(1)}" y="${H + 15}" text-anchor="middle">${text}</text>`);
+        };
+        const yTick = (y, text) => {
+          if (y < -0.5 || y > H + 0.5) return;
+          ticks.push(`M0 ${y.toFixed(1)}h-4`);
+          labels.push(`<text x="-6" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${text}</text>`);
+        };
+        let xTitle, yTitle;
+        if (!hemi) {
+          const lonStep = niceStep((vx1 - vx0) / kx), latStep = niceStep(vy1 - vy0);
+          for (let lo = Math.ceil(vx0 / kx / lonStep) * lonStep; lo <= vx1 / kx; lo += lonStep) {
+            const x = sx(lo * kx);
+            lines.push(`M${x.toFixed(1)} 0V${H}`);
+            xTick(x, fmtDeg(mod(lo, 360), lonStep));
+          }
+          for (let la = Math.ceil(-vy1 / latStep) * latStep; la <= Math.min(90, -vy0); la += latStep) {
+            if (la < -90) continue;
+            const y = sy(-la);
+            lines.push(`M0 ${y.toFixed(1)}H${W}`);
+            yTick(y, fmtDeg(la, latStep));
+          }
+          [xTitle, yTitle] = ['Longitude (deg E)', 'Latitude (deg)'];
+        } else {
+          const inView = (x, y) => x >= 4 && x <= W - 30 && y >= 12 && y <= H - 4;
+          const cx = Math.min(Math.max(0, vx0), vx1), cy = Math.min(Math.max(0, vy0), vy1);
+          const rMin = Math.hypot(cx, cy);
+          const rMax = Math.max(...[[vx0, vy0], [vx0, vy1], [vx1, vy0], [vx1, vy1]].map(([x, y]) => Math.hypot(x, y)));
+          const [laIn, laOut] = [latOf(rMin), latOf(rMax)];
+          const latStep = niceStep(Math.abs(laOut - laIn));
+          const poleward = (la) => (hemi === 'S' ? la <= 0 : la >= 0);
+          const angSpan = rMin > 0 ? Math.min(360, (2 * Math.hypot(vx1 - vx0, vy1 - vy0) / rMin) * DEG) : 360;
+          const lonStep = Math.min(30, Math.max(0.5, niceStep(angSpan)));
+          // Latitude labels between two meridians, towards the view centre
+          const dirC = (Math.hypot(view.cx, view.cy) > 1e-6 ? Math.atan2(view.cy, view.cx) : Math.PI / 4) + (lonStep / 2) * RAD;
+          const lats = [];
+          for (let la = Math.ceil(Math.min(laIn, laOut) / latStep) * latStep; la <= Math.max(laIn, laOut); la += latStep) {
+            if (poleward(la) && Math.abs(la) < 90) lats.push(la);
+          }
+          for (const la of lats) {
+            const r = rho(la) * view.k;
+            lines.push(`M${(sx(0) - r).toFixed(1)} ${sy(0).toFixed(1)}a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(2 * r).toFixed(1)} 0a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(-2 * r).toFixed(1)} 0`);
+            const lx = sx(Math.cos(dirC) * rho(la)), ly = sy(Math.sin(dirC) * rho(la));
+            if (inView(lx, ly)) inner.push(`<text class="gl" x="${(lx + 3).toFixed(1)}" y="${(ly - 3).toFixed(1)}">${fmtDeg(la, latStep)}</text>`);
+          }
+          const rLab = Math.max(Math.hypot(view.cx, view.cy), 0.3 * Math.min(W, H) / view.k);
+          for (let lo = 0; lo < 360; lo += lonStep) {
+            // Data coords (y down): S x = rho sin, y = -rho cos; N y = rho cos
+            const ux = Math.sin(lo * RAD), uy = -sgn * Math.cos(lo * RAD);
+            lines.push(`M${sx(ux * rMin).toFixed(1)} ${sy(uy * rMin).toFixed(1)}L${sx(ux * rMax).toFixed(1)} ${sy(uy * rMax).toFixed(1)}`);
+            const lx = sx(ux * rLab), ly = sy(uy * rLab);
+            if (inView(lx, ly)) inner.push(`<text class="gl" x="${(lx + 3).toFixed(1)}" y="${(ly - 3).toFixed(1)}">${fmtDeg(lo, lonStep)}E</text>`);
+          }
+          // Frame ticks in polar stereographic km (y up)
+          const xs = step125((vx1 - vx0) / 1000, Math.max(2, W / 90)), ys = step125((vy1 - vy0) / 1000, Math.max(2, H / 50));
+          for (let v = Math.ceil(vx0 / 1000 / xs) * xs; v <= vx1 / 1000; v += xs) xTick(sx(v * 1000), fmtDeg(v, xs));
+          for (let v = Math.ceil(-vy1 / 1000 / ys) * ys; v <= -vy0 / 1000; v += ys) yTick(sy(-v * 1000), fmtDeg(v, ys));
+          [xTitle, yTitle] = ['x (km)', 'y (km)'];
+        }
+        labels.push(`<text class="axis" x="${(W / 2).toFixed(1)}" y="${H + 29}" text-anchor="middle">${xTitle}</text>`,
+          `<text class="axis" transform="translate(${-M.l + 12} ${(H / 2).toFixed(1)}) rotate(-90)" text-anchor="middle">${yTitle}</text>`);
+        return { grid: `<path class="grid" d="${lines.join('')}"/>${inner.join('')}`, ticks: ticks.join(''), labels: labels.join('') };
+      }
+
+      function draw() {
+        if (!view) fit();
+        svg.setAttribute('viewBox', `0 0 ${SW} ${SH}`);
+        const a = axes();
+        const order = fps.map((_, i) => i).filter((i) => i !== sel);
+        if (sel >= 0) order.push(sel);
+        svg.innerHTML = `<defs><clipPath id="${clipId}"><rect width="${W}" height="${H}"/></clipPath></defs>`
+          + `<g transform="translate(${M.l} ${M.t})"><rect class="plot" width="${W}" height="${H}"/>`
+          + `<g clip-path="url(#${clipId})">${a.grid}`
+          + order.map((i) => `<path class="fp${i === sel ? ' sel' : ''}" data-i="${i}" d="${pathD(fps[i])}"><title>${esc(items[i].title)}</title></path>`).join('')
+          + (reg.length ? `<path class="region" d="${pathD(reg)}"/>` : '')
+          + `</g><rect class="frame" x="0.5" y="0.5" width="${W - 1}" height="${H - 1}"/>`
+          + `<path class="tick" d="${a.ticks}"/>${a.labels}</g>`;
+      }
+
+      let frame = 0;
+      const redraw = () => { if (!frame) frame = requestAnimationFrame(() => { frame = 0; draw(); }); };
+      // Pointer position in plot coordinates
+      const plotXY = (e) => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left - M.l, e.clientY - r.top - M.t]; };
+      svg.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const [mx, my] = plotXY(e);
+        const x = view.cx + (mx - W / 2) / view.k, y = view.cy + (my - H / 2) / view.k;
+        touched = true;
+        view.k *= Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015));
+        view.cx = x - (mx - W / 2) / view.k; view.cy = y - (my - H / 2) / view.k;
+        redraw();
+      }, { passive: false });
+      const showCursor = (e) => {
+        const [mx, my] = plotXY(e);
+        if (mx < 0 || my < 0 || mx > W || my > H) { $('cursor').textContent = ''; return; }
+        const x = view.cx + (mx - W / 2) / view.k, y = -(view.cy + (my - H / 2) / view.k);
+        let lat, lon, xy = '';
+        if (hemi) {
+          lat = latOf(Math.hypot(x, y));
+          lon = mod(Math.atan2(x, sgn * y) * DEG, 360);
+          xy = `  x ${(x / 1000).toFixed(2)} km  y ${(y / 1000).toFixed(2)} km`;
+        } else {
+          [lat, lon] = [y, mod(x / kx, 360)];
+        }
+        $('cursor').textContent = Math.abs(lat) > 90 ? ''
+          : `Lat ${lat.toFixed(4)}  Lon ${lon.toFixed(4)} E${xy}`;
+      };
+      let drag = null;
+      svg.addEventListener('pointerdown', (e) => {
+        drag = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, i: e.target.dataset?.i, moved: false };
+        try { svg.setPointerCapture(e.pointerId); } catch { /* synthetic event */ }
+      });
+      svg.addEventListener('pointermove', (e) => {
+        showCursor(e);
+        if (!drag) return;
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('dragging'); }
+        if (drag.moved) { touched = true; view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; redraw(); }
+      });
+      svg.addEventListener('pointerleave', () => { if (!drag) $('cursor').textContent = ''; });
+      svg.addEventListener('pointerup', () => {
+        if (drag && !drag.moved && drag.i != null) items[Number(drag.i)].onclick();
+        drag = null;
+        svg.classList.remove('dragging');
+      });
+      const home0 = () => { view = null; touched = false; draw(); };
+      svg.addEventListener('dblclick', home0);
+      reset.addEventListener('click', home0);
+      container._highlight = (row) => { sel = items.findIndex((it) => it.row === row); draw(); };
+      let lastW = 0, lastH = 0;
+      container._resize = new ResizeObserver(() => {
+        const [w, h] = [svg.clientWidth, svg.clientHeight];
+        if (w && h && (w !== lastW || h !== lastH)) {
+          [lastW, lastH] = [w, h];
+          // Keep the zoom / pan, just re-measure the plot area
+          const old = view;
+          view = null; fit();
+          if (old && touched) view = old;
+          draw();
+        }
+      });
+      container._resize.observe(svg);
+      draw();
+    }
+
+    function mapHemi(region, lats) {
+      if (region) return polarHemi(region);
+      lats = lats.filter(Number.isFinite);
+      if (lats.length && lats.every((l) => l < -POLAR_LAT_THRESHOLD)) return 'S';
+      if (lats.length && lats.every((l) => l > POLAR_LAT_THRESHOLD)) return 'N';
+      return null;
+    }
+
+    function mapItems(rows, wktCol, hemi, title, onclick) {
+      const items = [];
+      for (const row of rows) {
+        const geom = rowFootprint(row, wktCol, hemi);
+        if (geom) items.push({ geom, row, title: title(row), onclick: () => onclick(row) });
+      }
+      return items;
+    }
+
+    // Newest detail on top of the details pane
+    function showDetail(container, block) {
+      container.prepend(block);
+      container.scrollTop = 0;
+    }
+
+    // QTableView-like grid: cols are [header, numeric]; click or arrow keys select a row
+    function resultTable(cols, rows, cells, onpick) {
+      const tbody = el('tbody');
+      for (const row of rows) {
+        const tr = el('tr', {}, ...cells(row).map((c, i) => el('td', { class: cols[i][1] ? 'num' : i === 0 ? 'mono' : '' },
+          ...(Array.isArray(c) ? c : [c]))));
+        tr._row = row;
+        tr.addEventListener('click', (ev) => { if (!ev.target.closest('a')) onpick(row); });
+        tbody.append(tr);
+      }
+      const wrap = el('div', { class: 'tablewrap', tabindex: '0' }, el('table', { class: 'grid' },
+        el('thead', {}, el('tr', {}, ...cols.map(([h, n]) => el('th', { class: n ? 'num' : '' }, h)))), tbody));
+      wrap.addEventListener('keydown', (e) => {
+        const d = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+        if (!d || !rows.length) return;
+        e.preventDefault();
+        const trs = [...tbody.rows], i = trs.findIndex((t) => t.classList.contains('selected'));
+        onpick(trs[Math.min(Math.max(i + d, 0), trs.length - 1)]._row);
+      });
+      return wrap;
+    }
+
+    // Select a result row (table + map) and show its detail
+    function pick(p, row, detail) {
+      const trs = [...$(`${p}-results`).querySelectorAll('tbody tr')];
+      for (const tr of trs) tr.classList.toggle('selected', tr._row === row);
+      trs.find((tr) => tr._row === row)?.scrollIntoView({ block: 'nearest' });
+      $(`${p}-map`)._highlight?.(row);
+      showDetail($(`${p}-detail`), detail);
+    }
+
+    // DuckDB-WASM
+    async function initDB() {
+      const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+      // Blob worker avoids cross-origin worker restrictions
+      const workerUrl = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
+      );
+      db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), new Worker(workerUrl));
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      URL.revokeObjectURL(workerUrl);
+      conn = await db.connect();
+      for (const m of MACROS) await conn.query(m);
+    }
+
+    // Index sources: ?edr=... URL params, then `lunar serve` (data/<file> next to the page),
+    // then files opened by the user.
+    async function findSources(bust = false) {
+      const params = new URLSearchParams(window.location.search);
+      for (const ds of DATASETS) {
+        const url = params.get(ds);
+        if (url) { sources[ds] = { path: url, label: 'URL' }; continue; }
+        const local = new URL(`data/cumindex_${ds}.parquet${bust ? `?v=${Date.now()}` : ''}`, window.location.href).href;
+        try {
+          const res = await fetch(local, { method: 'HEAD' });
+          if (res.ok) sources[ds] = { path: local, label: 'lunar serve' };
+        } catch { /* not served */ }
+      }
+    }
+
+    async function openFiles(files) {
+      for (const file of files) {
+        const ds = (file.name.match(/(edr|cdr|rdr)/i) || [null, 'edr'])[1].toLowerCase();
+        const name = `cumindex_${ds}_${Date.now()}.parquet`;
+        await db.registerFileHandle(name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
+        sources[ds] = { path: name, label: file.name };
+      }
+      renderSources();
+    }
+
+    function renderSources() {
+      const loaded = DATASETS.filter((ds) => sources[ds]);
+      const $s = $('sources');
+      $s.replaceChildren();
+      if (!loaded.length) {
+        $s.append('Index: none loaded - open the Parquet files in the control panel');
+      } else {
+        $s.append('Index: ');
+        loaded.forEach((ds, i) => {
+          if (i) $s.append(' | ');
+          $s.append(el('b', {}, ds.toUpperCase()), ` (${sources[ds].label})`);
+        });
+      }
+      const $sel = $('ix-dataset');
+      const current = $sel.value;
+      $sel.replaceChildren(...loaded.map((ds) => el('option', { value: ds }, ds.toUpperCase())));
+      if (loaded.includes(current)) $sel.value = current;
+      $('lookup-btn').disabled = $('ix-search-btn').disabled = !loaded.length;
+    }
+
+    // Plain objects (Arrow rows are read-only proxies)
+    const rowsOf = (tbl) => tbl.toArray().map((r) => r.toJSON());
+
+    const parquet = (ds) => `read_parquet(${sqlStr(sources[ds].path)})`;
+
+    async function columnsOf(ds) {
+      const key = sources[ds].path;
+      columnCache[key] ??= (await conn.query(`SELECT * FROM ${parquet(ds)} LIMIT 0`)).schema.fields.map((f) => f.name);
+      return columnCache[key];
+    }
+
+    // Mirrors constants.pds_url_from_file_spec:
+    // 'LRO-L-LROC-2-EDR-V1.0/LROLRC_0001/...' -> PDS_BASE + 'lro-l-lroc-2-edr/LROLRC_0001/...'
+    function pdsUrl(row) {
+      const fsn = String(row.FILE_SPECIFICATION_NAME ?? '').trim().replace(/^\//, '');
+      if (!fsn) return null;
+      const m = fsn.match(/^(LRO-L-LROC-\d-[A-Z]+)-V\d+\.\d+\/(.*)$/i);
+      return m ? PDS_BASE + m[1].toLowerCase() + '/' + m[2] : PDS_BASE + fsn;
+    }
+
+    function modernize(url) {
+      return url && url.startsWith(LEGACY_PDS_BASE) ? pdsUrl({ FILE_SPECIFICATION_NAME: url.slice(LEGACY_PDS_BASE.length) }) : url;
+    }
+
+    function indexDetail(pid, row, dataset) {
+      const block = el('div', { class: 'detail' }, el('h2', {}, `${pid}${dataset ? ` | ${dataset.toUpperCase()}` : ''}`));
+      if (!row) {
+        block.append(el('p', { class: 'not-found' }, 'Not found in the loaded index files.'));
+        return block;
+      }
+      block._product = indexProduct(row);
+      block._preview = previewPanel(block._product);
+      block.append(block._preview);
+      const tbody = el('tbody');
+      for (const [col, label] of LABELS) {
+        const val = cell(row, col);
+        if (val) tbody.append(el('tr', {}, el('td', { class: 'label' }, label), el('td', {}, val)));
+      }
+      const url = pdsUrl(row);
+      if (url) tbody.append(el('tr', {}, el('td', { class: 'label' }, 'PDS URL'), el('td', {}, link(url))));
+      block.append(el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Property'), el('th', {}, 'Value'))), tbody));
+      return block;
+    }
+
+    const pidOf = (row) => String(row.PRODUCT_ID ?? '').trim();
+    const wktColOf = (row) => (row.FP_WKT_QUERY != null ? 'FP_WKT_QUERY' : 'FP_WKT');
+
+    function indexMap(rows, region) {
+      const hemi = mapHemi(region?.region, rows.map((r) => numOrNull(r.CENTER_LATITUDE)));
+      const items = rows.length ? mapItems(rows, wktColOf(rows[0]), hemi, (r) => `${pidOf(r)} (${r._ds.toUpperCase()})`,
+        pickIndex) : [];
+      renderMap($('index-map'), { hemi, region, items });
+    }
+
+    function pickIndex(r) {
+      const block = indexDetail(pidOf(r), r, r._ds);
+      pick('index', r, block);
+      selectProduct(block);
+    }
+
+    function indexTable(rows) {
+      $('index-results').replaceChildren(resultTable(INDEX_COLUMNS.map(([, h, d]) => [h, d != null]), rows,
+        (row) => INDEX_COLUMNS.map(([col, , d]) => cell(row, col, d)), pickIndex));
+      setCount('index', rows.length);
+    }
+
+    // Product IDs are matched in every loaded dataset (NAC, WAC and RDR alike).
+    async function lookup(ids) {
+      const found = {};
+      const inList = ids.map(sqlStr).join(', ');
+      for (const ds of DATASETS.filter((d) => sources[d])) {
+        const tbl = await conn.query(`SELECT * FROM ${parquet(ds)} WHERE PRODUCT_ID IN (${inList})`);
+        for (const row of rowsOf(tbl)) {
+          const pid = pidOf(row).toUpperCase();
+          if (pid && !found[pid]) found[pid] = { row, ds };
+        }
+      }
+      return found;
+    }
+
+    // Short NAC base form M...L / M...R -> EDR (...LE / ...RE)
+    const normalizeId = (id) => {
+      id = id.trim().toUpperCase();
+      return /^M\d{9,12}[LR]$/.test(id) ? id + 'E' : id;
+    };
+
+    $('lookup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ids = $('ids').value.split(/[\s,]+/).filter(Boolean).map(normalizeId);
+      if (!ids.length) return setStatus('index-status', 'Enter one or more product IDs.');
+      setStatus('index-status', 'Querying...');
+      try {
+        const found = await lookup(ids);
+        const rows = Object.values(found).map(({ row, ds }) => Object.assign(row, { _ds: ds }));
+        indexTable(rows);
+        $('index-detail').replaceChildren(...ids.map((id) => indexDetail(id, found[id]?.row, found[id]?.ds)));
+        indexMap(rows, null);
+        const missing = ids.filter((id) => !found[id]);
+        setStatus('index-status', `Lookup: ${Object.keys(found).length} of ${ids.length} found`
+          + (missing.length ? ` | not found: ${missing.join(' ')}` : ''));
+      } catch (err) {
+        setStatus('index-status', err.message, true);
+      }
+    });
+
+    function rangeConds(col, lo, hi) {
+      const c = [];
+      if (lo != null) c.push(`${col} >= ${lo}`);
+      if (hi != null) c.push(`${col} <= ${hi}`);
+      return c;
+    }
+
+    const INDEX_COLUMNS = [
+      ['PRODUCT_ID', 'Product'], ['START_TIME', 'Start'], ['CENTER_LATITUDE', 'Lat', 3],
+      ['CENTER_LONGITUDE', 'Lon', 3], ['INCIDENCE_ANGLE', 'Inc', 1], ['EMISSION_ANGLE', 'Emi', 1],
+      ['SUB_SOLAR_AZIMUTH', 'Sun az', 1], ['RESOLUTION', 'm/px', 2],
+    ];
+
+    $('index-search-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ds = $('ix-dataset').value;
+      let sel;
+      try { sel = readRegion('ix'); } catch (err) { return setStatus('index-status', err.message, true); }
+      const conds = [
+        regionSql(sel.region),
+        ...rangeConds('INCIDENCE_ANGLE', num('ix-inc-min'), num('ix-inc-max')),
+        ...rangeConds('EMISSION_ANGLE', num('ix-emi-min'), num('ix-emi-max')),
+      ];
+      const camera = $('ix-camera').value;
+      if (camera === 'nac') conds.push(NAC_SQL);
+      if (camera === 'wac') conds.push(`NOT ${NAC_SQL}`);
+      const limit = Math.max(1, Math.min(5000, num('ix-limit') ?? 200));
+      setStatus('index-status', 'Searching...');
+      try {
+        const wkt = footprintWktSql(await columnsOf(ds));
+        const base = `SELECT *, ${wkt} AS FP_WKT_QUERY FROM ${parquet(ds)} WHERE ${conds.join(' AND ')} ORDER BY START_TIME, PRODUCT_ID`;
+        let rows = [], scanned = 0;
+        if (!sel.aoi) {
+          rows = rowsOf(await conn.query(`${base} LIMIT ${limit}`));
+        } else {
+          // Exact AOI refinement after the bbox prefilter; the limit applies afterwards
+          const keep = aoiPredicate(sel.aoi, 'FP_WKT_QUERY');
+          for (let offset = 0; rows.length < limit; offset += AOI_PAGE) {
+            const page = rowsOf(await conn.query(`${base} LIMIT ${AOI_PAGE} OFFSET ${offset}`));
+            scanned += page.length;
+            rows.push(...page.filter(keep));
+            setStatus('index-status', `Searching... ${rows.length} of ${scanned} bbox match(es) intersect the AOI`);
+            if (page.length < AOI_PAGE) break;
+          }
+          rows = rows.slice(0, limit);
+        }
+        rows.forEach((row) => { row._ds = ds; });
+        indexTable(rows);
+        $('index-detail').replaceChildren();
+        indexMap(rows, sel);
+        setStatus('index-status', `${rows.length} image(s)${rows.length === limit ? ' (limit reached)' : ''}`
+          + `${sel.aoi ? ` after exact AOI test of ${scanned} bbox match(es)` : ''} | click a row or footprint for details`);
+      } catch (err) {
+        setStatus('index-status', `${err.message} (does this dataset have FP_* footprint columns?)`, true);
+      }
+    });
+
+    $('files').addEventListener('change', async (e) => {
+      try {
+        await openFiles(e.target.files);
+        setStatus('index-status', 'Ready');
+      } catch (err) {
+        setStatus('index-status', `Could not open: ${err.message}`, true);
+      }
+    });
+
+    // ODE
+    function fillOdeSelects() {
+      $('ode-instrument').replaceChildren(...Object.entries(ODE_INSTRUMENTS).map(
+        ([key, inst]) => el('option', { value: key }, inst.label)));
+      const updateTypes = () => {
+        const inst = ODE_INSTRUMENTS[$('ode-instrument').value];
+        $('ode-type').replaceChildren(...Object.keys(inst.types).map((t) => el('option', { value: t }, t)));
+        $('ode-type').value = inst.default;
+      };
+      $('ode-instrument').addEventListener('change', updateTypes);
+      updateTypes();
+    }
+
+    const odeNum = (v) => (v == null || v === '' ? null : Number(v));
+    const odePid = (prod) => String(prod.pdsid ?? '').split('.').pop();
+
+    function odeFiles(prod) {
+      const f = prod.Product_files?.Product_file ?? [];
+      return (Array.isArray(f) ? f : [f]).map((x) => ({ ...x, URL: modernize(x.URL) }));
+    }
+
+    // Footprint fields as in ode.parse_product
+    const odeFootprint = (prod) => ({
+      footprint_wkt: prod.Footprint_geometry || prod.Footprint_C0_geometry,
+      min_lat: prod.Minimum_latitude, max_lat: prod.Maximum_latitude,
+      lon_west: prod.Westernmost_longitude, lon_east: prod.Easternmost_longitude,
+    });
+
+    // ode.ODEClient.build_params: the region's bounding box, numbers as %.6g
+    function odeParams(sel) {
+      const inst = ODE_INSTRUMENTS[$('ode-instrument').value];
+      const g6 = (x) => String(Number(x.toPrecision(6)));
+      const [west, south, east, north] = regionBbox(sel.region).map(g6);
+      const p = {
+        query: 'product', results: 'fmp', output: 'JSON', target: 'moon',
+        ihid: inst.ihid, iid: inst.iid, pt: inst.types[$('ode-type').value],
+        minlat: south, maxlat: north, westernlon: west, easternlon: east,
+        mininangle: num('ode-inc-min'), maxinangle: num('ode-inc-max'),
+        minemangle: num('ode-emi-min'), maxemangle: num('ode-emi-max'),
+        minobtime: $('ode-t0').value || null, maxobtime: $('ode-t1').value || null,
+      };
+      return Object.fromEntries(Object.entries(p).filter(([, v]) => v != null && v !== ''));
+    }
+
+    function odeDetail(prod) {
+      const block = el('div', { class: 'detail' }, el('h2', {}, odePid(prod)));
+      block._product = odeProduct(prod);
+      block._preview = previewPanel(block._product);
+      block.append(block._preview);
+      const tbody = el('tbody');
+      for (const [k, v] of Object.entries(prod)) {
+        if (typeof v === 'object' || v == null || v === '' || /_geometry$/.test(k)) continue;
+        tbody.append(el('tr', {}, el('td', { class: 'label' }, k.replace(/_/g, ' ')), el('td', {}, String(v))));
+      }
+      for (const f of odeFiles(prod)) {
+        if (!f.URL) continue;
+        tbody.append(el('tr', {}, el('td', { class: 'label' }, `${f.Type ?? 'file'} file`), el('td', {}, link(f.URL, f.FileName ?? f.URL))));
+      }
+      block.append(el('table', {}, tbody));
+      return block;
+    }
+
+    let ode = null;  // the submitted query: { params, limit, sel, keep }
+
+    async function odePage(offset) {
+      const res = await fetch(`${ODE_URL}?${new URLSearchParams({ ...ode.params, limit: ode.limit, offset })}`);
+      const json = await res.json();
+      const results = json.ODEResults ?? {};
+      if (results.Error) throw new Error(results.Error);
+      const raw = results.Products?.Product ?? [];
+      return Array.isArray(raw) ? raw : [raw];
+    }
+
+    async function odeSearch(offset, history) {
+      setStatus('ode-status', 'Querying ODE...');
+      $('ode-btn').disabled = true;
+      try {
+        // With an AOI keep paging (up to ODE_AOI_PAGES) until a page's worth survives the exact test
+        let prods = [], next = offset, more = false, pages = 0;
+        do {
+          const page = await odePage(next);
+          next += page.length;
+          more = page.length === ode.limit;
+          prods.push(...(ode.keep ? page.filter((p) => ode.keep(odeFootprint(p))) : page));
+          if (ode.keep) setStatus('ode-status', `Querying ODE... ${prods.length} of ${next - offset} intersect the AOI`);
+        } while (ode.keep && more && prods.length < ode.limit && ++pages < ODE_AOI_PAGES);
+        // One record per product, shared by the table and the map so selection links both
+        const recs = prods.map((p) => Object.assign(odeFootprint(p), { prod: p }));
+        const pickOde = (r) => {
+          const block = odeDetail(r.prod);
+          pick('ode', r, block);
+          selectProduct(block);
+        };
+        const cols = [['Product'], ['Start'], ['Lat', 1], ['Lon', 1], ['Inc', 1], ['Emi', 1], ['m/px', 1], ['Links']];
+        $('ode-results').replaceChildren(resultTable(cols, recs, ({ prod }) => {
+          const data = odeFiles(prod).find((f) => String(f.Type).toLowerCase() === 'product' && !/\.(xml|lbl)$/i.test(f.FileName ?? ''));
+          return [
+            odePid(prod),
+            fmt(prod.UTC_start_time ?? prod.Observation_time),
+            fmt(odeNum(prod.Center_latitude), 3),
+            fmt(odeNum(prod.Center_longitude), 3),
+            fmt(odeNum(prod.Incidence_angle), 1),
+            fmt(odeNum(prod.Emission_angle), 1),
+            fmt(odeNum(prod.Map_resolution ?? prod.Map_scale), 2),
+            [...(data?.URL ? [link(data.URL, 'data')] : []), ...(prod.ProductURL ? [data?.URL ? ' | ' : '', link(prod.ProductURL, 'ODE')] : [])],
+          ];
+        }, pickOde));
+        setCount('ode', recs.length);
+        $('ode-detail').replaceChildren();
+        const nav = [];
+        if (history.length) nav.push(el('button', { class: 'tool', type: 'button', onclick: () => odeSearch(history.at(-1), history.slice(0, -1)) }, '< Previous'));
+        if (more) nav.push(el('button', { class: 'tool', type: 'button', onclick: () => odeSearch(next, [...history, offset]) }, 'Next >'));
+        $('ode-nav').replaceChildren(...nav);
+        const hemi = mapHemi(ode.sel.region, []);
+        renderMap($('ode-map'), {
+          hemi, region: ode.sel,
+          items: mapItems(recs, 'footprint_wkt', hemi, (r) => odePid(r.prod), pickOde),
+        });
+        const range = next > offset ? `ODE results ${offset + 1}-${next}` : '';
+        setStatus('ode-status', !prods.length ? `No products found${range ? ` (${range})` : ''}.`
+          : ode.keep ? `${prods.length} product(s) intersect the AOI (${range}) | click a row or footprint for details`
+          : `Products ${offset + 1}-${next} | click a row or footprint for details`);
+      } catch (err) {
+        setStatus('ode-status', `ODE query failed: ${err.message}`, true);
+      } finally {
+        $('ode-btn').disabled = false;
+      }
+    }
+
+    $('ode-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      let sel;
+      try { sel = readRegion('ode'); } catch (err) { return setStatus('ode-status', err.message, true); }
+      ode = {
+        sel, params: odeParams(sel), limit: Math.max(1, Math.min(1000, num('ode-limit') ?? 100)),
+        keep: sel.aoi ? aoiPredicate(sel.aoi, 'footprint_wkt') : null,
+      };
+      odeSearch(0, []);
+    });
+
+    // Image previews and the deep-zoom viewer. geotiff.js (loaded on first use) reads tiled TIFF
+    // pyramids / COGs with HTTP Range, one tile per request, so nothing downloads a whole file.
+    const GEOTIFF_URL = 'https://cdn.jsdelivr.net/npm/geotiff@3.0.5/+esm';
+    const TILE_CACHE_BYTES = 150 * 2 ** 20;  // decoded tiles + their canvases
+    const OVERVIEW_PX = 400;                 // preview / base level: the coarsest with a side >= this
+    const MAX_OVERVIEW_PX = 2048;            // remote images without a level this small get no preview
+    const STRIP_TILE = 512;                  // block size for untiled (striped) TIFFs
+    const TILE_REQUESTS = 4;                 // concurrent tile reads (PDS rate-limits with HTTP 429)
+    // pds.mcp.nasa.gov drops its CORS header for browser requests; lunar serve relays those hosts
+    const RELAY_FIRST = ['pds.mcp.nasa.gov', 'pds.lroc.im-ldi.com'];
+    let geotiffLib = null;
+    let serveConfig = { relay: [], images: false };
+    let localImages = [];  // paths from `lunar serve --images`
+
+    const loadGeotiff = () => (geotiffLib ??= import(GEOTIFF_URL).catch((err) => {
+      geotiffLib = null;
+      throw new Error(`Could not load geotiff.js from jsDelivr (${err.message})`);
+    }));
+    const hostOf = (url) => { try { return new URL(url, window.location.href).hostname; } catch { return ''; } };
+    const relayable = (url) => /^https:/i.test(url) && serveConfig.relay.includes(hostOf(url));
+    const relayUrl = (url) => new URL(`remote?url=${encodeURIComponent(url)}`, window.location.href).href;
+    const readUrl = (url, viaRelay = RELAY_FIRST.includes(hostOf(url))) => (viaRelay && relayable(url) ? relayUrl(url) : url);
+    const abortError = () => new DOMException('Aborted', 'AbortError');
+    const fileName = (url) => decodeURIComponent(String(url).split(/[?#]/)[0].split('/').pop() || url);
+
+    // NAC / WAC EDR and CDR: <VOL>/DATA/<phase>/<yyyyddd>/<NAC|WAC>/<ID>.IMG
+    //   -> <VOL>/EXTRAS/BROWSE/<yyyyddd>/<ID>_pyr.tif (tiled JPEG, one IFD per 2x level)
+    function lrocPyramidUrl(url) {
+      const m = String(url ?? '').match(/^(.*\/LROLRC_\w+)\/DATA\/[^/]+\/(\d{7})\/(?:NAC|WAC)\/([^/]+)\.IMG$/i);
+      return m ? `${m[1]}/EXTRAS/BROWSE/${m[2]}/${m[3]}_pyr.tif` : null;
+    }
+
+    // Product -> { id, sources: [{ label, url, kind: 'tiff' | 'img', res, samples }] }; res is the
+    // product's m/px, samples its width (to scale res to the pyramid's full-resolution level).
+    function indexProduct(row) {
+      const pyr = lrocPyramidUrl(pdsUrl(row));
+      const meta = { res: numOrNull(row.RESOLUTION), samples: numOrNull(row.LINE_SAMPLES) };
+      return { id: pidOf(row), sources: pyr ? [{ label: 'Browse pyramid', url: pyr, kind: 'tiff', ...meta }] : [] };
+    }
+
+    function odeProduct(prod) {
+      const files = odeFiles(prod).filter((f) => f.URL);
+      const type = (f) => String(f.Type ?? '').toLowerCase();
+      const meta = { res: odeNum(prod.Map_resolution ?? prod.Map_scale), samples: null };
+      const rank = (url) => {
+        const n = fileName(url).toLowerCase();
+        return /_pyr\.tif$/.test(n) ? 0 : /_cog\.tif$/.test(n) && !/smear/.test(n) ? 1
+          : /_map_stretched\.tif$/.test(n) ? 2 : /_map_raw\.tif$/.test(n) ? 3 : 4;
+      };
+      const names = ['Browse pyramid', 'Browse COG', 'Map-projected, stretched', 'Map-projected, raw'];
+      const tifs = files.filter((f) => ['browse', 'referenced'].includes(type(f)) && /\.tiff?$/i.test(f.URL))
+        .sort((a, b) => rank(a.URL) - rank(b.URL));
+      const sources = tifs.map((f) => ({ label: names[rank(f.URL)] ?? fileName(f.URL), url: f.URL, kind: 'tiff', ...meta,
+        ...(rank(f.URL) >= 2 ? { res: null } : {}) }));
+      if (!sources.length) {
+        const img = files.find((f) => type(f) === 'product' && /\.IMG$/i.test(f.URL));
+        const pyr = lrocPyramidUrl(img?.URL);
+        if (pyr) sources.push({ label: 'Browse pyramid', url: pyr, kind: 'tiff', ...meta });
+      }
+      const small = (url) => (/\/small\//i.test(url) ? 1 : 0);
+      for (const f of files.filter((g) => type(g) === 'browse' && /\.(png|jpe?g)$/i.test(g.URL)).sort((a, b) => small(a.URL) - small(b.URL))) {
+        const size = /\/(small|large)\//i.exec(f.URL)?.[1];
+        sources.push({ label: `Browse ${/\.png$/i.test(f.URL) ? 'PNG' : 'JPEG'}${size ? ` (${size})` : ''}`, url: f.URL, kind: 'img', res: null });
+      }
+      return { id: odePid(prod), sources };
+    }
+
+    // The preview uses the first TIFF (its coarsest useful level), else the smallest browse image
+    const previewSource = (prod) => prod.sources.find((s) => s.kind === 'tiff')
+      ?? prod.sources.filter((s) => s.kind === 'img').at(-1);
+
+    // Image sources (header + overview raster), a few recent ones
+    const srcCache = new Map();
+    function cachedSource(key, make) {
+      let p = srcCache.get(key);
+      if (p) { srcCache.delete(key); srcCache.set(key, p); return p; }
+      p = make();
+      srcCache.set(key, p);
+      p.catch(() => { if (srcCache.get(key) === p) srcCache.delete(key); });
+      while (srcCache.size > 6) srcCache.delete(srcCache.keys().next().value);
+      return p;
+    }
+
+    function openTiff(spec) {
+      const key = spec.file ? `file:${spec.file.name}:${spec.file.size}:${spec.file.lastModified}` : spec.url;
+      return cachedSource(key, async () => {
+        const G = await loadGeotiff();
+        let tiff, via = spec.url;
+        if (spec.file) tiff = await G.fromBlob(spec.file);
+        else {
+          via = readUrl(spec.url);
+          // Small blocks for remote tiles (~20-60 KB each); bigger ones for lunar serve --images
+          const sameOrigin = new URL(via, window.location.href).origin === window.location.origin && !/\/remote\?/.test(via);
+          const opts = { allowFullFile: false, ...(sameOrigin ? { blockSize: 65536, cacheSize: 128 } : { blockSize: 16384, cacheSize: 256 }) };
+          try {
+            tiff = await G.fromUrl(via, opts);
+          } catch (err) {
+            if (via !== spec.url || !relayable(spec.url)) throw err;
+            via = relayUrl(spec.url);  // direct read failed (CORS?): try the relay
+            tiff = await G.fromUrl(via, opts);
+          }
+        }
+        return describeTiff(tiff, spec, key, via);
+      });
+    }
+
+    function geoMpp(img) {
+      try {
+        const keys = img.getGeoKeys() ?? {};
+        const rx = Math.abs(img.getResolution()[0]);
+        if (!rx) return null;
+        if (keys.ProjectedCSTypeGeoKey || keys.ProjCoordTransGeoKey || keys.ProjectionGeoKey) return rx;
+        if (keys.GeographicTypeGeoKey || keys.GeogAngularUnitsGeoKey) return rx * RAD * MOON_RADIUS_KM * 1000;
+      } catch { /* no georeferencing */ }
+      return null;
+    }
+
+    async function describeTiff(tiff, spec, key, via) {
+      const count = await tiff.getImageCount();
+      const first = await tiff.getImage(0);
+      const levels = [];
+      for (let i = 0; i < count; i++) {
+        const img = i ? await tiff.getImage(i) : first;
+        if (Number(img.fileDirectory.getValue('NewSubfileType') ?? 0) & 4) continue;  // transparency mask
+        if (levels.length && img.getWidth() >= levels.at(-1).w) continue;              // not a reduced level
+        if (img.getSamplesPerPixel() !== first.getSamplesPerPixel()) continue;
+        levels.push({ img, w: img.getWidth(), h: img.getHeight(),
+          tw: img.isTiled ? img.getTileWidth() : STRIP_TILE, th: img.isTiled ? img.getTileHeight() : STRIP_TILE });
+      }
+      const [w0, h0] = [levels[0].w, levels[0].h];
+      const local = Boolean(spec.file) || new URL(via, window.location.href).origin === window.location.origin && !/\/remote\?/.test(via);
+      // Local files without overviews get decimated "virtual" levels (read with resampling)
+      for (let k = 2, R = levels.at(-1); local && k <= 16 && Math.max(R.w, R.h) * 2 / k > 1024; k *= 2) {
+        // tiles of at most 4096 x 4096 source pixels
+        const t = Math.max(64, Math.min(STRIP_TILE, 4096 / k));
+        levels.push({ img: R.img, base: R, virtual: k, w: Math.ceil(R.w / k), h: Math.ceil(R.h / k), tw: t, th: t });
+      }
+      for (const L of levels) [L.fx, L.fy] = [w0 / L.w, h0 / L.h];
+      const fmtCode = first.getSampleFormat(), bits = first.getBitsPerSample();
+      const rgb = first.getSamplesPerPixel() >= 3 && Number(first.fileDirectory.getValue('PhotometricInterpretation')) === 2;
+      const mpp = geoMpp(first) ?? (spec.res ? spec.res * (spec.samples ? spec.samples / w0 : 1) : null);
+      return {
+        key, via, local, levels, w0, h0, mpp, rgb, samples: rgb ? [0, 1, 2] : [0],
+        int: fmtCode !== 3, noData: first.getGDALNoData(),
+        dtype: `${fmtCode === 3 ? 'float' : fmtCode === 2 ? 'int' : 'uint'}${bits}${rgb ? ' RGB' : ''}`,
+        title: spec.file ? spec.file.name : fileName(spec.url), base: null,
+      };
+    }
+
+    // Browse PNG / JPEG: pixels when the host allows CORS (or via the relay), else a plain <img>
+    function openPicture(spec, signal) {
+      return cachedSource(spec.file ? `file:${spec.file.name}:${spec.file.size}` : spec.url, async () => {
+        const title = spec.file ? spec.file.name : fileName(spec.url);
+        let blob = spec.file;
+        if (!blob) {
+          try {
+            const res = await fetch(readUrl(spec.url, true), { signal });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            blob = await res.blob();
+          } catch (err) {
+            if (signal?.aborted) throw err;
+            const img = await loadImg(spec.url, signal);
+            return { key: spec.url, title, plain: img, w0: img.naturalWidth, h0: img.naturalHeight, levels: [], mpp: null, dtype: 'image (no pixel access)' };
+          }
+        }
+        const bmp = await createImageBitmap(blob);
+        const [w, h] = [bmp.width, bmp.height], n = w * h;
+        const c = Object.assign(document.createElement('canvas'), { width: w, height: h });
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(bmp, 0, 0);
+        bmp.close();
+        const px = ctx.getImageData(0, 0, w, h).data;
+        c.width = 0;
+        let gray = true;
+        for (let i = 0; i < n && gray; i += Math.max(1, Math.floor(n / 4096))) gray = px[4 * i] === px[4 * i + 1] && px[4 * i] === px[4 * i + 2];
+        const bands = (gray ? [0] : [0, 1, 2]).map((b) => { const a = new Uint8Array(n); for (let i = 0; i < n; i++) a[i] = px[4 * i + b]; return a; });
+        return {
+          key: spec.url ?? title, title, local: true, levels: [{ w, h, tw: w, th: h, fx: 1, fy: 1 }],
+          w0: w, h0: h, mpp: null, rgb: !gray, int: true, noData: null,
+          dtype: gray ? 'uint8' : 'uint8 RGB', samples: gray ? [0] : [0, 1, 2],
+          base: { li: 0, bands, w, h, stats: rasterStats(bands, null, true) },
+        };
+      });
+    }
+
+    function loadImg(url, signal) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        let relayed = false;
+        img.decoding = 'async';
+        img.onload = () => resolve(img);
+        img.onerror = () => {
+          if (!relayed && relayable(url)) { relayed = true; img.src = relayUrl(url); return; }
+          reject(new Error(`Could not load ${fileName(url)}`));
+        };
+        signal?.addEventListener('abort', () => { img.removeAttribute('src'); reject(abortError()); });
+        img.src = url;
+      });
+    }
+
+    // Read a window of level L (level pixel coords); virtual levels resample the coarsest real one
+    function readWindow(src, L, [x0, y0, x1, y1], signal) {
+      if (!L.virtual) return L.img.readRasters({ window: [x0, y0, x1, y1], samples: src.samples, signal });
+      const k = L.virtual, R = L.base;
+      return L.img.readRasters({
+        window: [x0 * k, y0 * k, Math.min(x1 * k, R.w), Math.min(y1 * k, R.h)],
+        width: x1 - x0, height: y1 - y0, resampleMethod: 'nearest', samples: src.samples, signal,
+      });
+    }
+
+    const isFill = (v, noData) => v !== v || v === noData || v > 1e30 || v < -1e30;
+
+    // Percentiles from a sample of the valid pixels; 0-filled margins of integer images are skipped
+    function rasterStats(bands, noData, int) {
+      const n = bands[0].length, step = Math.max(1, Math.floor((n * bands.length) / 200000));
+      let vals = [];
+      for (const a of bands) for (let i = 0; i < n; i += step) if (!isFill(a[i], noData)) vals.push(a[i]);
+      if (int && vals.filter((v) => v === 0).length > 0.1 * vals.length) vals = vals.filter((v) => v !== 0);
+      if (!vals.length) return null;
+      const f = Float64Array.from(vals).sort();
+      const q = (p) => f[Math.min(f.length - 1, Math.floor(p * (f.length - 1)))];
+      return { min: f[0], max: f.at(-1), p2: q(0.02), p98: q(0.98) };
+    }
+
+    function autoStretch(stats, int) {
+      if (!stats) return { min: 0, max: 255, gamma: 1 };
+      let [min, max] = stats.p98 > stats.p2 ? [stats.p2, stats.p98] : [stats.min, stats.max];
+      if (!(max > min)) max = min + 1;
+      if (int) [min, max] = [Math.floor(min), Math.ceil(max)];
+      return { min, max, gamma: 1 };
+    }
+
+    // Raster bands -> canvas through the linear stretch + gamma (look-up tables for 8 / 16 bit)
+    function paint(bands, w, h, st, noData, canvas = document.createElement('canvas')) {
+      if (canvas.width !== w || canvas.height !== h) [canvas.width, canvas.height] = [w, h];
+      const ctx = canvas.getContext('2d');
+      const im = ctx.createImageData(w, h), d = im.data, n = w * h;
+      const k = 1 / (st.max - st.min || 1), g = 1 / (st.gamma > 0 ? st.gamma : 1), lo = st.min;
+      const f = (v) => { let t = (v - lo) * k; t = t <= 0 ? 0 : t >= 1 ? 1 : t; return g === 1 ? t * 255 : 255 * t ** g; };
+      const lut = (a) => {
+        const size = a instanceof Uint8Array ? 256 : a instanceof Uint16Array ? 65536 : 0;
+        if (!size) return null;
+        const key = `_lut${size}`;
+        if (!st[key]) { st[key] = new Uint8ClampedArray(size); for (let v = 0; v < size; v++) st[key][v] = f(v); }
+        return st[key];
+      };
+      const nb = bands.length >= 3 ? 3 : 1;
+      for (let b = 0; b < nb; b++) {
+        const a = bands[b], t = lut(a);
+        if (t) for (let i = 0, j = b; i < n; i++, j += 4) d[j] = t[a[i]];
+        else for (let i = 0, j = b; i < n; i++, j += 4) d[j] = f(a[i]);
+      }
+      const a0 = bands[0];
+      for (let i = 0, j = 0; i < n; i++, j += 4) {
+        if (nb === 1) d[j + 1] = d[j + 2] = d[j];
+        d[j + 3] = isFill(a0[i], noData) ? 0 : 255;
+      }
+      ctx.putImageData(im, 0, 0);
+      return canvas;
+    }
+
+    // Overview raster: the coarsest level with a side >= OVERVIEW_PX (whole level, a few tiles)
+    async function ensureBase(src, signal) {
+      if (src.base || src.plain) return src.base;
+      let li = 0;
+      for (let i = src.levels.length - 1; i >= 0; i--) {
+        if (Math.max(src.levels[i].w, src.levels[i].h) >= OVERVIEW_PX) { li = i; break; }
+      }
+      const L = src.levels[li];
+      if (Math.max(L.w, L.h) > MAX_OVERVIEW_PX && !src.local) return null;
+      let bands;
+      if (!L.virtual) bands = Array.from(await readWindow(src, L, [0, 0, L.w, L.h], signal));
+      else {
+        // Tile by tile, so a decimated read never holds the whole source image
+        const Ctor = (await readWindow(src, L, [0, 0, 1, 1], signal))[0].constructor;
+        bands = src.samples.map(() => new Ctor(L.w * L.h));
+        for (let y = 0; y < L.h; y += L.th) {
+          for (let x = 0; x < L.w; x += L.tw) {
+            const r = await readWindow(src, L, [x, y, Math.min(x + L.tw, L.w), Math.min(y + L.th, L.h)], signal);
+            r.forEach((a, b) => { for (let j = 0; j < r.height; j++) bands[b].set(a.subarray(j * r.width, (j + 1) * r.width), (y + j) * L.w + x); });
+          }
+        }
+      }
+      src.base ??= { li, bands, w: L.w, h: L.h, stats: rasterStats(bands, src.noData, src.int) };
+      return src.base;
+    }
+
+    // Quick look in a detail block; one at a time, cancelled when the selection changes
+    let previewCtl = null;
+
+    function previewPanel(prod) {
+      if (!prod.sources.length) {
+        return el('div', { class: 'preview none' }, 'No browse image or pyramid known for this product.');
+      }
+      const box = el('div', { class: 'pvbox' }, el('span', { class: 'msg' }, 'Preview loads when the product is selected'));
+      const cap = el('span', { class: 'info' }, previewSource(prod).label);
+      const panel = el('div', { class: 'preview' }, box, el('div', { class: 'pvcap' }, cap, el('span', { class: 'right' },
+        el('button', { class: 'tool', type: 'button', title: 'Load the preview', onclick: () => panel._load() }, 'Preview'),
+        el('button', { class: 'tool', type: 'button', title: 'Show in the Image view (deep zoom)',
+          onclick: () => { selectView('image'); viewProduct(prod); } }, 'Open in viewer'))));
+      panel._load = () => loadPreview(prod, box, cap);
+      return panel;
+    }
+
+    async function loadPreview(prod, box, cap) {
+      previewCtl?.abort();
+      const ctl = previewCtl = new AbortController();
+      const spec = previewSource(prod);
+      const msg = (text, cls = 'msg') => box.replaceChildren(el('span', { class: cls }, text));
+      msg(`Loading preview... (${spec.label})`);
+      try {
+        if (spec.kind === 'img') {
+          const img = await loadImg(spec.url, ctl.signal);
+          img.alt = `${prod.id} browse image`;
+          box.replaceChildren(img);
+          cap.textContent = `${spec.label}: ${img.naturalWidth} x ${img.naturalHeight}`;
+          return;
+        }
+        const src = await openTiff(spec);
+        if (ctl.signal.aborted) throw abortError();
+        const base = await ensureBase(src, ctl.signal);
+        if (ctl.signal.aborted) throw abortError();
+        if (!base) {
+          msg('No overview level small enough for a quick look - use Open in viewer.');
+          return;
+        }
+        const canvas = paint(base.bands, base.w, base.h, autoStretch(base.stats, src.int), src.noData);
+        canvas.title = `${src.title}: level ${base.li} of ${src.levels.length}`;
+        box.replaceChildren(canvas);
+        cap.textContent = `${spec.label}: level ${base.li} (${base.w} x ${base.h}) of ${src.w0} x ${src.h0}, ${src.dtype}`;
+      } catch (err) {
+        if (ctl.signal.aborted || err?.name === 'AbortError') {
+          if (!box.querySelector('canvas, img')) msg('Preview not loaded (selection changed) - press Preview.');
+          return;
+        }
+        const text = await explainError(spec.url, err);
+        msg(text, 'msg error');
+        setStatus(`${activeTab()}-status`, `Preview: ${text}`, true);
+      } finally {
+        if (previewCtl === ctl) previewCtl = null;
+      }
+    }
+
+    async function explainError(url, err) {
+      if (!url || /geotiff\.js/.test(err?.message ?? '')) return err?.message ?? String(err);
+      const name = fileName(url), host = hostOf(url);
+      try {
+        // Through the relay when there is one: error responses often lack CORS headers
+        const res = await fetch(readUrl(url, relayable(url)), { headers: { Range: 'bytes=0-0' } });
+        res.body?.cancel();
+        if (res.status === 404) return `Not found (HTTP 404): ${name}`;
+        if (res.status === 403 && /\/remote\?/.test(res.url)) return `lunar serve does not relay ${host}`;
+        if (res.status === 429 || res.status === 503) return `${host} is rate-limiting requests (HTTP ${res.status})`;
+        if (!res.ok) return `HTTP ${res.status} from ${host} for ${name}`;
+        if (res.status === 200) return `${host} ignores HTTP Range requests, so ${name} would need a full download (not done)`;
+        return `Could not read ${name}: ${err?.message ?? err}`;
+      } catch {
+        return `Network or CORS error reading ${name} from ${host}: the server must allow cross-origin Range requests`
+          + (serveConfig.relay.length ? '' : ' (lunar serve relays the PDS image hosts)');
+      }
+    }
+
+    // Decoded tiles, least recently used first; bytes count the raster and its painted canvas
+    const tiles = new Map();
+    let tileBytes = 0;
+    function tileGet(key) {
+      const t = tiles.get(key);
+      if (t) { tiles.delete(key); tiles.set(key, t); }
+      return t;
+    }
+    function tileAdd(key, t, delta) {
+      if (key) tiles.set(key, t);
+      t.bytes += delta;
+      tileBytes += delta;
+      for (const [k, old] of tiles) {
+        if (tileBytes <= TILE_CACHE_BYTES || tiles.size <= 1) break;
+        tiles.delete(k);
+        tileBytes -= old.bytes;
+        if (old.canvas) old.canvas.width = 0;
+      }
+    }
+
+    // Viewer state. view = { cx, cy, s }: image point (full-res pixels) at the canvas centre and
+    // CSS px per full-res pixel; stretch = { min, max, gamma }, ver bumps when it changes.
+    const V = {
+      src: null, spec: null, product: null, pending: null, choices: [], file: null, view: null, touched: false,
+      stretch: { min: 0, max: 255, gamma: 1 }, ver: 0, ctl: null, wanted: [], inflight: new Set(), failed: new Map(),
+      priority: [], hover: null, frame: 0, readoutTimer: 0, pumpTimer: 0, pauseUntil: 0, backoff: 0,
+    };
+    const viewCanvas = $('view-canvas');
+    const frameSize = () => [viewCanvas.clientWidth, viewCanvas.clientHeight];
+    const viewActive = () => ($('view-image').hidden ? 'map' : 'image');
+    const dpr = () => window.devicePixelRatio || 1;
+
+    function viewMessage(text, isError = false) {
+      $('view-msg').textContent = text;
+      $('view-msg').className = 'viewmsg' + (isError ? ' error' : '');
+    }
+
+    function viewError(text) {
+      viewMessage(text, true);
+      setStatus(`${activeTab()}-status`, `Image: ${text}`, true);
+    }
+
+    const fitScale = (mode) => {
+      const [cw, ch] = frameSize(), { w0, h0 } = V.src;
+      return mode === 'width' ? cw / w0 : Math.min(cw / w0, ch / h0);
+    };
+
+    function fitView(mode) {
+      const [, ch] = frameSize(), s = fitScale(mode) * (mode === 'width' ? 1 : 0.98);
+      V.view = { s, cx: V.src.w0 / 2, cy: mode === 'width' ? Math.min(V.src.h0 / 2, ch / 2 / s) : V.src.h0 / 2 };
+    }
+
+    function viewFit(mode = 'all') {
+      if (!V.src) return;
+      fitView(mode);
+      V.touched = mode !== 'all';
+      viewRedraw();
+    }
+
+    function viewClamp() {
+      const v = V.view, src = V.src;
+      let minS = Math.min(fitScale('all') * 0.5, 1);
+      // Remote images without a small overview: don't zoom out past what the coarsest level fills
+      if (!src.base && !src.plain && src.levels.length) minS = Math.max(minS, 0.5 / (src.levels.at(-1).fx * dpr()));
+      v.s = Math.min(Math.max(v.s, minS), 32);
+      v.cx = Math.min(Math.max(v.cx, 0), src.w0);
+      v.cy = Math.min(Math.max(v.cy, 0), src.h0);
+    }
+
+    function viewZoom(f, mx, my) {
+      if (!V.src || !V.view) return;
+      const v = V.view, [cw, ch] = frameSize();
+      [mx, my] = [mx ?? cw / 2, my ?? ch / 2];
+      const x = v.cx + (mx - cw / 2) / v.s, y = v.cy + (my - ch / 2) / v.s;
+      v.s *= f;
+      viewClamp();
+      v.cx = x - (mx - cw / 2) / v.s;
+      v.cy = y - (my - ch / 2) / v.s;
+      viewClamp();
+      V.touched = true;
+      viewRedraw();
+    }
+
+    function viewSetScale(s) {
+      if (!V.view) return;
+      V.view.s = s;
+      viewClamp();
+      V.touched = true;
+      viewRedraw();
+    }
+
+    const viewRedraw = () => {
+      if (!V.frame) V.frame = requestAnimationFrame(() => { V.frame = 0; viewDraw(); });
+    };
+
+    // Finest level whose pixels are no smaller than a device pixel at scale s
+    function targetLevel(src, s) {
+      const want = 1 / (s * dpr());
+      let li = 0;
+      src.levels.forEach((L, i) => { if (L.fx <= want * 1.0001) li = i; });
+      return li;
+    }
+
+    function tileCanvas(t, src) {
+      if (!t.canvas || t.ver !== V.ver) {
+        const fresh = !t.canvas;
+        t.canvas = paint(t.bands, t.w, t.h, V.stretch, src.noData, t.canvas ?? undefined);
+        t.ver = V.ver;
+        if (fresh && t !== src.base) tileAdd(null, t, t.w * t.h * 4);
+      }
+      return t.canvas;
+    }
+
+    function viewDraw() {
+      const [cw, ch] = frameSize(), r = dpr();
+      if (!cw || !ch) return;
+      if (viewCanvas.width !== Math.round(cw * r) || viewCanvas.height !== Math.round(ch * r)) {
+        [viewCanvas.width, viewCanvas.height] = [Math.round(cw * r), Math.round(ch * r)];
+      }
+      const ctx = viewCanvas.getContext('2d');
+      ctx.setTransform(r, 0, 0, r, 0, 0);
+      ctx.clearRect(0, 0, cw, ch);
+      const src = V.src;
+      if (!src) { viewStatus(); return; }
+      if (!V.view || !V.touched) fitView('all');
+      viewClamp();
+      const { cx, cy, s } = V.view;
+      const X = (x) => Math.round((x - cx) * s + cw / 2), Y = (y) => Math.round((y - cy) * s + ch / 2);
+      const put = (canvas, x0, y0, x1, y1, sharp) => {
+        ctx.imageSmoothingEnabled = !sharp;
+        ctx.drawImage(canvas, X(x0), Y(y0), Math.max(1, X(x1) - X(x0)), Math.max(1, Y(y1) - Y(y0)));
+      };
+      if (src.plain) {
+        put(src.plain, 0, 0, src.w0, src.h0, s * r >= 1.5);
+        viewStatus(0);
+        return;
+      }
+      const vx0 = cx - cw / 2 / s, vx1 = cx + cw / 2 / s, vy0 = cy - ch / 2 / s, vy1 = cy + ch / 2 / s;
+      let target = targetLevel(src, s);
+      if (src.base) target = Math.min(target, src.base.li);
+      // The overview first (blurry stand-in), then the cached tiles of each finer level
+      if (src.base) put(tileCanvas(src.base, src), 0, 0, src.w0, src.h0, src.base.li === target && s * src.levels[target].fx * r >= 1.5);
+      const want = [];
+      for (let li = (src.base ? src.base.li - 1 : src.levels.length - 1); li >= target; li--) {
+        const L = src.levels[li], m = li === target ? 1 : 0;
+        const [tx0, tx1] = [Math.max(0, Math.floor(vx0 / L.fx / L.tw) - m), Math.min(Math.ceil(L.w / L.tw) - 1, Math.floor(vx1 / L.fx / L.tw) + m)];
+        const [ty0, ty1] = [Math.max(0, Math.floor(vy0 / L.fy / L.th) - m), Math.min(Math.ceil(L.h / L.th) - 1, Math.floor(vy1 / L.fy / L.th) + m)];
+        for (let ty = ty0; ty <= ty1; ty++) {
+          for (let tx = tx0; tx <= tx1; tx++) {
+            const key = `${src.key}|${li}|${tx}|${ty}`;
+            const t = tileGet(key);
+            const [x0, y0] = [tx * L.tw * L.fx, ty * L.th * L.fy];
+            const [x1, y1] = [Math.min((tx + 1) * L.tw, L.w) * L.fx, Math.min((ty + 1) * L.th, L.h) * L.fy];
+            if (t) put(tileCanvas(t, src), x0, y0, x1, y1, li === target && s * L.fx * r >= 1.5);
+            else if (li === target) want.push({ key, li, tx, ty, d: Math.hypot((x0 + x1) / 2 - cx, (y0 + y1) / 2 - cy) });
+          }
+        }
+      }
+      V.wanted = want.sort((a, b) => a.d - b.d);
+      // Fetch once the view rests, so fast pans don't request tiles that scroll straight past
+      clearTimeout(V.pumpTimer);
+      V.pumpTimer = setTimeout(viewPump, 80);
+      scaleBar(ctx, ch, s);
+      viewStatus(target);
+    }
+
+    function scaleBar(ctx, ch, s) {
+      const mpp = V.src.mpp;
+      if (!mpp) return;
+      const per = mpp / s;  // metres per CSS px
+      const len = step125(per * 120, 1), px = len / per;
+      const text = len >= 1000 ? `${len / 1000} km` : len >= 1 ? `${len} m` : `${len * 100} cm`;
+      const [x, y] = [12, ch - 14];
+      ctx.lineCap = 'butt';
+      for (const [color, width] of [['rgba(0,0,0,0.75)', 5], ['#ffffff', 2]]) {
+        ctx.strokeStyle = color; ctx.lineWidth = width;
+        ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x, y); ctx.lineTo(x + px, y); ctx.lineTo(x + px, y - 5); ctx.stroke();
+      }
+      ctx.font = '11px "DejaVu Sans", Arial, sans-serif';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#ffffff';
+      ctx.strokeText(text, x + 4, y - 7); ctx.fillText(text, x + 4, y - 7);
+    }
+
+    const fmtMpp = (m) => (m >= 100 ? m.toFixed(0) : m >= 1 ? m.toFixed(2) : m.toPrecision(2));
+
+    function viewStatus(target) {
+      const src = V.src;
+      const mb = (b) => (b / 2 ** 20).toFixed(1);
+      $('view-info').textContent = !src ? (V.spec ? `${V.spec.label ?? ''}${V.spec === V.failedSpec ? ': not loaded' : ' - loading...'}` : 'No image')
+        : `${src.title} | ${src.w0} x ${src.h0} px, ${src.levels.length || 1} level(s), ${src.dtype}`
+          + ` | tile cache ${tiles.size} tiles, ${mb(tileBytes)} / ${mb(TILE_CACHE_BYTES)} MB`;
+      if (!src || !V.view) { $('view-zoom').textContent = ''; return; }
+      const L = src.levels[target];
+      const zoom = V.view.s * dpr() * 100;
+      $('view-zoom').textContent = `Zoom ${zoom >= 10 ? zoom.toFixed(0) : zoom.toPrecision(2)}%`
+        + (L && src.levels.length > 1 ? ` | level ${target} (${L.w} x ${L.h})` : '')
+        + (src.mpp ? ` | ${fmtMpp(src.mpp)} m/px, ${fmtMpp(src.mpp / (V.view.s * dpr()))} m per screen px` : '');
+    }
+
+    function viewPump() {
+      const wait = V.pauseUntil - Date.now();
+      if (wait > 0) {
+        clearTimeout(V.pumpTimer);
+        V.pumpTimer = setTimeout(viewRedraw, wait + 50);
+        return;
+      }
+      while (V.inflight.size < TILE_REQUESTS && (V.priority.length || V.wanted.length)) {
+        const job = V.priority.shift() ?? V.wanted.shift();
+        if (V.inflight.has(job.key) || tiles.has(job.key) || (V.failed.get(job.key) ?? 0) >= 3) continue;
+        V.inflight.add(job.key);
+        loadTile(V.src, job, V.ctl).finally(() => { V.inflight.delete(job.key); viewPump(); });
+      }
+    }
+
+    async function loadTile(src, { key, li, tx, ty }, ctl) {
+      const L = src.levels[li];
+      try {
+        const [x0, y0] = [tx * L.tw, ty * L.th];
+        const r = await readWindow(src, L, [x0, y0, Math.min(x0 + L.tw, L.w), Math.min(y0 + L.th, L.h)], ctl.signal);
+        const bands = Array.from(r);
+        tileAdd(key, { bands, w: r.width, h: r.height, canvas: null, ver: -1, bytes: 0 }, bands.reduce((a, b) => a + b.byteLength, 0));
+        V.backoff = 0;
+        if (V.src === src) {
+          if (src.errorShown) { src.errorShown = false; viewMessage(''); }
+          if (V.stretch.pending) setStretch(autoStretch(rasterStats(bands, src.noData, src.int), src.int));
+          viewRedraw();
+          if (V.hover) viewReadout();
+        }
+      } catch (err) {
+        if (ctl.signal.aborted || err?.name === 'AbortError') return;
+        // Pause all tile reads (doubling up to a minute), then retry; a tile failing 3 times is skipped
+        V.failed.set(key, (V.failed.get(key) ?? 0) + 1);
+        V.backoff = Math.min(Math.max(2 * V.backoff, 2000), 60000);
+        V.pauseUntil = Date.now() + V.backoff;
+        if (V.src === src) {
+          const why = src.errorShown ? src.why : (src.why = await explainError(V.spec?.url, err));
+          if (V.src !== src) return;
+          src.errorShown = true;
+          viewError(`${why} - retrying tiles in ${Math.round(V.backoff / 1000)} s`);
+        }
+      }
+    }
+
+    // Pixel readout: 1-based sample / line at full resolution (ISIS convention); the value comes
+    // from the full-resolution tile, fetched after the pointer rests, meanwhile from a coarser level
+    function pixelAt(src, sx, sy) {
+      const levels = src.levels.length ? src.levels : [];
+      for (let li = 0; li < levels.length; li++) {
+        const L = levels[li], lx = Math.floor(sx / L.fx), ly = Math.floor(sy / L.fy);
+        const tx = Math.floor(lx / L.tw), ty = Math.floor(ly / L.th);
+        const t = src.base?.li === li ? src.base : tiles.get(`${src.key}|${li}|${tx}|${ty}`);
+        if (!t) continue;
+        const i = src.base?.li === li ? ly * t.w + lx : (ly - ty * L.th) * t.w + (lx - tx * L.tw);
+        return { li, v: t.bands.map((b) => b[i]), tx, ty };
+      }
+      return null;
+    }
+
+    function viewReadout() {
+      const src = V.src, h = V.hover;
+      if (!src || !V.view || !h) return;
+      const [cw, ch] = frameSize(), { cx, cy, s } = V.view;
+      const x = cx + (h.mx - cw / 2) / s, y = cy + (h.my - ch / 2) / s;
+      if (x < 0 || y < 0 || x >= src.w0 || y >= src.h0) { $('cursor').textContent = ''; return; }
+      const [sx, sy] = [Math.floor(x), Math.floor(y)];
+      let text = `Sample ${sx + 1}  Line ${sy + 1}`;
+      if (src.plain) {
+        text += '  (no pixel access: the host does not allow CORS)';
+      } else {
+        const p = pixelAt(src, sx, sy);
+        if (p) {
+          const v = p.v.map((a) => (isFill(a, src.noData) ? 'no data' : src.int ? String(a) : Number(a).toPrecision(6)));
+          text += `  ${src.rgb ? 'RGB' : src.int ? 'DN' : 'Value'} ${v.join(' ')}${p.li ? ` (level ${p.li})` : ''}`;
+        }
+        if (!p || p.li) {
+          clearTimeout(V.readoutTimer);
+          V.readoutTimer = setTimeout(() => {
+            const L = src.levels[0];
+            const key = `${src.key}|0|${Math.floor(sx / L.tw)}|${Math.floor(sy / L.th)}`;
+            if (V.src === src && !tiles.has(key)) {
+              V.priority = [{ key, li: 0, tx: Math.floor(sx / L.tw), ty: Math.floor(sy / L.th) }];
+              viewPump();
+            }
+          }, 250);
+        }
+      }
+      $('cursor').textContent = text;
+    }
+
+    function setStretch(st) {
+      V.stretch = { min: st.min, max: st.max, gamma: st.gamma ?? 1 };
+      V.ver++;
+      const int = V.src?.int;
+      const show = (v) => (int ? String(Math.round(v)) : String(Number(v.toPrecision(6))));
+      $('view-min').value = show(V.stretch.min);
+      $('view-max').value = show(V.stretch.max);
+      $('view-gamma').value = String(V.stretch.gamma);
+      for (const id of ['view-min', 'view-max']) $(id).step = int ? '1' : 'any';
+      viewRedraw();
+    }
+
+    function enableControls(on) {
+      for (const id of ['view-min', 'view-max', 'view-gamma', 'view-auto']) $(id).disabled = !on;
+    }
+
+    // Choices for the source drop-down: the selected product's images, served images, an opened file
+    function fillChoices() {
+      const groups = [];
+      if (V.product) groups.push([`Product ${V.product.id}`, V.product.sources]);
+      if (localImages.length) {
+        groups.push(['lunar serve --images', localImages.map((p) => ({
+          label: p, kind: /\.(png|jpe?g)$/i.test(p) ? 'img' : 'tiff',
+          url: new URL(`images/${p.split('/').map(encodeURIComponent).join('/')}`, window.location.href).href,
+        }))]);
+      }
+      if (V.file) groups.push(['Local file', [V.file]]);
+      V.choices = groups.flatMap(([, list]) => list);
+      let i = 0;
+      $('view-source').replaceChildren(...(V.choices.length ? [] : [el('option', { value: '' }, '(no image)')]),
+        ...groups.map(([name, list]) => el('optgroup', { label: name }, ...list.map((c) => el('option', { value: String(i++) }, c.label)))));
+      $('view-source').disabled = !V.choices.length;
+      const at = V.choices.indexOf(V.spec);
+      if (at >= 0) $('view-source').value = String(at);
+    }
+
+    function viewProduct(prod) {
+      if (V.product && V.product.id === prod.id && V.product.sources[0]?.url === prod.sources[0]?.url && V.src) return;
+      V.product = prod;
+      fillChoices();
+      if (prod.sources.length) viewOpen(prod.sources[0]);
+      else {
+        viewClose();
+        viewMessage(`${prod.id}: no browse image or pyramid known for this product.`);
+      }
+    }
+
+    function viewClose() {
+      V.ctl?.abort();
+      Object.assign(V, { src: null, spec: null, view: null, wanted: [], priority: [], ctl: null });
+      V.failed.clear();
+      enableControls(false);
+      $('cursor').textContent = '';
+      viewRedraw();
+    }
+
+    async function viewOpen(spec) {
+      viewClose();
+      const ctl = V.ctl = new AbortController();
+      V.spec = spec;
+      fillChoices();
+      viewMessage(`Loading ${spec.label ?? spec.file?.name ?? ''}...`);
+      try {
+        const src = await (spec.kind === 'img' ? openPicture(spec, ctl.signal) : openTiff(spec));
+        if (ctl.signal.aborted) return;
+        await ensureBase(src, ctl.signal);
+        if (ctl.signal.aborted) return;
+        Object.assign(V, { src, view: null, touched: false });
+        src.errorShown = false;
+        if (src.plain) {
+          V.stretch = { min: 0, max: 255, gamma: 1 };
+          enableControls(false);
+        } else {
+          enableControls(true);
+          setStretch(autoStretch(src.base?.stats, src.int));
+          if (!src.base) V.stretch.pending = true;
+        }
+        viewMessage('');
+        setStatus(`${activeTab()}-status`, `Image: ${src.title}, ${src.w0} x ${src.h0} px`
+          + (src.levels.length > 1 ? `, ${src.levels.length} levels` : '') + (src.plain ? ' (no pixel access)' : ''));
+        viewRedraw();
+      } catch (err) {
+        if (ctl.signal.aborted || err?.name === 'AbortError') return;
+        V.failedSpec = spec;
+        viewError(await explainError(spec.url, err));
+        viewStatus();
+      }
+    }
+
+    const viewTabs = () => [$('vtab-map'), $('vtab-image'), $('vtab-settings')];
+    function selectView(name) {
+      for (const t of viewTabs()) {
+        const on = t.dataset.view === name;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      }
+      $('view-map').hidden = name !== 'map';
+      $('view-image').hidden = $('view-zoom').hidden = name !== 'image';
+      $('view-settings').hidden = name !== 'settings';
+      $('workspace').classList.toggle('settings-on', name === 'settings');
+      $('cursor').textContent = '';
+      if (name === 'settings') settingsShown();
+      if (name === 'image') {
+        if (V.pending) { const p = V.pending; V.pending = null; viewProduct(p); }
+        viewRedraw();
+      }
+    }
+
+    // A picked row / footprint: preview in its detail block, and the viewer follows if visible
+    function selectProduct(block) {
+      const prod = block._product;
+      if (!prod) return;
+      block._preview?._load?.();
+      if (viewActive() === 'image') viewProduct(prod);
+      else V.pending = prod;
+    }
+
+    function initViewer() {
+      const all = viewTabs();
+      for (const t of all) {
+        t.addEventListener('click', () => selectView(t.dataset.view));
+        t.addEventListener('keydown', (e) => {
+          const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+          if (!d) return;
+          const next = all[(all.indexOf(t) + d + all.length) % all.length];
+          selectView(next.dataset.view);
+          next.focus();
+        });
+      }
+      $('view-zoom-in').addEventListener('click', () => viewZoom(2));
+      $('view-zoom-out').addEventListener('click', () => viewZoom(0.5));
+      $('view-1to1').addEventListener('click', () => viewSetScale(1 / dpr()));
+      $('view-fit').addEventListener('click', () => viewFit('all'));
+      $('view-fit-width').addEventListener('click', () => viewFit('width'));
+      $('view-auto').addEventListener('click', () => {
+        if (V.src) setStretch({ ...autoStretch(V.src.base?.stats, V.src.int), gamma: V.stretch.gamma });
+      });
+      for (const id of ['view-min', 'view-max', 'view-gamma']) {
+        $(id).addEventListener('change', () => {
+          const [min, max, gamma] = ['view-min', 'view-max', 'view-gamma'].map(num);
+          if ([min, max, gamma].some((v) => v == null || !Number.isFinite(v)) || !(max > min) || !(gamma > 0)) {
+            setStatus(`${activeTab()}-status`, 'Image: contrast needs Max > Min and Gamma > 0', true);
+            return;
+          }
+          setStretch({ min, max, gamma });
+        });
+      }
+      $('view-source').addEventListener('change', () => {
+        const c = V.choices[Number($('view-source').value)];
+        if (c) viewOpen(c);
+      });
+      $('view-open').addEventListener('click', () => $('view-file').click());
+      $('view-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        V.file = { label: file.name, file, kind: /\.(png|jpe?g)$/i.test(file.name) ? 'img' : 'tiff' };
+        e.target.value = '';
+        selectView('image');
+        viewOpen(V.file);
+      });
+      const local = (e) => { const r = viewCanvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+      viewCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        viewZoom(Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), ...local(e));
+      }, { passive: false });
+      let drag = null;
+      viewCanvas.addEventListener('pointerdown', (e) => {
+        if (!V.view || e.button !== 0) return;
+        viewCanvas.focus();
+        drag = { x: e.clientX, y: e.clientY, cx: V.view.cx, cy: V.view.cy };
+        try { viewCanvas.setPointerCapture(e.pointerId); } catch { /* synthetic event */ }
+        viewCanvas.classList.add('dragging');
+      });
+      viewCanvas.addEventListener('pointermove', (e) => {
+        const [mx, my] = local(e);
+        V.hover = { mx, my };
+        if (drag && V.view) {
+          V.view.cx = drag.cx - (e.clientX - drag.x) / V.view.s;
+          V.view.cy = drag.cy - (e.clientY - drag.y) / V.view.s;
+          V.touched = true;
+          viewRedraw();
+        }
+        viewReadout();
+      });
+      const endDrag = () => { drag = null; viewCanvas.classList.remove('dragging'); };
+      viewCanvas.addEventListener('pointerup', endDrag);
+      viewCanvas.addEventListener('pointercancel', endDrag);
+      viewCanvas.addEventListener('pointerleave', () => { V.hover = null; clearTimeout(V.readoutTimer); if (!drag) $('cursor').textContent = ''; });
+      viewCanvas.addEventListener('dblclick', (e) => viewZoom(2, ...local(e)));
+      viewCanvas.addEventListener('keydown', (e) => {
+        if (!V.view || e.ctrlKey || e.metaKey || e.altKey) return;
+        const [cw, ch] = frameSize();
+        const pan = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.2], ArrowDown: [0, 0.2],
+          PageUp: [0, -0.9], PageDown: [0, 0.9] }[e.key];
+        const act = { '+': () => viewZoom(2), '=': () => viewZoom(2), '-': () => viewZoom(0.5), '0': () => viewSetScale(1 / dpr()),
+          f: () => viewFit('all'), F: () => viewFit('all'), w: () => viewFit('width'), W: () => viewFit('width') }[e.key];
+        if (pan) {
+          V.view.cx += (pan[0] * cw) / V.view.s;
+          V.view.cy += (pan[1] * ch) / V.view.s;
+          V.touched = true;
+          viewRedraw();
+        } else if (act) act();
+        else return;
+        e.preventDefault();
+      });
+      new ResizeObserver(() => viewRedraw()).observe($('view-frame'));
+    }
+
+    // lunar serve extras: the PDS image relay and --images DIR; ?image=URL opens an image
+    async function initImages() {
+      try {
+        const res = await fetch(new URL('api/config', window.location.href));
+        if (res.ok && /json/.test(res.headers.get('content-type') ?? '')) serveConfig = { ...serveConfig, ...(await res.json()) };
+        if (serveConfig.images) {
+          const list = await fetch(new URL('api/images', window.location.href));
+          if (list.ok) localImages = await list.json();
+        }
+      } catch { /* not lunar serve */ }
+      fillChoices();
+      const url = new URLSearchParams(window.location.search).get('image');
+      if (url) {
+        V.product = { id: fileName(url), sources: [{ label: fileName(url), url: new URL(url, window.location.href).href,
+          kind: /\.(png|jpe?g)$/i.test(url) ? 'img' : 'tiff' }] };
+        selectView('image');
+        viewOpen(V.product.sources[0]);
+      }
+    }
+
+    // Settings (lunar serve / lunar app): /api/status, jobs over Server-Sent Events, job submission.
+    // Admin (localhost or the --admin-token) may start jobs; the server enforces it, the page follows.
+    const S = { on: false, admin: false, token: null, status: null, jobs: [], seen: {}, regions: null, es: null, timer: 0 };
+
+    function readToken() {
+      const params = new URLSearchParams(window.location.search);
+      let token = params.get('token');
+      try {
+        if (token) sessionStorage.setItem('lunar-token', token);
+        else token = sessionStorage.getItem('lunar-token');
+      } catch { /* storage blocked */ }
+      if (params.has('token')) {
+        params.delete('token');
+        const q = params.toString();
+        history.replaceState(null, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
+      }
+      return token;
+    }
+
+    function apiUrl(path) {
+      const u = new URL(path, window.location.href);
+      u.search = '';
+      if (S.token) u.searchParams.set('token', S.token);
+      return u;
+    }
+
+    async function api(path, { method = 'GET', json } = {}) {
+      const headers = {};
+      if (S.token) headers.Authorization = `Bearer ${S.token}`;
+      if (json !== undefined) headers['Content-Type'] = 'application/json';
+      const res = await fetch(new URL(path, window.location.href), {
+        method, headers, body: json === undefined ? undefined : JSON.stringify(json), cache: 'no-store',
+      });
+      const data = /json/.test(res.headers.get('content-type') ?? '') ? await res.json() : null;
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function fmtBytes(n) {
+      if (n == null) return '';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let i = 0;
+      while (n >= 1000 && i < units.length - 1) { n /= 1000; i++; }
+      return `${i ? n.toFixed(n < 10 ? 2 : n < 100 ? 1 : 0) : n} ${units[i]}`;
+    }
+
+    function fmtWhen(v) {
+      if (v == null || v === '') return '';
+      const d = typeof v === 'number' ? new Date(v * 1000) : new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+      const p2 = (x) => String(x).padStart(2, '0');
+      return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    }
+
+    function fmtDur(s) {
+      if (s == null || !Number.isFinite(s)) return '';
+      s = Math.max(0, Math.round(s));
+      if (s < 60) return `${s} s`;
+      if (s < 3600) return `${Math.floor(s / 60)} min ${s % 60} s`;
+      return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`;
+    }
+
+    function grid(head, rows) {
+      const nums = new Set(head.map((h, i) => (h.endsWith(' ') ? i : -1)));
+      const thead = el('thead', {}, el('tr', {}, ...head.map((h, i) => el('th', nums.has(i) ? { class: 'num' } : {}, h.trim()))));
+      const tbody = el('tbody', {}, ...rows.map((r) => (r instanceof Node ? r
+        : el('tr', {}, ...r.map((c, i) => (c instanceof Node && c.tagName === 'TD' ? c : el('td', nums.has(i) ? { class: 'num' } : {}, c)))))));
+      return el('table', { class: 'grid' }, thead, tbody);
+    }
+
+    function progressBar(frac, { busy = false, error = false, text } = {}) {
+      const pct = Math.round(Math.min(1, Math.max(0, frac || 0)) * 100);
+      const bar = el('div', { class: 'bar' });
+      bar.style.width = `${pct}%`;
+      return el('div', { class: `progress${busy ? ' busy' : ''}${error ? ' error' : ''}`, role: 'progressbar',
+        'aria-valuenow': String(pct), 'aria-valuemin': '0', 'aria-valuemax': '100' }, bar, el('span', {}, text ?? `${pct}%`));
+    }
+
+    function button(text, onclick, { title, disabled = false } = {}) {
+      const b = el('button', { class: 'tool', type: 'button', ...(title ? { title } : {}) }, text);
+      b.disabled = disabled || !S.admin;
+      b.addEventListener('click', onclick);
+      return b;
+    }
+
+    async function startJob(body) {
+      try {
+        const job = await api('api/jobs', { method: 'POST', json: body });
+        setStatus(`${activeTab()}-status`, `Started: ${job.title}`);
+        S.jobs = [...S.jobs.filter((j) => j.id !== job.id), job];
+        renderJobs();
+      } catch (err) {
+        setStatus(`${activeTab()}-status`, `Job not started: ${err.message}`, true);
+      }
+    }
+
+    function renderIndexes(st) {
+      const data = st.data;
+      $('set-data-dir').textContent = data.path ? `Data dir: ${data.path}${data.exists ? '' : ' (not created yet)'}` : 'Data dir (path hidden from read-only clients)';
+      const rows = data.indexes.map((ix) => {
+        const ds = ix.dataset;
+        const build = button(ix.exists ? 'Rebuild' : 'Build', () => {
+          if (ix.exists && !window.confirm(`Rebuild the ${ds.toUpperCase()} index? The current Parquet is replaced when the build finishes.`)) return;
+          const release = $('set-release').value.trim();
+          startJob({ kind: 'build-db', dataset: ds, force: ix.exists, volume_only: $('set-volume-only').checked,
+            ...(release ? { release } : {}) });
+        });
+        const update = button('Update', () => startJob({ kind: 'build-db', dataset: ds, update: true }),
+          { disabled: !ix.exists, title: 'Append volumes released since the build' });
+        return [
+          ds.toUpperCase(),
+          ix.exists ? el('span', { class: 'ok' }, 'Built') : el('span', { class: 'dim' }, 'Missing'),
+          ix.rows != null ? Number(ix.rows).toLocaleString('en-US') : '',
+          el('td', { title: ix.source === 'volume_index' ? 'built from one volume index' : ix.source ? 'cumulative index' : '' },
+            `${ix.release ?? ''}${ix.source === 'volume_index' ? ' (vol)' : ''}`),
+          fmtBytes(ix.size),
+          el('td', { title: ix.built_at ? `built ${fmtWhen(ix.built_at)}` : '' }, fmtWhen(ix.updated_at ?? ix.built_at)),
+          el('td', { class: 'actions' }, build, update),
+        ];
+      });
+      $('set-indexes').replaceChildren(grid(['Index', 'Status', 'Rows ', 'Release', 'Size ', 'Updated', ''], rows));
+    }
+
+    function renderReference(st) {
+      const ref = st.reference;
+      const rows = [
+        ...ref.pgda.map((s) => {
+          const kinds = Object.entries(s.kinds).map(([k, n]) => (n > 1 ? `${k} x${n}` : k)).join(', ');
+          return ['PGDA', s.site, s.region ?? '', el('td', { class: 'wrap' }, kinds || '(none)'), fmtBytes(s.size)];
+        }),
+        ...ref.sdem.map((z) => ['SfS DEM', z.zip, '', el('td', { class: 'wrap', title: z.members.join('\n') },
+          `${z.count} member${z.count === 1 ? '' : 's'}`), fmtBytes(z.size)]),
+      ];
+      $('set-reference').replaceChildren(...(rows.length ? [grid(['Source', 'Site / zip', 'Region', 'Downloaded', 'Size '], rows)] : []));
+      $('set-ref-dir').textContent = (rows.length ? '' : 'No reference data downloaded yet. ')
+        + (ref.path ? `Reference cache: ${ref.path}` : '');
+    }
+
+    function renderDownloads(st) {
+      const dl = st.downloads;
+      if (dl.path) $('set-dl-dest').placeholder = dl.path;
+      const rows = dl.files.map((f) => [f.name, f.partial ? el('span', { class: 'dim' }, 'partial') : 'complete', fmtBytes(f.size), fmtWhen(f.mtime)]);
+      $('set-downloads').replaceChildren(...(rows.length ? [grid([`Downloaded (${dl.count}, ${fmtBytes(dl.size)})`, 'State', 'Size ', 'Modified'], rows)] : []));
+      const c = st.cache;
+      $('set-cache-dir').textContent = `Cache${c.path ? `: ${c.path}` : ''}, ${fmtBytes(c.size)}${c.exists ? '' : ' (empty)'}`;
+      const crows = c.items.map((i) => [i.name, i.dir ? `${i.files}${i.truncated ? '+' : ''}` : '', fmtBytes(i.size), fmtWhen(i.mtime)]);
+      $('set-cache').replaceChildren(...(crows.length ? [grid(['Cache entry', 'Files ', 'Size ', 'Modified'], crows)] : []));
+    }
+
+    function renderRuns(st) {
+      const r = st.runs;
+      if (!r.configured) {
+        $('set-runs-dir').textContent = 'No runs dir: set LUNAR_RUNS_DIR or start with --runs-dir DIR to list SfS runs.';
+        $('set-runs').replaceChildren();
+        return;
+      }
+      $('set-runs-dir').textContent = `${r.path ? `Runs dir: ${r.path}` : 'Runs dir'}${r.exists === false ? ' (missing)' : ''}, ${r.runs.length} run(s) with provenance.json`;
+      const rows = r.runs.map((run) => {
+        const ok = run.steps.filter((s) => s.status === 'ok').length;
+        const last = run.steps[run.steps.length - 1];
+        const steps = run.steps.length ? `${ok} of ${run.steps.length} ok${last && last.status !== 'ok' ? `, ${last.name}: ${last.status}` : ''}` : '';
+        const cls = run.status === 'ok' ? 'ok' : run.status === 'error' ? 'bad' : '';
+        return [
+          run.name,
+          el('span', { class: cls }, run.status ?? ''),
+          fmtWhen(run.started),
+          fmtWhen(run.finished),
+          el('td', { class: 'wrap', title: run.steps.map((s) => `${s.name}: ${s.status}${s.seconds != null ? ` (${fmtDur(s.seconds)})` : ''}`).join('\n') }, steps),
+          run.report && S.admin ? link(apiUrl(`runs/${encodeURIComponent(run.name)}/report.html`).href, 'report.html') : '',
+        ];
+      });
+      $('set-runs').replaceChildren(...(rows.length ? [grid(['Run', 'Status', 'Started', 'Finished', 'Steps', 'Report'], rows)] : []));
+    }
+
+    function renderEnv(st) {
+      const env = st.environment;
+      const rows = [];
+      for (const r of env.roots) rows.push([r.name, r.path ?? (r.set ? 'set' : el('span', { class: 'dim' }, 'not set'))]);
+      const v = env.versions ?? {};
+      for (const [k, label] of [['asp', 'ASP'], ['isis', 'ISIS'], ['ale', 'ALE'], ['gdal', 'GDAL']]) {
+        if (k in v) rows.push([label, v[k] ?? el('span', { class: 'dim' }, 'not found')]);
+      }
+      const missing = Object.entries(env.tools).filter(([, t]) => !t.found).map(([n]) => n);
+      rows.push(['Tools', missing.length ? el('span', { class: missing.length === Object.keys(env.tools).length ? 'bad' : '' },
+        `missing: ${missing.join(' ')}`) : 'all found']);
+      const subs = Object.entries(env.isisdata);
+      if (subs.length) rows.push(['ISISDATA', subs.map(([k, on]) => `${k}: ${on ? 'yes' : 'no'}`).join(', ')]);
+      for (const c of st.cooldowns) rows.push(['Host paused', `${c.host} until ${c.until_text} (${fmtDur(c.seconds)})`]);
+      if (!st.cooldowns.length) rows.push(['Host pauses', 'none']);
+      for (const d of st.disks) rows.push([`Disk (${d.labels.join(', ')})`, `${fmtBytes(d.free)} free of ${fmtBytes(d.total)}`]);
+      rows.push(['Toolkit', st.version]);
+      $('set-env').replaceChildren(grid(['Item', 'Value'], rows.map(([k, val]) => [k, el('td', { class: 'wrap' }, val)])));
+    }
+
+    function fillRegions() {
+      if (!S.regions) return;
+      const sel = $('set-region');
+      const current = sel.value;
+      sel.replaceChildren(...S.regions.regions.map((r) => el('option', { value: String(r.id) },
+        `${r.id} ${r.name}${r.pgda_site ? ` (${r.pgda_site})` : ' (no PGDA site)'}, zip ${fmtBytes(r.zenodo_size)}`)));
+      sel.value = current || '11';
+      const box = $('set-pgda-kinds');
+      if (!box.children.length) {
+        for (const k of S.regions.pgda_kinds) {
+          const cb = el('input', { type: 'checkbox', value: k, 'data-admin': '' });
+          cb.checked = k === 'surf';
+          box.append(el('label', { title: k === 'clones' ? '100 clone DEMs' : '' }, cb, k));
+        }
+      }
+    }
+
+    function applyAdmin() {
+      for (const node of document.querySelectorAll('#settings [data-admin]')) node.disabled = !S.admin;
+      const note = $('set-note');
+      note.hidden = S.admin;
+      note.textContent = 'Read-only: this page is served to the network, so it shows status only. Building indexes, '
+        + 'downloads and local paths need this machine (localhost) or the server\'s admin token (open the page with ?token=TOKEN).';
+    }
+
+    function renderStatus() {
+      const st = S.status;
+      if (!st) return;
+      renderIndexes(st);
+      renderReference(st);
+      renderDownloads(st);
+      renderRuns(st);
+      renderEnv(st);
+      $('set-info').textContent = `${S.admin ? 'Admin' : 'Read-only'} | read ${fmtWhen(st.built)}`;
+    }
+
+    async function loadStatus(refresh = false) {
+      if (!S.on) return;
+      try {
+        S.status = await api(`api/status${refresh ? '?refresh=1' : ''}`);
+        S.admin = S.status.admin;
+        applyAdmin();
+        renderStatus();
+      } catch (err) {
+        $('set-info').textContent = `Status failed: ${err.message}`;
+      }
+    }
+
+    function jobRow(j) {
+      const active = j.status === 'running' || j.status === 'queued';
+      const frac = j.status === 'done' ? 1 : j.progress;
+      const text = j.status === 'queued' ? 'queued' : j.busy ? j.stage : undefined;
+      const bar = progressBar(frac, { busy: j.busy && active, error: j.status === 'error', text });
+      const file = j.file ? `${j.file_count > 1 ? `${j.file_index}/${j.file_count} ` : ''}${j.file}` : '';
+      const bytes = j.bytes_total ? `${fmtBytes(j.bytes_done)} of ${fmtBytes(j.bytes_total)}` : j.bytes_done ? fmtBytes(j.bytes_done) : '';
+      const cancel = button('Cancel', () => api(`api/jobs/${j.id}`, { method: 'DELETE' })
+        .catch((err) => setStatus(`${activeTab()}-status`, `Cancel failed: ${err.message}`, true)),
+      { disabled: !active || !j.cancellable, title: j.cancellable ? 'Stop after the current chunk (the .part file is kept)' : 'The DuckDB step cannot be interrupted' });
+      const cls = j.status === 'done' ? 'ok' : j.status === 'error' ? 'bad' : '';
+      const row = el('tr', {}, el('td', { class: 'wrap' }, j.title), el('td', {}, el('span', { class: cls }, j.status)),
+        el('td', {}, bar), el('td', { class: 'wrap' }, j.status === 'running' ? j.stage : j.error ?? ''),
+        el('td', { class: 'mono' }, file), el('td', { class: 'num' }, bytes),
+        el('td', { class: 'num' }, active && j.rate ? `${fmtBytes(j.rate)}/s` : ''),
+        el('td', { class: 'num' }, active ? fmtDur(j.eta) : j.finished && j.started ? fmtDur(j.finished - j.started) : ''),
+        el('td', { class: 'actions' }, cancel));
+      const rows = [row];
+      if (j.log?.length) {
+        rows.push(el('tr', {}, el('td', { colspan: '9' }, el('pre', { class: 'log' }, j.log.slice(-4).join('\n')))));
+      }
+      return rows;
+    }
+
+    function renderJobs() {
+      const jobs = [...S.jobs].sort((a, b) => b.created - a.created);
+      $('set-jobs-empty').hidden = jobs.length > 0;
+      $('set-jobs').replaceChildren(...(jobs.length ? [grid(['Job', 'Status', 'Progress', 'Stage', 'File', 'Bytes ', 'Rate ', 'ETA / took ', ''],
+        jobs.flatMap(jobRow))] : []));
+      const active = jobs.filter((j) => j.status === 'running' || j.status === 'queued');
+      const summary = $('jobs-summary');
+      summary.hidden = !active.length;
+      if (active.length) {
+        const running = active.filter((j) => j.status === 'running');
+        const frac = active.reduce((a, j) => a + (j.progress || 0), 0) / active.length;
+        const what = running.length === active.length ? `${running.length} job${running.length === 1 ? '' : 's'} running`
+          : `${active.length} jobs (${running.length} running)`;
+        summary.textContent = `${what}, ${Math.round(frac * 100)}%`;
+      }
+    }
+
+    // A finished build reloads the index sources; any finished job refreshes the status
+    async function jobsChanged(jobs, first) {
+      S.jobs = jobs;
+      renderJobs();
+      let rebuilt = false, finished = false;
+      for (const j of jobs) {
+        const was = S.seen[j.id];
+        S.seen[j.id] = j.status;
+        if (first || was === j.status || !['done', 'error', 'cancelled'].includes(j.status)) continue;
+        finished = true;
+        if (j.kind === 'build-db' && j.status === 'done') rebuilt = true;
+        setStatus(`${activeTab()}-status`, `${j.title}: ${j.status}${j.error ? ` (${j.error})` : ''}`, j.status === 'error');
+      }
+      if (rebuilt && db) {
+        for (const ds of DATASETS) if (sources[ds]?.label === 'lunar serve') delete sources[ds];
+        for (const k of Object.keys(columnCache)) delete columnCache[k];
+        await findSources(true);
+        renderSources();
+      }
+      if (finished) loadStatus();
+    }
+
+    function watchJobs() {
+      if (S.es || typeof EventSource === 'undefined') return;
+      let first = true;
+      const es = new EventSource(apiUrl('api/jobs/events'));
+      es.addEventListener('jobs', (e) => { jobsChanged(JSON.parse(e.data), first); first = false; });
+      es.onerror = () => {  // server gone or restarted: retry slowly
+        es.close();
+        S.es = null;
+        clearTimeout(S.timer);
+        S.timer = setTimeout(watchJobs, 5000);
+      };
+      S.es = es;
+    }
+
+    function settingsShown() {
+      if (!S.on) return;
+      loadStatus();
+    }
+
+    function selectedKinds() {
+      return [...$('set-pgda-kinds').querySelectorAll('input:checked')].map((c) => c.value);
+    }
+
+    function initSettingsControls() {
+      $('set-refresh').addEventListener('click', () => loadStatus(true));
+      $('jobs-summary').addEventListener('click', () => selectView('settings'));
+      $('set-pgda-btn').addEventListener('click', () => {
+        const kinds = selectedKinds();
+        if (!kinds.length) return setStatus(`${activeTab()}-status`, 'Choose at least one PGDA kind.', true);
+        startJob({ kind: 'pgda', region: Number($('set-region').value), kinds });
+      });
+      $('set-sdem-list').addEventListener('click', async () => {
+        const sel = $('set-sdem-members');
+        $('set-sdem-list').disabled = true;
+        setStatus(`${activeTab()}-status`, 'Reading the zip directory...');
+        try {
+          const r = await api(`api/sdem/members?region=${encodeURIComponent($('set-region').value)}`);
+          sel.replaceChildren(...r.members.map((m) => el('option', { value: m.name.split('/').pop() }, `${m.name.split('/').slice(1).join('/') || m.name}  (${fmtBytes(m.size)})`)));
+          sel.hidden = false;
+          setStatus(`${activeTab()}-status`, `${r.zip}: ${r.members.length} members; select some, or use the patterns`);
+        } catch (err) {
+          setStatus(`${activeTab()}-status`, `Zip directory: ${err.message}`, true);
+        } finally {
+          $('set-sdem-list').disabled = !S.admin;
+        }
+      });
+      $('set-region').addEventListener('change', () => { $('set-sdem-members').hidden = true; $('set-sdem-members').replaceChildren(); });
+      $('set-sdem-btn').addEventListener('click', () => {
+        const picked = [...$('set-sdem-members').selectedOptions].map((o) => o.value);
+        const members = picked.length ? picked : $('set-sdem-pat').value.split(/[\s,]+/).filter(Boolean);
+        if (!members.length) return setStatus(`${activeTab()}-status`, 'Enter member patterns or pick members.', true);
+        startJob({ kind: 'sdem', region: Number($('set-region').value), members });
+      });
+      $('set-dl-btn').addEventListener('click', () => {
+        const ids = $('set-dl-ids').value.split(/[\s,;]+/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+        if (!ids.length) return setStatus(`${activeTab()}-status`, 'Enter one or more product IDs to download.', true);
+        const dest = $('set-dl-dest').value.trim();
+        startJob({ kind: 'download', ids, product: $('set-dl-product').value, ...(dest ? { dest } : {}) });
+      });
+    }
+
+    async function initSettings() {
+      S.token = readToken();
+      initSettingsControls();
+      applyAdmin();
+      try {
+        const cfg = await api('api/config');
+        if (!cfg?.jobs) throw new Error('not lunar serve');
+        S.on = true;
+        S.admin = !!cfg.admin;
+        S.regions = await api('api/regions');
+        fillRegions();
+        applyAdmin();
+        $('set-info').textContent = S.admin ? 'Admin' : 'Read-only';
+        watchJobs();
+        if (!$('view-settings').hidden) loadStatus();
+      } catch {
+        for (const node of document.querySelectorAll('#settings [data-admin], #set-refresh')) node.disabled = true;
+        $('set-note').hidden = false;
+        $('set-note').textContent = 'Settings need the local server: start lunar app or lunar serve.';
+      }
+    }
+
+    // Boot
+    fillOdeSelects();
+    initViewer();
+    initImages();
+    initSettings();
+    try {
+      await initDB();
+      await findSources();
+      renderSources();
+      setStatus('index-status', 'Ready');
+    } catch (err) {
+      setStatus('index-status', `Failed to initialize DuckDB: ${err.message}`, true);
+    }
+  </script>
+</body>
+</html>

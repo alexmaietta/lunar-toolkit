@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# MkDocs build output
+site/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage/
+coverage.json
+coverage.md
+coverage.xml
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Type checking
+.mypy_cache/
+.ruff_cache/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pipeline work directories (lunar sfs / lunar stereo defaults)
+sfs_work/
+stereo_work/
+output/
+
+# ISIS / ASP / GDAL products and logs
+*.IMG
+*.img
+*.img.gz
+*.lbl
+*.cub
+*.tif
+*.vrt
+*.map
+*.lis
+print.prt
+*-log-*.txt
+*.match
+*.vwip
+*.adjust
+*.adjusted_state.json
+
+# DuckDB / Parquet databases (built into the user data dir; never committed)
+*.parquet
+*.meta.json
+*.duckdb
+*.duckdb.wal
+*.build.duckdb*

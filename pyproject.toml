@@ -1,0 +1,112 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lunar-toolkit"
+version = "0.1.0"
+description = "Find, download and process lunar orbital imagery (LROC, ShadowCam, Kaguya TC) and build stereo and shape-from-shading DEMs with ISIS + ASP"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+keywords = ["moon", "lroc", "shadowcam", "kaguya", "isis", "ames-stereo-pipeline", "shape-from-shading", "dem"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "pyarrow>=14",
+    "pywebview>=5",
+    "duckdb>=1.0",
+    "matplotlib>=3.7",
+    "tqdm>=4.65",
+    "platformdirs>=3",
+    "pyyaml>=6",
+    "rasterio>=1.3",
+    "shapely>=2.0",
+]
+
+[project.optional-dependencies]
+# Native window for `lunar app` on Linux (Qt WebEngine, ~500 MB); without it the app opens a
+# Chromium --app window or a browser tab.
+app = [
+    "pywebview[qt]>=5; sys_platform == 'linux'",
+]
+dev = [
+    "pytest>=7",
+    "pytest-cov>=6.1",
+    "mypy>=2",
+    "pandas-stubs",
+    "types-tqdm",
+    "types-PyYAML",
+    "pre-commit",
+    "ruff",
+]
+docs = [
+    "mkdocs-material",
+    "mkdocs-gen-files",
+    "mkdocstrings[python]",
+]
+
+[project.scripts]
+lunar = "lunar_toolkit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lunar_toolkit*"]
+
+[tool.setuptools.package-data]
+lunar_toolkit = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not network and not tools'"
+markers = [
+    "network: tests that hit live PDS / ODE servers (run with: pytest -m network)",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 110
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+# zip() lengths are matched by construction; strict= would only add noise.
+ignore = ["B905"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["lunar_toolkit"]
+
+[tool.coverage.run]
+source = ["lunar_toolkit"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+python_version = "3.10"
+files = ["lunar_toolkit"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["duckdb.*", "shapely.*", "platformdirs.*", "pyarrow.*", "matplotlib.*", "rasterio.*"]
+ignore_missing_imports = true
