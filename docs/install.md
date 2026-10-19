@@ -11,7 +11,7 @@ Python 3.10+; the package is pure Python (one wheel for every platform). Image p
 
 ## Docker
 
-A self-contained image has ISIS 10 + ASP 3.7 (from `docker/asp-env.lock`, the exact package list of a verified env), a minimal ISISDATA for LRO NAC (`docker/isisdata.sh`) and lunar_toolkit in its own Python 3.13 venv. Pull the published image from the GitHub Container Registry (`latest` and the release versions, `main` for the newest Dockerfile), or build it from the repository.
+A self-contained image has ISIS 10 + ASP 3.7 (from `docker/asp-env.lock`, the exact package list of a verified env), a minimal ISISDATA for LRO NAC (`docker/isisdata.sh`) and lunar_toolkit in its own Python 3.13 venv. Pull the published image from the GitHub Container Registry (`latest` follows the main branch, and releases are tagged with their version), or build it from the repository.
 
 ```bash
 docker pull ghcr.io/alexmaietta/lunar-toolkit:latest
