@@ -8,21 +8,10 @@ site_dir: site
 strict: true
 
 theme:
-  name: material
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-  features:
-    - navigation.sections
-    - content.code.copy
+  name: readthedocs
+  navigation_depth: 3
+  highlightjs: true
+  hljs_languages: [yaml, bash, python, sql, ini]
 
 markdown_extensions:
   - admonition
@@ -30,14 +19,12 @@ markdown_extensions:
   - toc:
       permalink: true
   - pymdownx.details
-  - pymdownx.highlight
-  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      use_pygments: false
   - pymdownx.snippets:
       base_path: [.]
       check_paths: true
   - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
 
 plugins:
   - search

@@ -1,9 +1,9 @@
 # Lunar Toolkit
 
-Data-layer tools for lunar orbital imagery: a local, searchable copy of the LROC PDS index, footprint search that handles the poles and the 0/360 seam, area-of-interest search from QuickMap GeoJSON / WKT polygons, ODE search and download for ShadowCam, LROC and Kaguya TC, an ISIS + GDAL pipeline for LROC NAC images, ShadowCam and Kaguya TC / MI import, stereo and shape-from-shading DEM pipelines built on Python wrappers for ISIS and the Ames Stereo Pipeline (reproducing the Bertone et al. 2026 Artemis III SfS workflow and products), and reference data for validation (PGDA LOLA DEMs, published SfS DEMs). All search backends can return one common observation schema.
+Lunar Toolkit is a Python tool suite that finds, downloads and processes lunar orbital imagery and turns it into DEMs. It keeps a searchable local copy of the LROC PDS index whose footprint search works at the poles and across the 0/360 seam, takes QuickMap GeoJSON or WKT areas of interest, and finds ShadowCam, LROC and Kaguya products on the PDS Orbital Data Explorer. It imports images into [ISIS](https://isis.astrogeology.usgs.gov/) and builds stereo and shape-from-shading DEMs with the [Ames Stereo Pipeline](https://stereopipeline.readthedocs.io/) through configurable, reproducible pipelines, with PGDA LOLA DEMs and published SfS DEMs as reference data for validation.
 
 !!! tip "Desktop app"
-    `lunar app` opens the toolkit in a desktop window: search the LROC index and ODE, footprints on a map, full-resolution image viewing, and a Settings tab for indexes, downloads and runs with progress bars. See [Desktop app and browser](app.md); a [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/) runs in any browser.
+    `lunar app` opens the toolkit in a desktop window with search, footprint maps, full-resolution images and a Settings tab for indexes and downloads. See [Desktop app and browser](app.md), or try the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/) in any browser.
 
 ## Install
 

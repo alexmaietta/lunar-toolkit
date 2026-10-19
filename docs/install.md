@@ -4,7 +4,7 @@
 pip install lunar-toolkit              # or from a checkout: pip install -e .  /  uv sync
 pip install "lunar-toolkit[app]"       # + Qt WebEngine for the `lunar app` window on Linux
 pip install -e ".[dev]"                # + pytest, mypy, ruff, pre-commit
-pip install -e ".[docs]"               # + mkdocs-material, mkdocstrings
+pip install -e ".[docs]"               # + mkdocs, mkdocstrings
 ```
 
 Python 3.10+; the package is pure Python (one wheel for every platform). Image processing and DEMs (`lunar process`, `kaguya`, `shadowcam`, `stereo`, `sfs`) also need ISIS and the Ames Stereo Pipeline: see [DEMs with ISIS + ASP](dems.md#setup) for the conda env and the minimal ISISDATA.

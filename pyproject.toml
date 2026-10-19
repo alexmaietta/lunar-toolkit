@@ -56,7 +56,7 @@ dev = [
     "ruff",
 ]
 docs = [
-    "mkdocs-material",
+    "mkdocs>=1.6",
     "mkdocs-gen-files",
     "mkdocstrings[python]",
 ]
