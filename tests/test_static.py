@@ -59,9 +59,9 @@ def test_js_element_ids_exist():
     ids = set(re.findall(r'\bid="([\w-]+)"', PAGE))
     used = set(re.findall(r"\$\('([\w-]+)'\)", PAGE))
     assert used and used <= ids, sorted(used - ids)
-    # $(`${p}-...`) with p one of the form / pane prefixes
+    # $(`${p}-...`) with p the search form prefix
     for suffix in set(re.findall(r"\$\(`\$\{p\}-([\w-]+)`\)", PAGE)):
-        assert any(f"{p}-{suffix}" in ids for p in ("ix", "index", "ode")), suffix
+        assert any(f"{p}-{suffix}" in ids for p in ("s",)), suffix
 
 
 def test_byte_range():

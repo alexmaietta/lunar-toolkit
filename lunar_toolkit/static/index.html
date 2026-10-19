@@ -5,177 +5,130 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lunar Toolkit Browser</title>
   <style>
-    /* Fusion palette (light), dark variant below */
+    /* Classic desktop look: flat grey panels, white sunken fields, one-pixel edges, square
+       corners, a navy accent. */
     :root {
-      --window: #efefef;
+      color-scheme: light;
+      --chrome: #d4d4d4;
+      --window: #e0e0e0;
+      --header: #cfcfcf;
       --base: #ffffff;
-      --alt: #f6f6f6;
-      --text: #1b1b1b;
-      --muted: #5f5f5f;
-      --disabled: #9a9a9a;
-      --mid: #b5b5b5;
-      --dark: #8e8e8e;
-      --light: #ffffff;
-      --gridline: #dcdcdc;
-      --btn-top: #fbfbfb;
-      --btn-bot: #e6e6e6;
-      --btn-press-top: #d9d9d9;
-      --btn-press-bot: #e9e9e9;
-      --hdr-top: #fafafa;
-      --hdr-bot: #e4e4e4;
-      --highlight: #308cc6;
-      --hl-text: #ffffff;
-      --link: #0b5fa5;
-      --error: #b00020;
+      --alt: #f5f5f5;
+      --hover: #f0f0f0;
+      --button: #e6e6e6;
+      --button-lit: #b4c6dc;
+      --sep: #b0b0b0;
+      --border: #8f8f8f;
+      --gridline: #e3e3e3;
+      --text: #000000;
+      --muted: #555555;
+      --disabled: #8f8f8f;
+      --selection: #a8c4e2;
+      --sel-text: #000000;
+      --accent: #1f4a8a;
+      --link: #1f4a8a;
+      --error: #b3261e;
+      --ok: #2e7d32;
       --plot-bg: #ffffff;
       --plot-fg: #000000;
-      --plot-grid: #d9d9d9;
-      --plot-label: #303030;
-      --fp: #1f5f8b;
-      --fp-sel: #d62728;
-      --region: #008a00;
-      --view-bg: #6e6e6e;
-      --view-fg: #f0f0f0;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --window: #353535;
-        --base: #252525;
-        --alt: #2c2c2c;
-        --text: #ffffff;
-        --muted: #b4b4b4;
-        --disabled: #7f7f7f;
-        --mid: #232323;
-        --dark: #1b1b1b;
-        --light: #4a4a4a;
-        --gridline: #3a3a3a;
-        --btn-top: #454545;
-        --btn-bot: #393939;
-        --btn-press-top: #2e2e2e;
-        --btn-press-bot: #363636;
-        --hdr-top: #434343;
-        --hdr-bot: #383838;
-        --highlight: #2a82da;
-        --hl-text: #ffffff;
-        --link: #6cb0f5;
-        --error: #ff6b6b;
-        --plot-bg: #1e1e1e;
-        --plot-fg: #d8d8d8;
-        --plot-grid: #3c3c3c;
-        --plot-label: #cfcfcf;
-        --fp: #6fa8dc;
-        --fp-sel: #ff6b5e;
-        --region: #4fd14f;
-        --view-bg: #161616;
-        --view-fg: #b4b4b4;
-      }
-    }
-    :root[data-theme="dark"] {
-      --window: #353535; --base: #252525; --alt: #2c2c2c; --text: #ffffff; --muted: #b4b4b4;
-      --disabled: #7f7f7f; --mid: #232323; --dark: #1b1b1b; --light: #4a4a4a; --gridline: #3a3a3a;
-      --btn-top: #454545; --btn-bot: #393939; --btn-press-top: #2e2e2e; --btn-press-bot: #363636;
-      --hdr-top: #434343; --hdr-bot: #383838; --highlight: #2a82da; --hl-text: #ffffff; --link: #6cb0f5;
-      --error: #ff6b6b; --plot-bg: #1e1e1e; --plot-fg: #d8d8d8; --plot-grid: #3c3c3c; --plot-label: #cfcfcf;
-      --fp: #6fa8dc; --fp-sel: #ff6b5e; --region: #4fd14f; --view-bg: #161616; --view-fg: #b4b4b4;
+      --plot-grid: #e3e3e3;
+      --plot-label: #333333;
+      --fp: #1f4a8a;
+      --fp-sel: #c62828;
+      --region: #2e7d32;
+      --view-bg: #303030;
+      --view-fg: #e8e8e8;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
-      font: 12px "Segoe UI", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
-      background: var(--window);
+      font: 13px "Segoe UI", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+      background: var(--chrome);
       color: var(--text);
       overflow: hidden;
     }
     code, .mono, td.mono, textarea, input.ids {
-      font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 11px;
+      font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 12px;
     }
     a { color: var(--link); }
     [hidden] { display: none !important; }
+    ::selection { background: color-mix(in srgb, var(--accent) 25%, transparent); }
 
-    /* Main window: title bar, control panel | workspace, status bar */
-    .app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; }
-    .titlebar {
-      display: flex; align-items: center; gap: 8px; padding: 3px 8px; min-height: 26px;
-      background: linear-gradient(var(--btn-top), var(--window)); border-bottom: 1px solid var(--mid);
-    }
-    .titlebar .name { font-weight: bold; }
-    .titlebar .sub { color: var(--muted); }
-    .titlebar .sources { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .titlebar .sources b { color: var(--text); font-weight: normal; }
-    .vsep { width: 1px; align-self: stretch; margin: 2px 2px; background: var(--mid); box-shadow: 1px 0 0 var(--light); }
+    /* Main window: control panel | workspace, status bar */
+    .app { display: grid; grid-template-rows: minmax(0, 1fr) auto; height: 100vh; }
     .main { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
 
-    .controls { display: flex; flex-direction: column; min-height: 0; padding: 6px 4px 6px 6px; }
-    .tabbar { display: flex; padding-left: 4px; position: relative; z-index: 1; }
+    .controls { display: flex; flex-direction: column; min-height: 0; padding: 6px 3px 6px 6px; }
+    .tabbar { display: flex; position: relative; z-index: 1; }
     .tabbar button {
-      font: inherit; color: var(--text); padding: 3px 12px; margin-right: -1px; margin-top: 2px;
-      background: linear-gradient(var(--btn-bot), var(--btn-press-top)); border: 1px solid var(--mid);
-      border-radius: 2px 2px 0 0; cursor: default;
+      font: inherit; color: var(--muted); padding: 3px 12px; margin-right: -1px; min-width: 0; min-height: 0;
+      background: var(--chrome); border: 1px solid var(--border); border-bottom: none; cursor: default;
     }
+    .tabbar button:hover { background: var(--hover); }
     .tabbar button[aria-selected="true"] {
-      background: var(--window); border-bottom-color: var(--window); margin-top: 0; padding-bottom: 5px;
-      margin-bottom: -1px; position: relative; z-index: 1;
+      color: var(--text); background: var(--window); margin-bottom: -1px; padding-bottom: 4px; position: relative; z-index: 1;
     }
     .tabbar button:focus-visible { outline: 1px dotted var(--text); outline-offset: -4px; }
-    .tabpane {
-      flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--mid); border-radius: 0 2px 2px 2px;
-      background: var(--window); padding: 4px 6px 6px; box-shadow: inset 1px 1px 0 var(--light);
+    .panel {
+      flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border);
+      background: var(--window); padding: 2px 8px 8px;
     }
 
-    fieldset { border: 1px solid var(--mid); border-radius: 2px; padding: 6px 7px 7px; margin-top: 6px; box-shadow: inset 1px 1px 0 var(--light), 1px 1px 0 var(--light); }
-    legend { padding: 0 3px; margin-left: 4px; }
-    .form { display: grid; grid-template-columns: 6.6em minmax(0, 1fr) minmax(0, 1fr); gap: 4px 5px; align-items: center; }
+    fieldset { border: none; border-top: 1px solid var(--sep); padding: 6px 0 2px; margin-top: 12px; }
+    fieldset:first-child { margin-top: 6px; }
+    legend { padding-right: 6px; color: var(--muted); font-weight: bold; }
+    .form { display: grid; grid-template-columns: 6.6em minmax(0, 1fr) minmax(0, 1fr); gap: 4px 6px; align-items: center; }
     .form > [data-mode] { display: contents; }
     .form > label, .form > .lbl { color: var(--text); white-space: nowrap; }
     .form .span2 { grid-column: span 2; }
     .form .span3 { grid-column: 1 / -1; }
-    .form .buttons { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px; }
-    .stack { display: flex; flex-direction: column; gap: 5px; }
-    .hint { color: var(--muted); font-size: 11px; line-height: 1.35; margin-top: 6px; }
-    .hint code { font-size: 10.5px; }
+    .form .buttons { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.35; margin-top: 6px; }
+    .hint code { font-size: 11.5px; }
+    .srcline { display: flex; align-items: center; gap: 6px; min-height: 24px; }
+    .srcline .text { flex: 1; min-width: 0; color: var(--muted); }
+    .srcline .text b { color: var(--text); font-weight: normal; }
+    .srcline .text.bad { color: var(--error); }
 
     input, select, textarea {
       font: inherit; color: var(--text); background: var(--base); min-width: 0; width: 100%;
-      border: 1px solid var(--mid); border-top-color: var(--dark); border-radius: 2px;
-      padding: 2px 4px; height: 22px;
+      border: 1px solid var(--border); border-radius: 0; padding: 2px 5px; height: 23px;
     }
     textarea { height: auto; min-height: 5.5em; resize: vertical; line-height: 1.3; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--highlight); box-shadow: 0 0 0 1px var(--highlight) inset; }
+    input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover { background-color: var(--hover); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
     input::placeholder, textarea::placeholder { color: var(--disabled); }
+    input:disabled, select:disabled { color: var(--disabled); }
     select {
-      appearance: none; padding-right: 18px; cursor: default;
+      appearance: none; padding-right: 20px; cursor: default;
       background:
         linear-gradient(45deg, transparent 50%, var(--text) 50%) right 10px top 9px / 4px 4px no-repeat,
         linear-gradient(135deg, var(--text) 50%, transparent 50%) right 6px top 9px / 4px 4px no-repeat,
-        linear-gradient(var(--btn-top), var(--btn-bot));
-      border-top-color: var(--mid); border-bottom-color: var(--dark);
+        var(--button);
     }
+    select:hover:not(:disabled) { background-color: var(--hover); }
     select option { background: var(--base); color: var(--text); }
-    input[type="file"] { padding: 1px; height: 24px; border: none; background: none; color: var(--muted); }
-    button, input[type="file"]::file-selector-button {
-      font: inherit; color: var(--text); white-space: nowrap; cursor: default;
-      background: linear-gradient(var(--btn-top), var(--btn-bot));
-      border: 1px solid var(--mid); border-bottom-color: var(--dark); border-radius: 2px;
-      padding: 2px 12px; min-height: 22px; min-width: 72px;
+    button {
+      font: inherit; color: var(--text); white-space: nowrap; cursor: default; background: var(--button);
+      border: 1px solid var(--border); border-radius: 0; padding: 2px 12px; min-height: 23px; min-width: 72px;
     }
-    input[type="file"]::file-selector-button { margin-right: 6px; min-width: 0; }
-    button:hover:not(:disabled), input[type="file"]::file-selector-button:hover { background: linear-gradient(var(--light), var(--btn-top)); }
-    button:active:not(:disabled) { background: linear-gradient(var(--btn-press-top), var(--btn-press-bot)); }
-    button.default { border-color: var(--highlight); }
+    button:hover:not(:disabled) { background: var(--hover); }
+    button:active:not(:disabled), button.on { background: var(--button-lit); }
+    button.default { border-color: var(--accent); }
     button:focus-visible { outline: 1px dotted var(--text); outline-offset: -4px; }
     button:disabled { color: var(--disabled); }
-    button.tool { min-width: 0; padding: 0 8px; min-height: 18px; font-size: 11px; }
+    button.tool { min-width: 0; padding: 0 8px; min-height: 20px; font-size: 12px; }
 
     /* Workspace: map over (results | details), with splitters */
     .workspace {
       display: grid; grid-template-rows: minmax(140px, var(--map-h, 55%)) 6px minmax(0, 1fr);
-      min-height: 0; padding: 6px 6px 4px 2px;
+      min-height: 0; padding: 6px 6px 4px 3px;
     }
     .lower { display: grid; grid-template-columns: minmax(0, 1fr) 6px minmax(200px, var(--det-w, 380px)); min-height: 0; }
-    .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border: 1px solid var(--mid); background: var(--base); }
+    .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border: 1px solid var(--border); background: var(--base); }
     .panehead {
-      display: flex; align-items: center; gap: 6px; padding: 1px 2px 1px 6px; min-height: 22px;
-      background: linear-gradient(var(--hdr-top), var(--hdr-bot)); border-bottom: 1px solid var(--mid);
+      display: flex; align-items: center; gap: 6px; padding: 1px 2px 1px 6px; min-height: 23px;
+      background: var(--header); border-bottom: 1px solid var(--sep);
     }
     .panehead .title { font-weight: bold; }
     .panehead .info { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -188,36 +141,34 @@
     .splitter { position: relative; touch-action: none; }
     .splitter.rows { cursor: row-resize; }
     .splitter.cols { cursor: col-resize; }
-    .splitter::after { content: ''; position: absolute; inset: 0; margin: auto; }
-    .splitter.rows::after { width: 24px; height: 2px; border-top: 1px dotted var(--dark); border-bottom: 1px dotted var(--dark); }
-    .splitter.cols::after { height: 24px; width: 2px; border-left: 1px dotted var(--dark); border-right: 1px dotted var(--dark); }
+    .splitter:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 
-    /* QTableView-like grids */
+    /* Tables */
     table { border-collapse: separate; border-spacing: 0; }
     table.grid { min-width: 100%; }
     table.grid th {
       position: sticky; top: 0; z-index: 1; text-align: left; font-weight: normal; white-space: nowrap;
-      padding: 2px 6px; background: linear-gradient(var(--hdr-top), var(--hdr-bot));
-      border-right: 1px solid var(--mid); border-bottom: 1px solid var(--mid); box-shadow: inset 1px 1px 0 var(--light);
+      padding: 2px 6px; background: var(--header); border-right: 1px solid var(--sep); border-bottom: 1px solid var(--sep);
     }
-    table.grid td { padding: 1px 6px; height: 20px; white-space: nowrap; border-right: 1px solid var(--gridline); border-bottom: 1px solid var(--gridline); }
+    table.grid td { padding: 1px 6px; height: 21px; white-space: nowrap; border-right: 1px solid var(--gridline); border-bottom: 1px solid var(--gridline); }
     table.grid tbody tr:nth-child(even) td { background: var(--alt); }
     table.grid tbody tr { cursor: default; }
-    table.grid tbody tr.selected td { background: var(--highlight); color: var(--hl-text); }
-    table.grid tbody tr.selected a { color: var(--hl-text); }
+    table.grid tbody tr:hover td { background: color-mix(in srgb, var(--selection) 40%, var(--base)); }
+    table.grid tbody tr.selected td { background: var(--selection); color: var(--sel-text); }
+    table.grid tbody tr.selected a { color: var(--sel-text); }
     table.grid th.num, table.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .tablewrap:focus { outline: none; }
-    .tablewrap:focus-visible tr.selected td { outline: 1px dotted var(--hl-text); outline-offset: -2px; }
+    .tablewrap:focus-visible tr.selected td { outline: 1px dotted var(--sel-text); outline-offset: -2px; }
 
-    .detail { border-bottom: 1px solid var(--mid); }
+    .detail { border-bottom: 1px solid var(--sep); }
     .detail h2 {
-      font: bold 11px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; padding: 3px 6px;
-      background: var(--window); border-bottom: 1px solid var(--gridline);
+      font: bold 12px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; padding: 3px 6px;
+      background: var(--header); border-bottom: 1px solid var(--sep);
     }
     .detail table { width: 100%; table-layout: fixed; }
     .detail th {
-      text-align: left; font-weight: normal; padding: 1px 6px; background: linear-gradient(var(--hdr-top), var(--hdr-bot));
-      border-bottom: 1px solid var(--mid); border-right: 1px solid var(--mid);
+      text-align: left; font-weight: normal; padding: 1px 6px; background: var(--header);
+      border-bottom: 1px solid var(--sep); border-right: 1px solid var(--sep);
     }
     .detail td { padding: 1px 6px; border-bottom: 1px solid var(--gridline); vertical-align: top; overflow-wrap: anywhere; }
     .detail td.label { width: 42%; color: var(--muted); background: var(--alt); border-right: 1px solid var(--gridline); }
@@ -236,32 +187,33 @@
     .map .fp { fill: var(--fp); fill-opacity: 0.08; fill-rule: evenodd; stroke: var(--fp); stroke-width: 0.8; cursor: pointer; }
     .map .fp:hover { fill-opacity: 0.25; stroke-width: 1.3; }
     .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.3; stroke: var(--fp-sel); stroke-width: 1.8; }
+    .mapbox.hide-fp .fp, .mapbox.hide-region .region { display: none; }
+    .panehead .toggle { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; white-space: nowrap; }
     .map .region { fill: none; fill-rule: evenodd; stroke: var(--region); stroke-width: 1.4; stroke-dasharray: 6 3; pointer-events: none; }
-    .map text { fill: var(--plot-label); font-size: 10.5px; pointer-events: none; }
-    .map text.gl { fill: var(--muted); font-size: 10px; }
-    .map text.axis { font-size: 11px; }
+    .map text { fill: var(--plot-label); font-size: 11px; pointer-events: none; }
+    .map text.gl { fill: var(--muted); font-size: 10.5px; }
+    .map text.axis { font-size: 11.5px; }
 
-    /* Top pane: Footprints | Image tabs; the image view is a framed canvas under a tool bar */
+    /* Top pane: Footprints | Image | Settings tabs; the image view is a framed canvas under a tool bar */
     .viewwrap { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-    .viewwrap > .tabbar { padding-left: 2px; }
     .viewwrap > .pane { flex: 1; }
     .viewbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .viewbody > .mapbox { flex: 1; min-height: 0; height: auto; }
     .toolbar {
       display: flex; flex-wrap: wrap; align-items: center; gap: 3px; padding: 2px 4px;
-      background: var(--window); border-bottom: 1px solid var(--mid); box-shadow: inset 0 1px 0 var(--light);
+      background: var(--window); border-bottom: 1px solid var(--sep);
     }
-    .toolbar select, .toolbar input { width: auto; height: 20px; padding-top: 0; padding-bottom: 0; }
+    .toolbar select, .toolbar input { width: auto; height: 21px; padding-top: 0; padding-bottom: 0; }
     .toolbar select { max-width: 24em; background-position: right 10px top 8px, right 6px top 8px, 0 0; }
     .toolbar input[type="number"] { width: 6em; }
-    .toolbar input:disabled { color: var(--disabled); }
+    .toolbar #view-rot { width: 4.5em; }
     .toolbar .lbl { color: var(--text); margin-left: 3px; }
-    .toolbar .sep { width: 1px; align-self: stretch; margin: 1px 3px; background: var(--mid); box-shadow: 1px 0 0 var(--light); }
-    .toolbar button.tool { min-height: 20px; }
-    .viewframe { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--view-bg); box-shadow: inset 1px 1px 0 var(--dark); }
+    .toolbar .sep { width: 1px; align-self: stretch; margin: 1px 3px; background: var(--sep); }
+    .toolbar button.tool { min-height: 21px; }
+    .viewframe { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--view-bg); }
     .viewframe canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; outline: none; }
     .viewframe canvas.dragging { cursor: grabbing; }
-    .viewframe canvas:focus-visible { box-shadow: inset 0 0 0 1px var(--highlight); }
+    .viewframe canvas:focus-visible { box-shadow: inset 0 0 0 1px var(--accent); }
     .viewmsg {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1em;
       color: var(--view-fg); text-align: center; pointer-events: none; line-height: 1.4;
@@ -269,43 +221,46 @@
     .viewmsg:empty { display: none; }
     .viewmsg.error {
       inset: auto 8px 8px 8px; justify-content: flex-start; text-align: left; padding: 4px 8px;
-      color: var(--error); background: var(--base); border: 1px solid var(--mid); border-left: 3px solid var(--error);
+      color: var(--error); background: var(--base); border: 1px solid var(--border); border-left: 3px solid var(--error);
     }
 
     /* Quick look in the Details pane */
     .preview { padding: 4px 6px 5px; border-bottom: 1px solid var(--gridline); background: var(--window); }
     .pvbox {
       display: flex; align-items: center; justify-content: center; min-height: 48px; overflow: hidden;
-      background: var(--view-bg); border: 1px solid var(--mid); border-top-color: var(--dark);
+      background: var(--view-bg); border: 1px solid var(--border);
     }
-    .pvbox canvas, .pvbox img { display: block; max-width: 100%; max-height: 240px; }
-    .pvbox .msg { color: var(--view-fg); padding: 8px; font-size: 11px; text-align: center; }
+    .pvbox canvas, .pvbox img { display: block; max-width: 100%; max-height: 240px; transform-origin: 50% 50%; }
+    .pvbox.pan { cursor: grab; touch-action: none; user-select: none; }
+    .pvbox.pan.dragging { cursor: grabbing; }
+    .pvbox .msg { color: var(--view-fg); padding: 8px; font-size: 12px; text-align: center; }
     .pvbox .msg.error { color: var(--error); background: var(--base); align-self: stretch; width: 100%; text-align: left; }
     .pvcap { display: flex; align-items: center; gap: 6px; margin-top: 3px; min-width: 0; }
-    .pvcap .info { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pvcap .info { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pvcap .right { margin-left: auto; display: flex; gap: 3px; }
-    .preview.none { color: var(--muted); font-size: 11px; }
+    .preview.none { color: var(--muted); font-size: 12px; }
 
     .statusbar {
-      display: flex; align-items: stretch; gap: 3px; padding: 2px 4px; min-height: 22px;
-      border-top: 1px solid var(--mid); box-shadow: inset 0 1px 0 var(--light); background: var(--window);
+      display: flex; align-items: stretch; gap: 3px; padding: 2px 4px; min-height: 23px;
+      border-top: 1px solid var(--sep); background: var(--chrome);
     }
     .statusbar > span { padding: 1px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .statusbar .status { flex: 1; min-width: 0; }
     .statusbar .status.error { color: var(--error); }
-    .statusbar .cell { border-left: 1px solid var(--mid); box-shadow: inset 1px 0 0 var(--light); }
-    .statusbar #cursor { min-width: 22em; font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 11px; }
+    .statusbar .cell { border-left: 1px solid var(--sep); }
+    .statusbar #cursor { min-width: 22em; font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 12px; }
 
     /* Settings view: group boxes over the whole workspace */
     .workspace.settings-on { grid-template-rows: minmax(0, 1fr); }
     .workspace.settings-on > .splitter, .workspace.settings-on > .lower { display: none; }
     .settings {
-      flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; background: var(--window);
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 0 10px; align-content: start;
+      flex: 1; min-height: 0; overflow: auto; padding: 0 10px 10px; background: var(--window);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 0 16px; align-content: start;
     }
     .settings fieldset { min-width: 0; }
+    .settings fieldset:first-child, .settings .note + fieldset { margin-top: 12px; }
     .settings .wide { grid-column: 1 / -1; }
-    .settings .tablebox { border: 1px solid var(--mid); border-top-color: var(--dark); background: var(--base); overflow: auto; max-height: 230px; margin-top: 5px; }
+    .settings .tablebox { border: 1px solid var(--border); background: var(--base); overflow: auto; max-height: 230px; margin-top: 5px; }
     .settings .tablebox:empty { display: none; }
     .settings .path { color: var(--muted); overflow-wrap: anywhere; margin-bottom: 3px; }
     .settings .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 5px; }
@@ -317,33 +272,37 @@
     .settings td.actions button { margin-right: 2px; }
     .checks { display: flex; flex-wrap: wrap; gap: 2px 12px; }
     .checks label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-    input[type="checkbox"] { width: auto; height: auto; margin: 0; accent-color: var(--highlight); }
-    .note { margin-top: 6px; padding: 4px 8px; background: var(--base); border: 1px solid var(--mid); border-left: 3px solid var(--highlight); line-height: 1.35; }
-    .settings .ok { color: var(--region); }
+    input[type="checkbox"] { width: auto; height: auto; margin: 0; accent-color: var(--accent); }
+    .note { margin-top: 8px; padding: 4px 8px; background: var(--base); border: 1px solid var(--border); border-left: 3px solid var(--accent); line-height: 1.35; }
+    .settings .ok { color: var(--ok); }
     .settings .bad { color: var(--error); }
     .settings .dim { color: var(--muted); }
-    pre.log { font: 10.5px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+    pre.log { font: 11.5px "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
     table.grid td.wrap { white-space: normal; }
     .progress {
-      position: relative; height: 16px; min-width: 110px; overflow: hidden; border-radius: 2px;
-      border: 1px solid var(--mid); border-top-color: var(--dark); background: var(--base);
+      position: relative; height: 17px; min-width: 110px; overflow: hidden;
+      border: 1px solid var(--border); background: var(--base);
     }
-    .progress > .bar { position: absolute; top: 0; bottom: 0; left: 0; background: linear-gradient(var(--highlight), color-mix(in srgb, var(--highlight) 78%, #000)); }
-    .progress > span { position: relative; display: block; text-align: center; font-size: 11px; line-height: 14px; }
+    .progress > .bar { position: absolute; top: 0; bottom: 0; left: 0; background: var(--selection); }
+    .progress > span { position: relative; display: block; text-align: center; font-size: 12px; line-height: 15px; }
     .progress.busy > .bar { width: 28% !important; animation: busy 1.6s linear infinite; }
     .progress.error > .bar { background: var(--error); }
     @keyframes busy { from { left: -28%; } to { left: 100%; } }
     #jobs-summary { cursor: pointer; }
+    .busy::before, .loading::before {
+      content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 6px; vertical-align: -1px;
+      border: 2px solid var(--sep); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    .loading { color: var(--muted); white-space: nowrap; }
+    .pvbox .msg.busy::before { border-color: #666; border-top-color: var(--view-fg); }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 800px) {
       body { overflow: auto; }
-      .app { height: auto; min-height: 100vh; grid-template-rows: auto auto auto; }
-      .titlebar { flex-wrap: wrap; }
-      .titlebar .sources { margin-left: 0; flex-basis: 100%; white-space: normal; }
-      .titlebar .vsep { display: none; }
+      .app { height: auto; min-height: 100vh; grid-template-rows: auto auto; }
       .main { grid-template-columns: minmax(0, 1fr); }
       .controls { padding: 6px; }
-      .tabpane { overflow: visible; }
+      .panel { overflow: visible; }
       .workspace { display: flex; flex-direction: column; gap: 6px; padding: 0 6px 6px; }
       .workspace > .viewwrap { height: 420px; flex: none; }
       .workspace.settings-on > .viewwrap { height: auto; }
@@ -359,31 +318,55 @@
 </head>
 <body>
 <div class="app">
-  <header class="titlebar">
-    <span class="name">Lunar Toolkit Browser</span>
-    <span class="vsep"></span>
-    <span class="sub">LROC PDS index via DuckDB-WASM | ShadowCam, LROC, Kaguya via PDS ODE</span>
-    <span class="sources" id="sources">Looking for index files...</span>
-  </header>
-
   <div class="main">
     <aside class="controls">
-      <div class="tabbar" role="tablist">
-        <button role="tab" id="tab-index" data-for="index" aria-selected="true" aria-controls="panel-index">Local index</button>
-        <button role="tab" id="tab-ode" data-for="ode" aria-selected="false" aria-controls="panel-ode" tabindex="-1">ODE</button>
-      </div>
-
-      <section class="tabpane" id="panel-index" data-tab="index" role="tabpanel" aria-labelledby="tab-index">
-        <fieldset>
-          <legend>Index data</legend>
-          <div class="stack">
-            <input id="files" type="file" accept=".parquet" multiple aria-label="Open Parquet files">
-          </div>
-          <p class="hint">Open <code>cumindex_edr.parquet</code> / <code>_cdr</code> / <code>_rdr</code> from
-            <code>lunar build-db</code> (<code>~/.local/share/lunar_toolkit</code>); read in place, nothing is
-            uploaded. <code>lunar serve</code> loads them automatically; <code>?edr=URL&amp;cdr=URL&amp;rdr=URL</code>
-            reads hosted copies (CORS + Range required).</p>
-        </fieldset>
+      <div class="panel">
+        <form id="search-form">
+          <fieldset>
+            <legend>Search</legend>
+            <div class="form">
+              <label for="s-instrument">Instrument</label><select id="s-instrument" class="span2"></select>
+              <label for="s-product">Product</label><select id="s-product" class="span2"></select>
+              <label for="s-source">Source</label><select id="s-source" class="span2"></select>
+              <label for="s-mode">Region</label>
+              <select id="s-mode" class="span2">
+                <option value="box">Bounding box</option>
+                <option value="point">Point + radius</option>
+                <option value="aoi">AOI polygon</option>
+              </select>
+              <div data-mode="box">
+                <span class="lbl">Lon W / E</span>
+                <input id="s-west" type="number" step="any" value="0" aria-label="West" title="West">
+                <input id="s-east" type="number" step="any" value="360" aria-label="East" title="East">
+                <span class="lbl">Lat S / N</span>
+                <input id="s-south" type="number" step="any" value="-90" aria-label="South" title="South">
+                <input id="s-north" type="number" step="any" value="-89.5" aria-label="North" title="North">
+              </div>
+              <div data-mode="point" hidden>
+                <label for="s-lat">Lat</label><input id="s-lat" class="span2" type="number" step="any" value="-89.67">
+                <label for="s-lon">Lon</label><input id="s-lon" class="span2" type="number" step="any" value="129.8">
+                <label for="s-radius">Radius (km)</label><input id="s-radius" class="span2" type="number" step="any" min="0" value="15">
+              </div>
+              <div data-mode="aoi" hidden>
+                <label for="s-aoi-file">AOI file</label>
+                <input id="s-aoi-file" class="span2" type="file" accept=".geojson,.json,.wkt,.txt">
+                <textarea id="s-aoi" class="span3" spellcheck="false" aria-label="AOI polygon"
+                  placeholder="or paste WKT / GeoJSON, e.g. POLYGON((350 -5, 10 -5, 10 5, 350 5, 350 -5))"></textarea>
+              </div>
+              <span class="lbl">Incidence</span>
+              <input id="s-inc-min" type="number" step="any" placeholder="min" aria-label="Incidence min">
+              <input id="s-inc-max" type="number" step="any" placeholder="max" aria-label="Incidence max">
+              <span class="lbl">Emission</span>
+              <input id="s-emi-min" type="number" step="any" placeholder="min" aria-label="Emission min">
+              <input id="s-emi-max" type="number" step="any" placeholder="max" aria-label="Emission max">
+              <label for="s-t0">From</label><input id="s-t0" class="span2" type="date">
+              <label for="s-t1">To</label><input id="s-t1" class="span2" type="date">
+              <label for="s-limit">Limit</label><input id="s-limit" class="span2" type="number" value="200" min="1" max="5000">
+              <div class="buttons"><button id="s-btn" class="default" type="submit">Search</button></div>
+            </div>
+            <p class="hint" id="s-hint" hidden>Load or build the local index to search this product.</p>
+          </fieldset>
+        </form>
 
         <form id="lookup-form">
           <fieldset>
@@ -396,106 +379,16 @@
           </fieldset>
         </form>
 
-        <form id="index-search-form">
-          <fieldset>
-            <legend>Search footprints</legend>
-            <div class="form">
-              <label for="ix-dataset">Dataset</label><select id="ix-dataset" class="span2"></select>
-              <label for="ix-camera">Camera</label>
-              <select id="ix-camera" class="span2">
-                <option value="all">All</option>
-                <option value="nac">NAC</option>
-                <option value="wac">WAC</option>
-              </select>
-              <label for="ix-limit">Limit</label><input id="ix-limit" class="span2" type="number" value="200" min="1" max="5000">
-              <label for="ix-mode">Region</label>
-              <select id="ix-mode" class="span2">
-                <option value="box">Bounding box</option>
-                <option value="point">Point + radius</option>
-                <option value="aoi">AOI polygon</option>
-              </select>
-              <div data-mode="box">
-                <span class="lbl">Lon W / E</span>
-                <input id="ix-west" type="number" step="any" value="0" aria-label="West" title="West">
-                <input id="ix-east" type="number" step="any" value="360" aria-label="East" title="East">
-                <span class="lbl">Lat S / N</span>
-                <input id="ix-south" type="number" step="any" value="-90" aria-label="South" title="South">
-                <input id="ix-north" type="number" step="any" value="-89" aria-label="North" title="North">
-              </div>
-              <div data-mode="point" hidden>
-                <label for="ix-lat">Lat</label><input id="ix-lat" class="span2" type="number" step="any" value="-89.67">
-                <label for="ix-lon">Lon</label><input id="ix-lon" class="span2" type="number" step="any" value="129.8">
-                <label for="ix-radius">Radius (km)</label><input id="ix-radius" class="span2" type="number" step="any" min="0" value="15">
-              </div>
-              <div data-mode="aoi" hidden>
-                <label for="ix-aoi-file">AOI file</label>
-                <input id="ix-aoi-file" class="span2" type="file" accept=".geojson,.json,.wkt,.txt">
-                <textarea id="ix-aoi" class="span3" spellcheck="false" aria-label="AOI polygon"
-                  placeholder="or paste WKT / GeoJSON, e.g. POLYGON((350 -5, 10 -5, 10 5, 350 5, 350 -5))"></textarea>
-              </div>
-              <span class="lbl">Incidence</span>
-              <input id="ix-inc-min" type="number" step="any" placeholder="min" aria-label="Incidence min">
-              <input id="ix-inc-max" type="number" step="any" placeholder="max" aria-label="Incidence max">
-              <span class="lbl">Emission</span>
-              <input id="ix-emi-min" type="number" step="any" placeholder="min" aria-label="Emission min">
-              <input id="ix-emi-max" type="number" step="any" placeholder="max" aria-label="Emission max">
-              <div class="buttons"><button id="ix-search-btn" class="default" type="submit" disabled>Search</button></div>
-            </div>
-            <p class="hint">Degrees, longitudes positive east (0-360 or -180-180); WEST &gt; EAST crosses the seam.
-              Same matching as <code>lunar search --bbox / --point / --aoi</code>: conservative bounding-box test
-              (polar stereographic poleward of 60 deg), and for an AOI an exact polygon intersection.</p>
-          </fieldset>
-        </form>
-      </section>
-
-      <section class="tabpane" id="panel-ode" data-tab="ode" role="tabpanel" aria-labelledby="tab-ode" hidden>
-        <form id="ode-form">
-          <fieldset>
-            <legend>Search ODE</legend>
-            <div class="form">
-              <label for="ode-instrument">Instrument</label><select id="ode-instrument" class="span2"></select>
-              <label for="ode-type">Product type</label><select id="ode-type" class="span2"></select>
-              <label for="ode-limit">Per page</label><input id="ode-limit" class="span2" type="number" value="100" min="1" max="1000">
-              <label for="ode-mode">Region</label>
-              <select id="ode-mode" class="span2">
-                <option value="box">Bounding box</option>
-                <option value="point">Point + radius</option>
-                <option value="aoi">AOI polygon</option>
-              </select>
-              <div data-mode="box">
-                <span class="lbl">Lon W / E</span>
-                <input id="ode-west" type="number" step="any" value="0" aria-label="West" title="West">
-                <input id="ode-east" type="number" step="any" value="360" aria-label="East" title="East">
-                <span class="lbl">Lat S / N</span>
-                <input id="ode-south" type="number" step="any" value="-90" aria-label="South" title="South">
-                <input id="ode-north" type="number" step="any" value="-89.5" aria-label="North" title="North">
-              </div>
-              <div data-mode="point" hidden>
-                <label for="ode-lat">Lat</label><input id="ode-lat" class="span2" type="number" step="any" value="-89.67">
-                <label for="ode-lon">Lon</label><input id="ode-lon" class="span2" type="number" step="any" value="129.8">
-                <label for="ode-radius">Radius (km)</label><input id="ode-radius" class="span2" type="number" step="any" min="0" value="15">
-              </div>
-              <div data-mode="aoi" hidden>
-                <label for="ode-aoi-file">AOI file</label>
-                <input id="ode-aoi-file" class="span2" type="file" accept=".geojson,.json,.wkt,.txt">
-                <textarea id="ode-aoi" class="span3" spellcheck="false" aria-label="AOI polygon"
-                  placeholder="or paste WKT / GeoJSON, e.g. POLYGON((350 -5, 10 -5, 10 5, 350 5, 350 -5))"></textarea>
-              </div>
-              <span class="lbl">Incidence</span>
-              <input id="ode-inc-min" type="number" step="any" placeholder="min" aria-label="Incidence min">
-              <input id="ode-inc-max" type="number" step="any" placeholder="max" aria-label="Incidence max">
-              <span class="lbl">Emission</span>
-              <input id="ode-emi-min" type="number" step="any" placeholder="min" aria-label="Emission min">
-              <input id="ode-emi-max" type="number" step="any" placeholder="max" aria-label="Emission max">
-              <label for="ode-t0">From</label><input id="ode-t0" class="span2" type="date">
-              <label for="ode-t1">To</label><input id="ode-t1" class="span2" type="date">
-              <div class="buttons"><button id="ode-btn" class="default" type="submit">Search</button></div>
-            </div>
-            <p class="hint">ODE gets the region's bounding box (a circle becomes its box); with an AOI each
-              page is then filtered by exact footprint intersection, like <code>lunar ode-search --aoi</code>.</p>
-          </fieldset>
-        </form>
-      </section>
+        <fieldset>
+          <legend>Local index</legend>
+          <div class="srcline">
+            <span class="text" id="index-info">Looking for index files...</span>
+            <button class="tool" id="files-open" type="button" title="Open cumindex_*.parquet files from disk (read in place)" hidden>Open files...</button>
+            <input id="files" type="file" accept=".parquet" multiple hidden aria-label="Open Parquet files">
+          </div>
+          <p class="hint" id="index-hint" hidden></p>
+        </fieldset>
+      </div>
     </aside>
 
     <main class="workspace" id="workspace">
@@ -507,12 +400,12 @@
         </div>
         <section class="pane">
           <div class="viewbody" id="view-map" role="tabpanel" aria-labelledby="vtab-map">
-            <div class="mapbox" id="index-map" data-tab="index" data-empty="No footprints. Look up product IDs or run a search."></div>
-            <div class="mapbox" id="ode-map" data-tab="ode" data-empty="No footprints. Run an ODE search." hidden></div>
+            <div class="mapbox" id="map" data-empty="No footprints. Run a search or look up product IDs."></div>
           </div>
           <div class="viewbody" id="view-image" role="tabpanel" aria-labelledby="vtab-image" hidden>
             <div class="panehead">
               <span class="title">Image</span>
+              <span class="loading" id="view-loading" hidden></span>
               <span class="info" id="view-info">No image</span>
             </div>
             <div class="toolbar" role="toolbar" aria-label="Image view">
@@ -526,13 +419,18 @@
               <button class="tool" id="view-fit" type="button" title="Fit the whole image (F)">Fit</button>
               <button class="tool" id="view-fit-width" type="button" title="Fit the image width (W)">Fit width</button>
               <span class="sep"></span>
+              <span class="lbl">Rotate</span>
+              <button class="tool" id="view-rot-left" type="button" title="Rotate 90 deg counterclockwise (Shift+R; [ ] rotate 5 deg)">-90</button>
+              <button class="tool" id="view-rot-right" type="button" title="Rotate 90 deg clockwise (R)">+90</button>
+              <input id="view-rot" type="number" step="any" value="0" aria-label="Rotation angle" title="Rotation in degrees, clockwise">
+              <span class="sep"></span>
               <label class="lbl" for="view-min">Min</label><input id="view-min" type="number" step="any" disabled>
               <label class="lbl" for="view-max">Max</label><input id="view-max" type="number" step="any" disabled>
               <label class="lbl" for="view-gamma">Gamma</label><input id="view-gamma" type="number" step="0.1" min="0.1" max="10" value="1" disabled>
-              <button class="tool" id="view-auto" type="button" title="Stretch the 2nd - 98th percentile of the overview" disabled>Auto 2-98%</button>
+              <button class="tool" id="view-auto" type="button" title="Stretch the 2nd - 98th percentile of the overview" disabled>Auto</button>
             </div>
             <div class="viewframe" id="view-frame">
-              <canvas id="view-canvas" tabindex="0" aria-label="Image (wheel zoom, drag pan, + - 0 F W keys)"></canvas>
+              <canvas id="view-canvas" tabindex="0" aria-label="Image (wheel zoom, drag pan, + - 0 F W R [ ] keys)"></canvas>
               <div class="viewmsg" id="view-msg">Select a product with a browse image (LROC NAC / WAC pyramid, ShadowCam COG,
                 Kaguya JPEG), open a local GeoTIFF, or start <code>lunar serve --images DIR</code>.</div>
             </div>
@@ -630,10 +528,10 @@
         <section class="pane">
           <div class="panehead">
             <span class="title">Results</span>
-            <span class="right" id="ode-nav" data-tab="ode" hidden></span>
+            <span class="loading" id="results-loading" hidden>Loading...</span>
+            <span class="right" id="nav"></span>
           </div>
-          <div class="panebody" id="index-results" data-tab="index" data-empty="No results"></div>
-          <div class="panebody" id="ode-results" data-tab="ode" data-empty="No results" hidden></div>
+          <div class="panebody" id="results" data-empty="No results"></div>
         </section>
         <div class="splitter cols" id="split-cols" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
         <section class="pane">
@@ -641,18 +539,15 @@
             <span class="title">Details</span>
             <span class="right"><button class="tool" id="detail-clear" type="button">Clear</button></span>
           </div>
-          <div class="panebody" id="index-detail" data-tab="index" data-empty="Click a row or footprint"></div>
-          <div class="panebody" id="ode-detail" data-tab="ode" data-empty="Click a row or footprint" hidden></div>
+          <div class="panebody" id="detail" data-empty="Click a row or footprint"></div>
         </section>
       </div>
     </main>
   </div>
 
   <footer class="statusbar">
-    <span class="status" id="index-status" data-tab="index">Initializing DuckDB...</span>
-    <span class="status" id="ode-status" data-tab="ode" hidden>Ready</span>
-    <span class="cell" id="index-count" data-tab="index">0 rows</span>
-    <span class="cell" id="ode-count" data-tab="ode" hidden>0 rows</span>
+    <span class="status busy" id="status">Initializing DuckDB...</span>
+    <span class="cell" id="count">0 rows</span>
     <span class="cell" id="view-zoom" hidden></span>
     <span class="cell" id="jobs-summary" title="Open the Settings tab" hidden></span>
     <span class="cell" id="cursor"></span>
@@ -784,8 +679,10 @@
 
     function setStatus(id, msg, isError = false) {
       $(id).textContent = msg;
-      $(id).className = 'status' + (isError ? ' error' : '');
+      $(id).className = 'status' + (isError ? ' error' : /\.\.\.(\s|$)/.test(msg) ? ' busy' : '');
     }
+
+    const searching = (on) => { $('results-loading').hidden = !on; };
 
     function fmt(val, digits) {
       if (val == null) return '';
@@ -809,32 +706,9 @@
 
     function sqlStr(s) { return `'${String(s).replace(/'/g, "''")}'`; }
 
-    function setCount(p, n) {
-      $(`${p}-count`).textContent = `${n} row${n === 1 ? '' : 's'}`;
+    function setCount(n) {
+      $('count').textContent = `${n} row${n === 1 ? '' : 's'}`;
     }
-
-    // Tabs: switch the control panel and every [data-tab] part of the workspace / status bar
-    const tabs = [...document.querySelectorAll('.controls [role="tab"]')];
-    function selectTab(tab) {
-      for (const t of tabs) {
-        const on = t === tab;
-        t.setAttribute('aria-selected', String(on));
-        t.tabIndex = on ? 0 : -1;
-      }
-      for (const node of document.querySelectorAll('[data-tab]')) node.hidden = node.dataset.tab !== tab.dataset.for;
-      $('cursor').textContent = '';
-    }
-    for (const tab of tabs) {
-      tab.addEventListener('click', () => selectTab(tab));
-      tab.addEventListener('keydown', (e) => {
-        const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-        if (!d) return;
-        const next = tabs[(tabs.indexOf(tab) + d + tabs.length) % tabs.length];
-        selectTab(next);
-        next.focus();
-      });
-    }
-    const activeTab = () => tabs.find((t) => t.getAttribute('aria-selected') === 'true').dataset.for;
 
     // Splitters: map | lower pane (rows), results | details (columns)
     function splitter(handle, onmove) {
@@ -857,7 +731,7 @@
       const w = Math.min(Math.max(r.right - e.clientX - 3, 200), r.width - 200);
       $('lower').style.setProperty('--det-w', `${w}px`);
     });
-    $('detail-clear').addEventListener('click', () => $(`${activeTab()}-detail`).replaceChildren());
+    $('detail-clear').addEventListener('click', () => $('detail').replaceChildren());
 
     // Geometry: ports of lunar_toolkit.geometry (query_region, aoi_region, aoi_mask), so the
     // browser matches `lunar search` row for row.
@@ -1271,7 +1145,7 @@
       return out;
     }
 
-    // Search region from a form (prefix 'ix' or 'ode'), plus how to draw it
+    // Search region from the form (prefix 's'), plus how to draw it
     function readRegion(p) {
       const mode = $(`${p}-mode`).value;
       const finite = (...vs) => vs.every((v) => v != null && Number.isFinite(v));
@@ -1308,7 +1182,7 @@
       };
     }
 
-    for (const p of ['ix', 'ode']) {
+    for (const p of ['s']) {
       const sync = () => {
         for (const node of $(`${p}-mode`).closest('fieldset').querySelectorAll('[data-mode]')) {
           node.hidden = node.dataset.mode !== $(`${p}-mode`).value;
@@ -1342,6 +1216,19 @@
 
     const MARGIN = { l: 50, r: 12, t: 10, b: 34 };
 
+    // Show / hide a map layer (footprints, search region); remembered across searches
+    const hiddenLayers = new Set();
+    function layerToggle(container, layer, label) {
+      const box = el('input', { type: 'checkbox' });
+      box.checked = !hiddenLayers.has(layer);
+      container.classList.toggle(`hide-${layer}`, !box.checked);
+      box.addEventListener('change', () => {
+        if (box.checked) hiddenLayers.delete(layer); else hiddenLayers.add(layer);
+        container.classList.toggle(`hide-${layer}`, !box.checked);
+      });
+      return el('label', { class: 'toggle' }, box, ` ${label}`);
+    }
+
     function renderMap(container, { hemi, region, items }) {
       container._resize?.disconnect();
       container._highlight = null;
@@ -1353,7 +1240,7 @@
         el('span', { class: 'title' }, 'Footprints'),
         el('span', { class: 'info' }, hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
           : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
-        el('span', { class: 'right' }, reset));
+        el('span', { class: 'right' }, layerToggle(container, 'fp', 'Footprints'), layerToggle(container, 'region', 'Region'), reset));
       container.replaceChildren(el('div', { class: 'map' }, bar, svg));
       const clipId = `clip-${container.id}`;
       const M = MARGIN;
@@ -1596,12 +1483,12 @@
     }
 
     // Select a result row (table + map) and show its detail
-    function pick(p, row, detail) {
-      const trs = [...$(`${p}-results`).querySelectorAll('tbody tr')];
+    function pick(row, detail) {
+      const trs = [...$('results').querySelectorAll('tbody tr')];
       for (const tr of trs) tr.classList.toggle('selected', tr._row === row);
       trs.find((tr) => tr._row === row)?.scrollIntoView({ block: 'nearest' });
-      $(`${p}-map`)._highlight?.(row);
-      showDetail($(`${p}-detail`), detail);
+      $('map')._highlight?.(row);
+      showDetail($('detail'), detail);
     }
 
     // DuckDB-WASM
@@ -1645,22 +1532,22 @@
 
     function renderSources() {
       const loaded = DATASETS.filter((ds) => sources[ds]);
-      const $s = $('sources');
-      $s.replaceChildren();
-      if (!loaded.length) {
-        $s.append('Index: none loaded - open the Parquet files in the control panel');
-      } else {
-        $s.append('Index: ');
-        loaded.forEach((ds, i) => {
-          if (i) $s.append(' | ');
-          $s.append(el('b', {}, ds.toUpperCase()), ` (${sources[ds].label})`);
-        });
-      }
-      const $sel = $('ix-dataset');
-      const current = $sel.value;
-      $sel.replaceChildren(...loaded.map((ds) => el('option', { value: ds }, ds.toUpperCase())));
-      if (loaded.includes(current)) $sel.value = current;
-      $('lookup-btn').disabled = $('ix-search-btn').disabled = !loaded.length;
+      const served = loaded.some((ds) => sources[ds].label === 'lunar serve');
+      const info = $('index-info');
+      info.replaceChildren();
+      info.classList.toggle('bad', !loaded.length);
+      if (!loaded.length) info.append('No index found');
+      loaded.forEach((ds, i) => {
+        if (i) info.append(', ');
+        info.append(el('b', {}, ds.toUpperCase()));
+        if (sources[ds].label !== 'lunar serve') info.append(` (${sources[ds].label})`);
+      });
+      $('files-open').hidden = served;
+      $('index-hint').hidden = loaded.length > 0;
+      $('index-hint').textContent = 'Build it in Settings (lunar app) or with lunar build-db, or open cumindex_*.parquet '
+        + 'files (read in place, nothing is uploaded). LROC NAC searches use ODE until then.';
+      $('lookup-btn').disabled = !loaded.length;
+      syncSearchForm();
     }
 
     // Plain objects (Arrow rows are read-only proxies)
@@ -1714,19 +1601,42 @@
       const hemi = mapHemi(region?.region, rows.map((r) => numOrNull(r.CENTER_LATITUDE)));
       const items = rows.length ? mapItems(rows, wktColOf(rows[0]), hemi, (r) => `${pidOf(r)} (${r._ds.toUpperCase()})`,
         pickIndex) : [];
-      renderMap($('index-map'), { hemi, region, items });
+      renderMap($('map'), { hemi, region, items });
     }
 
-    function pickIndex(r) {
+    // Searches read only the columns the table, map and preview need; the full row is read on
+    // selection (CENTER_LATITUDE limits that to one row group)
+    const SEARCH_COLUMNS = [
+      'PRODUCT_ID', 'START_TIME', 'CENTER_LATITUDE', 'CENTER_LONGITUDE', 'INCIDENCE_ANGLE', 'EMISSION_ANGLE',
+      'SUB_SOLAR_AZIMUTH', 'RESOLUTION', 'LINE_SAMPLES', 'FILE_SPECIFICATION_NAME',
+      'FP_MIN_LAT', 'FP_MAX_LAT', 'FP_LON_WEST', 'FP_LON_SPAN',
+    ];
+    let pickSeq = 0;
+
+    async function pickIndex(r) {
+      const seq = ++pickSeq;
+      if (!r._full) {
+        const lat = numOrNull(r.CENTER_LATITUDE);
+        const where = `PRODUCT_ID = ${sqlStr(pidOf(r))}${lat == null ? '' : ` AND CENTER_LATITUDE = CAST('${lat}' AS DOUBLE)`}`;
+        try {
+          const [full] = rowsOf(await conn.query(`SELECT * FROM ${parquet(r._ds)} WHERE ${where} LIMIT 1`));
+          if (full) Object.assign(r, full, { FP_WKT_QUERY: r.FP_WKT_QUERY });
+          r._full = true;
+        } catch (err) {
+          setStatus('status', `Could not read the full record: ${err.message}`, true);
+        }
+        if (seq !== pickSeq) return;
+      }
       const block = indexDetail(pidOf(r), r, r._ds);
-      pick('index', r, block);
+      pick(r, block);
       selectProduct(block);
     }
 
     function indexTable(rows) {
-      $('index-results').replaceChildren(resultTable(INDEX_COLUMNS.map(([, h, d]) => [h, d != null]), rows,
+      $('results').replaceChildren(resultTable(INDEX_COLUMNS.map(([, h, d]) => [h, d != null]), rows,
         (row) => INDEX_COLUMNS.map(([col, , d]) => cell(row, col, d)), pickIndex));
-      setCount('index', rows.length);
+      setCount(rows.length);
+      $('nav').replaceChildren();
     }
 
     // Product IDs are matched in every loaded dataset (NAC, WAC and RDR alike).
@@ -1752,19 +1662,22 @@
     $('lookup-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const ids = $('ids').value.split(/[\s,]+/).filter(Boolean).map(normalizeId);
-      if (!ids.length) return setStatus('index-status', 'Enter one or more product IDs.');
-      setStatus('index-status', 'Querying...');
+      if (!ids.length) return setStatus('status', 'Enter one or more product IDs.');
+      setStatus('status', 'Querying...');
+      searching(true);
       try {
         const found = await lookup(ids);
-        const rows = Object.values(found).map(({ row, ds }) => Object.assign(row, { _ds: ds }));
+        const rows = Object.values(found).map(({ row, ds }) => Object.assign(row, { _ds: ds, _full: true }));
         indexTable(rows);
-        $('index-detail').replaceChildren(...ids.map((id) => indexDetail(id, found[id]?.row, found[id]?.ds)));
+        $('detail').replaceChildren(...ids.map((id) => indexDetail(id, found[id]?.row, found[id]?.ds)));
         indexMap(rows, null);
         const missing = ids.filter((id) => !found[id]);
-        setStatus('index-status', `Lookup: ${Object.keys(found).length} of ${ids.length} found`
+        setStatus('status', `Lookup: ${Object.keys(found).length} of ${ids.length} found`
           + (missing.length ? ` | not found: ${missing.join(' ')}` : ''));
       } catch (err) {
-        setStatus('index-status', err.message, true);
+        setStatus('status', err.message, true);
+      } finally {
+        searching(false);
       }
     });
 
@@ -1781,24 +1694,23 @@
       ['SUB_SOLAR_AZIMUTH', 'Sun az', 1], ['RESOLUTION', 'm/px', 2],
     ];
 
-    $('index-search-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const ds = $('ix-dataset').value;
-      let sel;
-      try { sel = readRegion('ix'); } catch (err) { return setStatus('index-status', err.message, true); }
+    async function indexSearch(sel, ds, camera) {
       const conds = [
         regionSql(sel.region),
-        ...rangeConds('INCIDENCE_ANGLE', num('ix-inc-min'), num('ix-inc-max')),
-        ...rangeConds('EMISSION_ANGLE', num('ix-emi-min'), num('ix-emi-max')),
+        ...rangeConds('INCIDENCE_ANGLE', num('s-inc-min'), num('s-inc-max')),
+        ...rangeConds('EMISSION_ANGLE', num('s-emi-min'), num('s-emi-max')),
       ];
-      const camera = $('ix-camera').value;
       if (camera === 'nac') conds.push(NAC_SQL);
       if (camera === 'wac') conds.push(`NOT ${NAC_SQL}`);
-      const limit = Math.max(1, Math.min(5000, num('ix-limit') ?? 200));
-      setStatus('index-status', 'Searching...');
+      if ($('s-t0').value) conds.push(`START_TIME >= TIMESTAMP ${sqlStr($('s-t0').value)}`);
+      if ($('s-t1').value) conds.push(`START_TIME < TIMESTAMP ${sqlStr($('s-t1').value)} + INTERVAL 1 DAY`);
+      const limit = Math.max(1, Math.min(5000, num('s-limit') ?? 200));
+      setStatus('status', 'Searching...');
+      searching(true);
       try {
-        const wkt = footprintWktSql(await columnsOf(ds));
-        const base = `SELECT *, ${wkt} AS FP_WKT_QUERY FROM ${parquet(ds)} WHERE ${conds.join(' AND ')} ORDER BY START_TIME, PRODUCT_ID`;
+        const have = await columnsOf(ds);
+        const cols = SEARCH_COLUMNS.filter((c) => have.includes(c)).join(', ');
+        const base = `SELECT ${cols}, ${footprintWktSql(have)} AS FP_WKT_QUERY FROM ${parquet(ds)} WHERE ${conds.join(' AND ')} ORDER BY START_TIME, PRODUCT_ID`;
         let rows = [], scanned = 0;
         if (!sel.aoi) {
           rows = rowsOf(await conn.query(`${base} LIMIT ${limit}`));
@@ -1809,42 +1721,92 @@
             const page = rowsOf(await conn.query(`${base} LIMIT ${AOI_PAGE} OFFSET ${offset}`));
             scanned += page.length;
             rows.push(...page.filter(keep));
-            setStatus('index-status', `Searching... ${rows.length} of ${scanned} bbox match(es) intersect the AOI`);
+            setStatus('status', `Searching... ${rows.length} of ${scanned} bbox match(es) intersect the AOI`);
             if (page.length < AOI_PAGE) break;
           }
           rows = rows.slice(0, limit);
         }
         rows.forEach((row) => { row._ds = ds; });
         indexTable(rows);
-        $('index-detail').replaceChildren();
+        $('detail').replaceChildren();
         indexMap(rows, sel);
-        setStatus('index-status', `${rows.length} image(s)${rows.length === limit ? ' (limit reached)' : ''}`
+        setStatus('status', `${rows.length} image(s)${rows.length === limit ? ' (limit reached)' : ''}`
           + `${sel.aoi ? ` after exact AOI test of ${scanned} bbox match(es)` : ''} | click a row or footprint for details`);
       } catch (err) {
-        setStatus('index-status', `${err.message} (does this dataset have FP_* footprint columns?)`, true);
+        setStatus('status', `${err.message} (does this dataset have FP_* footprint columns?)`, true);
+      } finally {
+        searching(false);
       }
-    });
+    }
 
     $('files').addEventListener('change', async (e) => {
       try {
         await openFiles(e.target.files);
-        setStatus('index-status', 'Ready');
+        setStatus('status', 'Ready');
       } catch (err) {
-        setStatus('index-status', `Could not open: ${err.message}`, true);
+        setStatus('status', `Could not open: ${err.message}`, true);
       }
     });
+    $('files-open').addEventListener('click', () => $('files').click());
 
-    // ODE
-    function fillOdeSelects() {
-      $('ode-instrument').replaceChildren(...Object.entries(ODE_INSTRUMENTS).map(
-        ([key, inst]) => el('option', { value: key }, inst.label)));
-      const updateTypes = () => {
-        const inst = ODE_INSTRUMENTS[$('ode-instrument').value];
-        $('ode-type').replaceChildren(...Object.keys(inst.types).map((t) => el('option', { value: t }, t)));
-        $('ode-type').value = inst.default;
+    // Search instruments: LROC from the local index when it has the product, else from ODE
+    const INSTRUMENTS = {
+      lroc_nac:  { label: 'LROC NAC', camera: 'nac', local: ['edr', 'cdr'], ode: 'lroc' },
+      lroc_wac:  { label: 'LROC WAC', camera: 'wac', local: ['edr', 'cdr'] },
+      lroc_rdr:  { label: 'LROC RDR (DTMs, mosaics)', local: ['rdr'] },
+      shadowcam: { label: 'ShadowCam', ode: 'shadowcam' },
+      kaguya_tc: { label: 'Kaguya TC', ode: 'kaguya_tc' },
+      kaguya_mi: { label: 'Kaguya MI', ode: 'kaguya_mi' },
+    };
+    const odeTypes = (inst) => (inst.ode ? ODE_INSTRUMENTS[inst.ode].types : {});
+
+    function productsOf(inst) {
+      return [...new Set([...(inst.local ?? []), ...Object.keys(odeTypes(inst))])];
+    }
+
+    function sourcesOf(inst, product) {
+      const out = [];
+      if (inst.local?.includes(product)) out.push(['local', sources[product] ? `Local index (${product.toUpperCase()})` : 'Local index (not loaded)', !sources[product]]);
+      if (product in odeTypes(inst)) out.push(['ode', 'PDS ODE', false]);
+      return out;
+    }
+
+    // Product and source choices for the instrument; the local index is preferred when loaded,
+    // unless the user picked a source for this product
+    let sourcePicked = false;
+    function syncSearchForm() {
+      const inst = INSTRUMENTS[$('s-instrument').value];
+      const product = $('s-product').value;
+      const prev = sourcePicked ? $('s-source').value : '';
+      const opts = sourcesOf(inst, product);
+      $('s-source').replaceChildren(...opts.map(([v, label, off]) => {
+        const o = el('option', { value: v }, label);
+        o.disabled = off;
+        return o;
+      }));
+      const usable = opts.filter(([, , off]) => !off).map(([v]) => v);
+      $('s-source').value = usable.includes(prev) ? prev : usable[0] ?? opts[0]?.[0] ?? '';
+      $('s-source').disabled = opts.length < 2;
+      const src = $('s-source').value;
+      $('s-btn').disabled = !usable.includes(src);
+      $('s-limit').max = src === 'ode' ? 1000 : 5000;
+      $('s-hint').hidden = usable.length > 0;
+    }
+
+    function initSearchForm() {
+      $('s-instrument').replaceChildren(...Object.entries(INSTRUMENTS).map(([key, inst]) => el('option', { value: key }, inst.label)));
+      const fillProducts = () => {
+        const inst = INSTRUMENTS[$('s-instrument').value];
+        const products = productsOf(inst);
+        $('s-product').replaceChildren(...products.map((p) => el('option', { value: p }, inst.ode && !inst.camera ? p : p.toUpperCase())));
+        $('s-product').value = inst.ode ? ODE_INSTRUMENTS[inst.ode].default : products[0];
+        sourcePicked = false;
+        syncSearchForm();
       };
-      $('ode-instrument').addEventListener('change', updateTypes);
-      updateTypes();
+      $('s-instrument').addEventListener('change', fillProducts);
+      $('s-product').addEventListener('change', () => { sourcePicked = false; syncSearchForm(); });
+      $('s-source').addEventListener('change', () => { sourcePicked = true; syncSearchForm(); });
+      fillProducts();
     }
 
     const odeNum = (v) => (v == null || v === '' ? null : Number(v));
@@ -1863,17 +1825,17 @@
     });
 
     // ode.ODEClient.build_params: the region's bounding box, numbers as %.6g
-    function odeParams(sel) {
-      const inst = ODE_INSTRUMENTS[$('ode-instrument').value];
+    function odeParams(sel, key, product) {
+      const inst = ODE_INSTRUMENTS[key];
       const g6 = (x) => String(Number(x.toPrecision(6)));
       const [west, south, east, north] = regionBbox(sel.region).map(g6);
       const p = {
         query: 'product', results: 'fmp', output: 'JSON', target: 'moon',
-        ihid: inst.ihid, iid: inst.iid, pt: inst.types[$('ode-type').value],
+        ihid: inst.ihid, iid: inst.iid, pt: inst.types[product],
         minlat: south, maxlat: north, westernlon: west, easternlon: east,
-        mininangle: num('ode-inc-min'), maxinangle: num('ode-inc-max'),
-        minemangle: num('ode-emi-min'), maxemangle: num('ode-emi-max'),
-        minobtime: $('ode-t0').value || null, maxobtime: $('ode-t1').value || null,
+        mininangle: num('s-inc-min'), maxinangle: num('s-inc-max'),
+        minemangle: num('s-emi-min'), maxemangle: num('s-emi-max'),
+        minobtime: $('s-t0').value || null, maxobtime: $('s-t1').value || null,
       };
       return Object.fromEntries(Object.entries(p).filter(([, v]) => v != null && v !== ''));
     }
@@ -1908,8 +1870,9 @@
     }
 
     async function odeSearch(offset, history) {
-      setStatus('ode-status', 'Querying ODE...');
-      $('ode-btn').disabled = true;
+      setStatus('status', 'Querying ODE...');
+      searching(true);
+      $('s-btn').disabled = true;
       try {
         // With an AOI keep paging (up to ODE_AOI_PAGES) until a page's worth survives the exact test
         let prods = [], next = offset, more = false, pages = 0;
@@ -1918,17 +1881,17 @@
           next += page.length;
           more = page.length === ode.limit;
           prods.push(...(ode.keep ? page.filter((p) => ode.keep(odeFootprint(p))) : page));
-          if (ode.keep) setStatus('ode-status', `Querying ODE... ${prods.length} of ${next - offset} intersect the AOI`);
+          if (ode.keep) setStatus('status', `Querying ODE... ${prods.length} of ${next - offset} intersect the AOI`);
         } while (ode.keep && more && prods.length < ode.limit && ++pages < ODE_AOI_PAGES);
         // One record per product, shared by the table and the map so selection links both
         const recs = prods.map((p) => Object.assign(odeFootprint(p), { prod: p }));
         const pickOde = (r) => {
           const block = odeDetail(r.prod);
-          pick('ode', r, block);
+          pick(r, block);
           selectProduct(block);
         };
         const cols = [['Product'], ['Start'], ['Lat', 1], ['Lon', 1], ['Inc', 1], ['Emi', 1], ['m/px', 1], ['Links']];
-        $('ode-results').replaceChildren(resultTable(cols, recs, ({ prod }) => {
+        $('results').replaceChildren(resultTable(cols, recs, ({ prod }) => {
           const data = odeFiles(prod).find((f) => String(f.Type).toLowerCase() === 'product' && !/\.(xml|lbl)$/i.test(f.FileName ?? ''));
           return [
             odePid(prod),
@@ -1941,34 +1904,38 @@
             [...(data?.URL ? [link(data.URL, 'data')] : []), ...(prod.ProductURL ? [data?.URL ? ' | ' : '', link(prod.ProductURL, 'ODE')] : [])],
           ];
         }, pickOde));
-        setCount('ode', recs.length);
-        $('ode-detail').replaceChildren();
+        setCount(recs.length);
+        $('detail').replaceChildren();
         const nav = [];
         if (history.length) nav.push(el('button', { class: 'tool', type: 'button', onclick: () => odeSearch(history.at(-1), history.slice(0, -1)) }, '< Previous'));
         if (more) nav.push(el('button', { class: 'tool', type: 'button', onclick: () => odeSearch(next, [...history, offset]) }, 'Next >'));
-        $('ode-nav').replaceChildren(...nav);
+        $('nav').replaceChildren(...nav);
         const hemi = mapHemi(ode.sel.region, []);
-        renderMap($('ode-map'), {
+        renderMap($('map'), {
           hemi, region: ode.sel,
           items: mapItems(recs, 'footprint_wkt', hemi, (r) => odePid(r.prod), pickOde),
         });
         const range = next > offset ? `ODE results ${offset + 1}-${next}` : '';
-        setStatus('ode-status', !prods.length ? `No products found${range ? ` (${range})` : ''}.`
+        setStatus('status', !prods.length ? `No products found${range ? ` (${range})` : ''}.`
           : ode.keep ? `${prods.length} product(s) intersect the AOI (${range}) | click a row or footprint for details`
           : `Products ${offset + 1}-${next} | click a row or footprint for details`);
       } catch (err) {
-        setStatus('ode-status', `ODE query failed: ${err.message}`, true);
+        setStatus('status', `ODE query failed: ${err.message}`, true);
       } finally {
-        $('ode-btn').disabled = false;
+        searching(false);
+        syncSearchForm();
       }
     }
 
-    $('ode-form').addEventListener('submit', (e) => {
+    $('search-form').addEventListener('submit', (e) => {
       e.preventDefault();
       let sel;
-      try { sel = readRegion('ode'); } catch (err) { return setStatus('ode-status', err.message, true); }
+      try { sel = readRegion('s'); } catch (err) { return setStatus('status', err.message, true); }
+      const inst = INSTRUMENTS[$('s-instrument').value];
+      const product = $('s-product').value;
+      if ($('s-source').value === 'local') return indexSearch(sel, product, inst.camera);
       ode = {
-        sel, params: odeParams(sel), limit: Math.max(1, Math.min(1000, num('ode-limit') ?? 100)),
+        sel, params: odeParams(sel, inst.ode, product), limit: Math.max(1, Math.min(1000, num('s-limit') ?? 100)),
         keep: sel.aoi ? aoiPredicate(sel.aoi, 'footprint_wkt') : null,
       };
       odeSearch(0, []);
@@ -2271,11 +2238,32 @@
       const box = el('div', { class: 'pvbox' }, el('span', { class: 'msg' }, 'Preview loads when the product is selected'));
       const cap = el('span', { class: 'info' }, previewSource(prod).label);
       const panel = el('div', { class: 'preview' }, box, el('div', { class: 'pvcap' }, cap, el('span', { class: 'right' },
-        el('button', { class: 'tool', type: 'button', title: 'Load the preview', onclick: () => panel._load() }, 'Preview'),
         el('button', { class: 'tool', type: 'button', title: 'Show in the Image view (deep zoom)',
           onclick: () => { selectView('image'); viewProduct(prod); } }, 'Open in viewer'))));
       panel._load = () => loadPreview(prod, box, cap);
+      // Click retries a preview that did not load
+      box.addEventListener('click', () => { if (!box.querySelector('canvas, img')) panel._load(); });
       return panel;
+    }
+
+    // Drag to pan and wheel to zoom the quick look (a CSS transform of the overview); double click resets
+    function pannable(box, node) {
+      let x = 0, y = 0, k = 1, drag = null;
+      const apply = () => { node.style.transform = `translate(${x}px, ${y}px) scale(${k})`; };
+      node.draggable = false;
+      box.classList.add('pan');
+      box.onpointerdown = (e) => { drag = [e.clientX - x, e.clientY - y]; box.setPointerCapture(e.pointerId); box.classList.add('dragging'); };
+      box.onpointermove = (e) => { if (drag) { [x, y] = [e.clientX - drag[0], e.clientY - drag[1]]; apply(); } };
+      box.onpointerup = box.onpointercancel = () => { drag = null; box.classList.remove('dragging'); };
+      box.onwheel = (e) => {
+        e.preventDefault();
+        const f = Math.min(Math.max(k * (e.deltaY < 0 ? 1.25 : 0.8), 1), 16) / k;
+        const r = box.getBoundingClientRect();
+        const mx = e.clientX - r.left - r.width / 2, my = e.clientY - r.top - r.height / 2;
+        [x, y, k] = [mx - f * (mx - x), my - f * (my - y), k * f];
+        apply();
+      };
+      box.ondblclick = () => { [x, y, k] = [0, 0, 1]; apply(); };
     }
 
     async function loadPreview(prod, box, cap) {
@@ -2283,12 +2271,13 @@
       const ctl = previewCtl = new AbortController();
       const spec = previewSource(prod);
       const msg = (text, cls = 'msg') => box.replaceChildren(el('span', { class: cls }, text));
-      msg(`Loading preview... (${spec.label})`);
+      msg(`Loading preview (${spec.label})`, 'msg busy');
       try {
         if (spec.kind === 'img') {
           const img = await loadImg(spec.url, ctl.signal);
           img.alt = `${prod.id} browse image`;
           box.replaceChildren(img);
+          pannable(box, img);
           cap.textContent = `${spec.label}: ${img.naturalWidth} x ${img.naturalHeight}`;
           return;
         }
@@ -2303,15 +2292,16 @@
         const canvas = paint(base.bands, base.w, base.h, autoStretch(base.stats, src.int), src.noData);
         canvas.title = `${src.title}: level ${base.li} of ${src.levels.length}`;
         box.replaceChildren(canvas);
+        pannable(box, canvas);
         cap.textContent = `${spec.label}: level ${base.li} (${base.w} x ${base.h}) of ${src.w0} x ${src.h0}, ${src.dtype}`;
       } catch (err) {
         if (ctl.signal.aborted || err?.name === 'AbortError') {
-          if (!box.querySelector('canvas, img')) msg('Preview not loaded (selection changed) - press Preview.');
+          if (!box.querySelector('canvas, img')) msg('Preview not loaded (selection changed) - click to load.');
           return;
         }
         const text = await explainError(spec.url, err);
-        msg(text, 'msg error');
-        setStatus(`${activeTab()}-status`, `Preview: ${text}`, true);
+        msg(`${text} - click to retry`, 'msg error');
+        setStatus('status', `Preview: ${text}`, true);
       } finally {
         if (previewCtl === ctl) previewCtl = null;
       }
@@ -2375,17 +2365,43 @@
 
     function viewError(text) {
       viewMessage(text, true);
-      setStatus(`${activeTab()}-status`, `Image: ${text}`, true);
+      setStatus('status', `Image: ${text}`, true);
+    }
+
+    // Rotation (degrees clockwise) about the view centre; screen offsets from the frame centre map
+    // to image offsets through the inverse rotation
+    const viewAngle = () => (V.rot ?? 0) * RAD;
+    function toImageDelta(dx, dy, s) {
+      const t = viewAngle(), c = Math.cos(t), sn = Math.sin(t);
+      return [(dx * c + dy * sn) / s, (-dx * sn + dy * c) / s];
+    }
+    function toImage(mx, my) {
+      const [cw, ch] = frameSize(), { cx, cy, s } = V.view;
+      const [dx, dy] = toImageDelta(mx - cw / 2, my - ch / 2, s);
+      return [cx + dx, cy + dy];
+    }
+    // Width and height of the rotated image's bounding box
+    function rotatedSize(w, h) {
+      const t = viewAngle(), c = Math.abs(Math.cos(t)), sn = Math.abs(Math.sin(t));
+      return [c * w + sn * h, sn * w + c * h];
     }
 
     const fitScale = (mode) => {
-      const [cw, ch] = frameSize(), { w0, h0 } = V.src;
-      return mode === 'width' ? cw / w0 : Math.min(cw / w0, ch / h0);
+      const [cw, ch] = frameSize(), [w, h] = rotatedSize(V.src.w0, V.src.h0);
+      return mode === 'width' ? cw / w : Math.min(cw / w, ch / h);
     };
 
     function fitView(mode) {
       const [, ch] = frameSize(), s = fitScale(mode) * (mode === 'width' ? 1 : 0.98);
-      V.view = { s, cx: V.src.w0 / 2, cy: mode === 'width' ? Math.min(V.src.h0 / 2, ch / 2 / s) : V.src.h0 / 2 };
+      const top = mode === 'width' && !(V.rot % 360);
+      V.view = { s, cx: V.src.w0 / 2, cy: top ? Math.min(V.src.h0 / 2, ch / 2 / s) : V.src.h0 / 2 };
+    }
+
+    function viewRotate(deg, absolute = false) {
+      V.rot = (((absolute ? deg : (V.rot ?? 0) + deg) % 360) + 360) % 360;
+      $('view-rot').value = String(Math.round(V.rot * 100) / 100);
+      if (V.src && !V.touched) fitView('all');
+      viewRedraw();
     }
 
     function viewFit(mode = 'all') {
@@ -2409,11 +2425,12 @@
       if (!V.src || !V.view) return;
       const v = V.view, [cw, ch] = frameSize();
       [mx, my] = [mx ?? cw / 2, my ?? ch / 2];
-      const x = v.cx + (mx - cw / 2) / v.s, y = v.cy + (my - ch / 2) / v.s;
+      const [x, y] = toImage(mx, my);
       v.s *= f;
       viewClamp();
-      v.cx = x - (mx - cw / 2) / v.s;
-      v.cy = y - (my - ch / 2) / v.s;
+      const [dx, dy] = toImageDelta(mx - cw / 2, my - ch / 2, v.s);
+      v.cx = x - dx;
+      v.cy = y - dy;
       viewClamp();
       V.touched = true;
       viewRedraw();
@@ -2463,17 +2480,22 @@
       if (!V.view || !V.touched) fitView('all');
       viewClamp();
       const { cx, cy, s } = V.view;
-      const X = (x) => Math.round((x - cx) * s + cw / 2), Y = (y) => Math.round((y - cy) * s + ch / 2);
+      const angle = viewAngle();
+      ctx.translate(cw / 2, ch / 2);
+      ctx.rotate(angle);
+      const X = (x) => Math.round((x - cx) * s), Y = (y) => Math.round((y - cy) * s);
       const put = (canvas, x0, y0, x1, y1, sharp) => {
         ctx.imageSmoothingEnabled = !sharp;
         ctx.drawImage(canvas, X(x0), Y(y0), Math.max(1, X(x1) - X(x0)), Math.max(1, Y(y1) - Y(y0)));
       };
       if (src.plain) {
         put(src.plain, 0, 0, src.w0, src.h0, s * r >= 1.5);
+        ctx.setTransform(r, 0, 0, r, 0, 0);
         viewStatus(0);
         return;
       }
-      const vx0 = cx - cw / 2 / s, vx1 = cx + cw / 2 / s, vy0 = cy - ch / 2 / s, vy1 = cy + ch / 2 / s;
+      const [hw, hh] = [Math.abs(Math.cos(angle)) * cw + Math.abs(Math.sin(angle)) * ch, Math.abs(Math.sin(angle)) * cw + Math.abs(Math.cos(angle)) * ch].map((v) => v / 2 / s);
+      const vx0 = cx - hw, vx1 = cx + hw, vy0 = cy - hh, vy1 = cy + hh;
       let target = targetLevel(src, s);
       if (src.base) target = Math.min(target, src.base.li);
       // The overview first (blurry stand-in), then the cached tiles of each finer level
@@ -2498,6 +2520,7 @@
       // Fetch once the view rests, so fast pans don't request tiles that scroll straight past
       clearTimeout(V.pumpTimer);
       V.pumpTimer = setTimeout(viewPump, 80);
+      ctx.setTransform(r, 0, 0, r, 0, 0);
       scaleBar(ctx, ch, s);
       viewStatus(target);
     }
@@ -2527,12 +2550,20 @@
       $('view-info').textContent = !src ? (V.spec ? `${V.spec.label ?? ''}${V.spec === V.failedSpec ? ': not loaded' : ' - loading...'}` : 'No image')
         : `${src.title} | ${src.w0} x ${src.h0} px, ${src.levels.length || 1} level(s), ${src.dtype}`
           + ` | tile cache ${tiles.size} tiles, ${mb(tileBytes)} / ${mb(TILE_CACHE_BYTES)} MB`;
+      viewLoading();
       if (!src || !V.view) { $('view-zoom').textContent = ''; return; }
       const L = src.levels[target];
       const zoom = V.view.s * dpr() * 100;
       $('view-zoom').textContent = `Zoom ${zoom >= 10 ? zoom.toFixed(0) : zoom.toPrecision(2)}%`
         + (L && src.levels.length > 1 ? ` | level ${target} (${L.w} x ${L.h})` : '')
         + (src.mpp ? ` | ${fmtMpp(src.mpp)} m/px, ${fmtMpp(src.mpp / (V.view.s * dpr()))} m per screen px` : '');
+    }
+
+    function viewLoading() {
+      const opening = !V.src && V.spec && V.spec !== V.failedSpec;
+      const left = V.inflight.size + V.wanted.length + V.priority.length;
+      $('view-loading').hidden = !(opening || left);
+      $('view-loading').textContent = opening ? 'Opening image pyramid...' : `Loading tiles (${left} left)`;
     }
 
     function viewPump() {
@@ -2548,6 +2579,7 @@
         V.inflight.add(job.key);
         loadTile(V.src, job, V.ctl).finally(() => { V.inflight.delete(job.key); viewPump(); });
       }
+      viewLoading();
     }
 
     async function loadTile(src, { key, li, tx, ty }, ctl) {
@@ -2597,8 +2629,7 @@
     function viewReadout() {
       const src = V.src, h = V.hover;
       if (!src || !V.view || !h) return;
-      const [cw, ch] = frameSize(), { cx, cy, s } = V.view;
-      const x = cx + (h.mx - cw / 2) / s, y = cy + (h.my - ch / 2) / s;
+      const [x, y] = toImage(h.mx, h.my);
       if (x < 0 || y < 0 || x >= src.w0 || y >= src.h0) { $('cursor').textContent = ''; return; }
       const [sx, sy] = [Math.floor(x), Math.floor(y)];
       let text = `Sample ${sx + 1}  Line ${sy + 1}`;
@@ -2703,7 +2734,7 @@
           if (!src.base) V.stretch.pending = true;
         }
         viewMessage('');
-        setStatus(`${activeTab()}-status`, `Image: ${src.title}, ${src.w0} x ${src.h0} px`
+        setStatus('status', `Image: ${src.title}, ${src.w0} x ${src.h0} px`
           + (src.levels.length > 1 ? `, ${src.levels.length} levels` : '') + (src.plain ? ' (no pixel access)' : ''));
         viewRedraw();
       } catch (err) {
@@ -2759,6 +2790,9 @@
       $('view-1to1').addEventListener('click', () => viewSetScale(1 / dpr()));
       $('view-fit').addEventListener('click', () => viewFit('all'));
       $('view-fit-width').addEventListener('click', () => viewFit('width'));
+      $('view-rot-left').addEventListener('click', () => viewRotate(-90));
+      $('view-rot-right').addEventListener('click', () => viewRotate(90));
+      $('view-rot').addEventListener('change', () => { const d = num('view-rot'); if (d != null && Number.isFinite(d)) viewRotate(d, true); });
       $('view-auto').addEventListener('click', () => {
         if (V.src) setStretch({ ...autoStretch(V.src.base?.stats, V.src.int), gamma: V.stretch.gamma });
       });
@@ -2766,7 +2800,7 @@
         $(id).addEventListener('change', () => {
           const [min, max, gamma] = ['view-min', 'view-max', 'view-gamma'].map(num);
           if ([min, max, gamma].some((v) => v == null || !Number.isFinite(v)) || !(max > min) || !(gamma > 0)) {
-            setStatus(`${activeTab()}-status`, 'Image: contrast needs Max > Min and Gamma > 0', true);
+            setStatus('status', 'Image: contrast needs Max > Min and Gamma > 0', true);
             return;
           }
           setStretch({ min, max, gamma });
@@ -2802,8 +2836,9 @@
         const [mx, my] = local(e);
         V.hover = { mx, my };
         if (drag && V.view) {
-          V.view.cx = drag.cx - (e.clientX - drag.x) / V.view.s;
-          V.view.cy = drag.cy - (e.clientY - drag.y) / V.view.s;
+          const [dx, dy] = toImageDelta(e.clientX - drag.x, e.clientY - drag.y, V.view.s);
+          V.view.cx = drag.cx - dx;
+          V.view.cy = drag.cy - dy;
           V.touched = true;
           viewRedraw();
         }
@@ -2820,10 +2855,12 @@
         const pan = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.2], ArrowDown: [0, 0.2],
           PageUp: [0, -0.9], PageDown: [0, 0.9] }[e.key];
         const act = { '+': () => viewZoom(2), '=': () => viewZoom(2), '-': () => viewZoom(0.5), '0': () => viewSetScale(1 / dpr()),
-          f: () => viewFit('all'), F: () => viewFit('all'), w: () => viewFit('width'), W: () => viewFit('width') }[e.key];
+          f: () => viewFit('all'), F: () => viewFit('all'), w: () => viewFit('width'), W: () => viewFit('width'),
+          r: () => viewRotate(90), R: () => viewRotate(-90), ']': () => viewRotate(5), '[': () => viewRotate(-5) }[e.key];
         if (pan) {
-          V.view.cx += (pan[0] * cw) / V.view.s;
-          V.view.cy += (pan[1] * ch) / V.view.s;
+          const [dx, dy] = toImageDelta(pan[0] * cw, pan[1] * ch, V.view.s);
+          V.view.cx += dx;
+          V.view.cy += dy;
           V.touched = true;
           viewRedraw();
         } else if (act) act();
@@ -2941,11 +2978,11 @@
     async function startJob(body) {
       try {
         const job = await api('api/jobs', { method: 'POST', json: body });
-        setStatus(`${activeTab()}-status`, `Started: ${job.title}`);
+        setStatus('status', `Started: ${job.title}`);
         S.jobs = [...S.jobs.filter((j) => j.id !== job.id), job];
         renderJobs();
       } catch (err) {
-        setStatus(`${activeTab()}-status`, `Job not started: ${err.message}`, true);
+        setStatus('status', `Job not started: ${err.message}`, true);
       }
     }
 
@@ -3103,7 +3140,7 @@
       const file = j.file ? `${j.file_count > 1 ? `${j.file_index}/${j.file_count} ` : ''}${j.file}` : '';
       const bytes = j.bytes_total ? `${fmtBytes(j.bytes_done)} of ${fmtBytes(j.bytes_total)}` : j.bytes_done ? fmtBytes(j.bytes_done) : '';
       const cancel = button('Cancel', () => api(`api/jobs/${j.id}`, { method: 'DELETE' })
-        .catch((err) => setStatus(`${activeTab()}-status`, `Cancel failed: ${err.message}`, true)),
+        .catch((err) => setStatus('status', `Cancel failed: ${err.message}`, true)),
       { disabled: !active || !j.cancellable, title: j.cancellable ? 'Stop after the current chunk (the .part file is kept)' : 'The DuckDB step cannot be interrupted' });
       const cls = j.status === 'done' ? 'ok' : j.status === 'error' ? 'bad' : '';
       const row = el('tr', {}, el('td', { class: 'wrap' }, j.title), el('td', {}, el('span', { class: cls }, j.status)),
@@ -3147,7 +3184,7 @@
         if (first || was === j.status || !['done', 'error', 'cancelled'].includes(j.status)) continue;
         finished = true;
         if (j.kind === 'build-db' && j.status === 'done') rebuilt = true;
-        setStatus(`${activeTab()}-status`, `${j.title}: ${j.status}${j.error ? ` (${j.error})` : ''}`, j.status === 'error');
+        setStatus('status', `${j.title}: ${j.status}${j.error ? ` (${j.error})` : ''}`, j.status === 'error');
       }
       if (rebuilt && db) {
         for (const ds of DATASETS) if (sources[ds]?.label === 'lunar serve') delete sources[ds];
@@ -3186,20 +3223,20 @@
       $('jobs-summary').addEventListener('click', () => selectView('settings'));
       $('set-pgda-btn').addEventListener('click', () => {
         const kinds = selectedKinds();
-        if (!kinds.length) return setStatus(`${activeTab()}-status`, 'Choose at least one PGDA kind.', true);
+        if (!kinds.length) return setStatus('status', 'Choose at least one PGDA kind.', true);
         startJob({ kind: 'pgda', region: Number($('set-region').value), kinds });
       });
       $('set-sdem-list').addEventListener('click', async () => {
         const sel = $('set-sdem-members');
         $('set-sdem-list').disabled = true;
-        setStatus(`${activeTab()}-status`, 'Reading the zip directory...');
+        setStatus('status', 'Reading the zip directory...');
         try {
           const r = await api(`api/sdem/members?region=${encodeURIComponent($('set-region').value)}`);
           sel.replaceChildren(...r.members.map((m) => el('option', { value: m.name.split('/').pop() }, `${m.name.split('/').slice(1).join('/') || m.name}  (${fmtBytes(m.size)})`)));
           sel.hidden = false;
-          setStatus(`${activeTab()}-status`, `${r.zip}: ${r.members.length} members; select some, or use the patterns`);
+          setStatus('status', `${r.zip}: ${r.members.length} members; select some, or use the patterns`);
         } catch (err) {
-          setStatus(`${activeTab()}-status`, `Zip directory: ${err.message}`, true);
+          setStatus('status', `Zip directory: ${err.message}`, true);
         } finally {
           $('set-sdem-list').disabled = !S.admin;
         }
@@ -3208,12 +3245,12 @@
       $('set-sdem-btn').addEventListener('click', () => {
         const picked = [...$('set-sdem-members').selectedOptions].map((o) => o.value);
         const members = picked.length ? picked : $('set-sdem-pat').value.split(/[\s,]+/).filter(Boolean);
-        if (!members.length) return setStatus(`${activeTab()}-status`, 'Enter member patterns or pick members.', true);
+        if (!members.length) return setStatus('status', 'Enter member patterns or pick members.', true);
         startJob({ kind: 'sdem', region: Number($('set-region').value), members });
       });
       $('set-dl-btn').addEventListener('click', () => {
         const ids = $('set-dl-ids').value.split(/[\s,;]+/).map((s) => s.trim().toUpperCase()).filter(Boolean);
-        if (!ids.length) return setStatus(`${activeTab()}-status`, 'Enter one or more product IDs to download.', true);
+        if (!ids.length) return setStatus('status', 'Enter one or more product IDs to download.', true);
         const dest = $('set-dl-dest').value.trim();
         startJob({ kind: 'download', ids, product: $('set-dl-product').value, ...(dest ? { dest } : {}) });
       });
@@ -3242,7 +3279,7 @@
     }
 
     // Boot
-    fillOdeSelects();
+    initSearchForm();
     initViewer();
     initImages();
     initSettings();
@@ -3250,9 +3287,15 @@
       await initDB();
       await findSources();
       renderSources();
-      setStatus('index-status', 'Ready');
+      // Read each index's Parquet footer now, so the first search is as quick as the rest
+      setStatus('status', 'Reading the index...');
+      for (const ds of DATASETS.filter((d) => sources[d])) {
+        await conn.query(`SELECT PRODUCT_ID FROM ${parquet(ds)} WHERE CENTER_LATITUDE < -90 LIMIT 1`).catch(() => {});
+        await columnsOf(ds).catch(() => {});
+      }
+      setStatus('status', 'Ready');
     } catch (err) {
-      setStatus('index-status', `Failed to initialize DuckDB: ${err.message}`, true);
+      setStatus('status', `Failed to initialize DuckDB: ${err.message}`, true);
     }
   </script>
 </body>

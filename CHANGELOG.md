@@ -28,7 +28,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - `runs_dir` / `LUNAR_RUNS_DIR` for relative run directories.
 - Image search keeps slewed images for bundle adjustment and stereo registration, with the nadir cut applied only to SfS selection (`max_sfs_slew`), and caps candidates before download (`max_images`: stereo pairs + illumination coverage).
 - Stereo pair ranking and illumination-diverse image selection, with `--aoi` (`lunar pairs`, `stereo`, `selection`).
-- Browser page for the LROC index (EDR / CDR / RDR, NAC and WAC) and ODE, with box / point / AOI search matching `lunar search`, a footprint map and a classic Qt (Fusion) style desktop layout, via `lunar serve` or GitHub Pages.
+- Browser page with one search panel for LROC, ShadowCam and Kaguya (local LROC index or ODE, chosen by instrument), box / point / AOI search matching `lunar search`, a footprint map, and a classic desktop look with light and dark themes, via `lunar serve` or GitHub Pages.
 - Image previews and a deep-zoom Image viewer in the browser (LROC browse pyramids, ShadowCam COGs, Kaguya JPEGs, local GeoTIFFs; geotiff.js 3.0.5), a PDS image relay and `--images DIR` in `lunar serve`.
 - More robust ISIS calibration: `spiceinit` falls back to the ellipsoid without the ISIS LOLA shape model, `lronaccal` falls back to the nearest dark when no dark pair brackets the image.
 - Desktop app (`lunar app`, pywebview with Chromium `--app` and browser fallbacks) and a Settings tab: indexes, caches, reference data, runs, ISIS / ASP environment, and build / download jobs with live progress (`/api/status`, `/api/jobs`, SSE); remote clients read-only unless they hold `--admin-token`; the image relay uses the per-host download throttle.

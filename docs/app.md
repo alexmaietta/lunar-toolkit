@@ -1,6 +1,6 @@
 # Desktop app and browser
 
-The Lunar Toolkit app is one page with a classic desktop layout: search and look-up panels on the left, a footprint map, deep-zoom image viewer and Settings on the right, results and details below, and a status bar. Run it as a desktop window, serve it to others, or open the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/).
+The Lunar Toolkit app is one page with a classic desktop layout: a search panel on the left, a footprint map, deep-zoom image viewer and Settings on the right, results and details below, and a status bar. It follows the system light or dark theme, and the button in the title bar switches between them. Run it as a desktop window, serve it to others, or open the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/).
 
 ```bash
 lunar app                                       # desktop window (server on 127.0.0.1, random port)
@@ -13,14 +13,15 @@ lunar serve --host 0.0.0.0 --admin-token auto   # share it; remote clients are r
 
 ## Search
 
-- **Local index**: look up product IDs across EDR, CDR and RDR, or search footprints by bounding box, point + radius or AOI polygon (load or paste GeoJSON / WKT), camera (NAC / WAC), incidence and emission. Queries run in the browser with DuckDB-WASM on the index Parquet files and match `lunar search` exactly (bounding-box prefilter, polar stereographic poleward of +/-60 deg, exact polygon intersection for AOIs).
-- **ODE**: search ShadowCam, LROC NAC, Kaguya TC and MI products by the same region types, with links to the data files.
+Choose an instrument (LROC NAC, LROC WAC, LROC RDR, ShadowCam, Kaguya TC or Kaguya MI) and a product, then search by bounding box, point + radius or AOI polygon (load or paste GeoJSON / WKT), incidence, emission and date. The source follows the instrument. LROC products come from the local index when it has them, and LROC NAC falls back to the PDS Orbital Data Explorer otherwise; ShadowCam and Kaguya always use ODE. Local searches run in the browser with DuckDB-WASM on the index Parquet files and match `lunar search` exactly (bounding-box prefilter, polar stereographic poleward of +/-60 deg, exact polygon intersection for AOIs). Look up product IDs finds them in every loaded index.
+
+The Local index box lists the indexes that `lunar app` and `lunar serve` found in the data dir. Without one it offers to open `cumindex_*.parquet` files from disk, and Settings can build them.
 
 Results are drawn on the footprint map (lon/lat, or polar stereographic near the poles; scroll to zoom, drag to pan, click a footprint for its details).
 
 ## Image viewer
 
-Selecting a product shows a quick look in the Details pane; the Image tab opens it in a deep-zoom viewer that reads only the visible tiles over HTTP Range:
+Selecting a product shows a quick look in the Details pane (drag to pan, wheel to zoom, double click to reset); the Image tab opens it in a deep-zoom viewer that reads only the visible tiles over HTTP Range:
 
 | Product | Source |
 |---|---|
@@ -29,7 +30,7 @@ Selecting a product shows a quick look in the Details pane; the Image tab opens 
 | Kaguya TC / MI | browse JPEGs (small / large) |
 | Local | GeoTIFF / COG / PNG / JPEG via "Open file...", `?image=URL`, or `--images DIR` |
 
-Wheel zoom, drag pan, `+` `-` `0` (1:1) `F` (fit) `W` (fit width), Min / Max / Gamma contrast with an automatic 2-98 % stretch, and a sample / line / value readout in the status bar; decoded tiles are cached up to 150 MB. The PDS store sends no CORS headers to browsers, so `lunar serve` relays the PDS image hosts (`/remote`, allowlisted, Range-forwarding, throttled like downloads); on a static copy of the page those images show a CORS error.
+Wheel zoom, drag pan, `+` `-` `0` (1:1) `F` (fit) `W` (fit width), rotation by any angle (`R` / `Shift+R` 90 deg, `[` `]` 5 deg, or the Angle box), Min / Max / Gamma contrast with an automatic 2-98 % stretch, and a sample / line / value readout in the status bar; decoded tiles are cached up to 150 MB. The PDS store sends no CORS headers to browsers, so `lunar serve` relays the PDS image hosts (`/remote`, allowlisted, Range-forwarding, throttled like downloads); on a static copy of the page those images show a CORS error.
 
 ## Settings
 
