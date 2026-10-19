@@ -2,6 +2,7 @@
 [![coverage](https://img.shields.io/endpoint?url=https://alexmaietta.github.io/lunar-toolkit/coverage/badge.json)](https://alexmaietta.github.io/lunar-toolkit/coverage/)
 [![pypi](https://img.shields.io/pypi/v/lunar-toolkit)](https://pypi.org/project/lunar-toolkit/)
 [![license](https://img.shields.io/badge/license-BSD_3--Clause-blue)](LICENSE)
+[![app](https://img.shields.io/badge/app-open_in_browser-2e7d32)](https://alexmaietta.github.io/lunar-toolkit/browser/)
 
 # Lunar Toolkit
 
