@@ -17,7 +17,7 @@ See our [latest documentation](https://alexmaietta.github.io/lunar-toolkit/) for
 pip install lunar-toolkit
 ```
 
-Python 3.10+. DEM and image-processing commands also need ISIS and the Ames Stereo Pipeline ([setup](https://alexmaietta.github.io/lunar-toolkit/dems/#setup)), or use the all-in-one Docker image (`docker build -t lunar-toolkit .`, see [Install](https://alexmaietta.github.io/lunar-toolkit/install/)).
+Python 3.10+. DEM and image-processing commands also need ISIS and the Ames Stereo Pipeline ([setup](https://alexmaietta.github.io/lunar-toolkit/dems/#setup)), or use the all-in-one Docker image (`docker pull ghcr.io/alexmaietta/lunar-toolkit`, see [Install](https://alexmaietta.github.io/lunar-toolkit/install/)).
 
 ## Quick start
 

@@ -11,17 +11,23 @@ Python 3.10+; the package is pure Python (one wheel for every platform). Image p
 
 ## Docker
 
-The repository's `Dockerfile` builds a self-contained image: ISIS 10 + ASP 3.7 from `docker/asp-env.lock` (the exact package list of a verified env), a minimal ISISDATA for LRO NAC (`docker/isisdata.sh`) and lunar_toolkit in its own Python 3.13 venv.
+A self-contained image has ISIS 10 + ASP 3.7 (from `docker/asp-env.lock`, the exact package list of a verified env), a minimal ISISDATA for LRO NAC (`docker/isisdata.sh`) and lunar_toolkit in its own Python 3.13 venv. Pull the published image from the GitHub Container Registry (`latest` and the release versions, `main` for the newest Dockerfile), or build it from the repository.
 
 ```bash
-docker build -t lunar-toolkit .
-docker build -t lunar-toolkit --build-arg WITH_SHAPE_MODEL=1 .   # + 2 GB ISIS LOLA shape model
-docker run --rm -v "$PWD/runs:/runs" -v lunar-data:/data lunar-toolkit \
-    sfs --config /opt/lunar_toolkit/examples/malapert_crop.yaml
-docker run --rm -p 8080:8080 -v lunar-data:/data lunar-toolkit serve --host 0.0.0.0 --no-browser
+docker pull ghcr.io/alexmaietta/lunar-toolkit:latest
+docker build -t ghcr.io/alexmaietta/lunar-toolkit .   # or build it yourself
+docker build -t ghcr.io/alexmaietta/lunar-toolkit --build-arg WITH_SHAPE_MODEL=1 .   # + 2 GB ISIS LOLA shape model
 ```
 
-Volumes: `/data` (index Parquet files, `LUNAR_DATA_DIR`), `/runs` (run directories, `LUNAR_RUNS_DIR`) and `/cache` (downloads and reference data, `XDG_CACHE_HOME`). The entry point is `lunar`.
+Run it with volumes for the indexes, the runs and the cache.
+
+```bash
+docker run --rm -v "$PWD/runs:/runs" -v lunar-data:/data ghcr.io/alexmaietta/lunar-toolkit \
+    sfs --config /opt/lunar_toolkit/examples/malapert_crop.yaml
+docker run --rm -p 8080:8080 -v lunar-data:/data ghcr.io/alexmaietta/lunar-toolkit serve --host 0.0.0.0 --no-browser
+```
+
+The volumes are `/data` (index Parquet files, `LUNAR_DATA_DIR`), `/runs` (run directories, `LUNAR_RUNS_DIR`) and `/cache` (downloads and reference data, `XDG_CACHE_HOME`), and the entry point is `lunar`. The image is about 12 GB and linux/amd64 only. Its ISISDATA has no SPICE kernels for LRO, so `spiceinit` uses the USGS SPICE web service (`web=yes`, the toolkit's default) and needs network access.
 
 ## Data locations
 

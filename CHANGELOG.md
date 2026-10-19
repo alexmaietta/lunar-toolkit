@@ -34,5 +34,6 @@ All notable changes to this project are documented here. The format follows [Kee
 - Desktop app (`lunar app`, pywebview with Chromium `--app` and browser fallbacks) and a Settings tab: indexes, caches, reference data, runs, ISIS / ASP environment, and build / download jobs with live progress (`/api/status`, `/api/jobs`, SSE); remote clients read-only unless they hold `--admin-token`; the image relay uses the per-host download throttle.
 - MkDocs documentation with a CLI reference generated from argparse, offline test suite, opt-in ISIS / ASP integration tests (`pytest -m tools`) and coverage report.
 - CI: pre-commit (ruff, mypy), tests on Linux / macOS / Windows, sdist + wheel build, docs and coverage on GitHub Pages, PyPI trusted publishing.
+- Docker image with ISIS 10, ASP 3.7, a minimal ISISDATA and lunar_toolkit, published to `ghcr.io/alexmaietta/lunar-toolkit`.
 - Python 3.10-3.14 support.
 - BSD-3-Clause license.
