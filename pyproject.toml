@@ -108,5 +108,5 @@ check_untyped_defs = true
 no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-module = ["duckdb.*", "shapely.*", "platformdirs.*", "pyarrow.*", "matplotlib.*", "rasterio.*"]
+module = ["duckdb.*", "shapely.*", "platformdirs.*", "pyarrow.*", "matplotlib.*", "rasterio.*", "qtpy.*", "webview.*"]
 ignore_missing_imports = true
