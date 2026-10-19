@@ -7,7 +7,7 @@ pip install -e ".[dev]"                # + pytest, mypy, ruff, pre-commit
 pip install -e ".[docs]"               # + mkdocs, mkdocstrings
 ```
 
-Python 3.10+; the package is pure Python (one wheel for every platform). Image processing and DEMs (`lunar process`, `kaguya`, `shadowcam`, `stereo`, `sfs`) also need ISIS and the Ames Stereo Pipeline: see [DEMs with ISIS + ASP](dems.md#setup) for the conda env and the minimal ISISDATA.
+Python 3.10+; the package is pure Python (one wheel for every platform). Image processing and DEMs (`lunar process`, `kaguya`, `shadowcam`, `stereo`, `sfs`) also need ISIS and the Ames Stereo Pipeline, installed as their own docs describe (see [DEMs with ISIS + ASP](dems.md#setup)), or the Docker image below.
 
 ## Docker
 

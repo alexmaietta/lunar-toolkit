@@ -1,12 +1,12 @@
 # Desktop app and browser
 
-The Lunar Toolkit app is one page with a classic desktop layout: a search panel on the left, a footprint map, deep-zoom image viewer and Settings on the right, results and details below, and a status bar. It follows the system light or dark theme, and the button in the title bar switches between them. Run it as a desktop window, serve it to others, or open the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/).
+The Lunar Toolkit app is a GUI to search the LROC index and the PDS Orbital Data Explorer, map footprints, view full-resolution images, and manage indexes and downloads. A search panel sits on the left, the footprint map, image viewer and Settings on the right, and results and details below. Run it as a desktop window, serve it to others, or open the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/).
 
 ```bash
-lunar app                                       # desktop window (server on 127.0.0.1, random port)
-lunar serve                                     # http://localhost:8080 in your browser
-lunar serve --images ~/lunar_runs               # also browse local GeoTIFFs (SfS products)
-lunar serve --host 0.0.0.0 --admin-token auto   # share it; remote clients are read-only without the token
+lunar app # desktop window (server on 127.0.0.1, random port)
+lunar serve # http://localhost:8080 in your browser
+lunar serve --images ~/lunar_runs # also browse local GeoTIFFs (SfS products)
+lunar serve --host 0.0.0.0 --admin-token auto # share it; remote clients are read-only without the token
 ```
 
 `lunar app` uses pywebview (WebView2 on Windows, WebKit on macOS; on Linux Qt WebEngine via `pip install "lunar-toolkit[app]"`), else a Chrome / Chromium / Edge `--app` window, else a browser tab. Its server stops when the window closes; running jobs are cancelled and their `.part` files kept.
@@ -30,7 +30,7 @@ Selecting a product shows a quick look in the Details pane (drag to pan, wheel t
 | Kaguya TC / MI | browse JPEGs (small / large) |
 | Local | GeoTIFF / COG / PNG / JPEG via "Open file...", `?image=URL`, or `--images DIR` |
 
-Wheel zoom, drag pan, `+` `-` `0` (1:1) `F` (fit) `W` (fit width), rotation by any angle (`R` / `Shift+R` 90 deg, `[` `]` 5 deg, or the Angle box), Min / Max / Gamma contrast with an automatic 2-98 % stretch, and a sample / line / value readout in the status bar; decoded tiles are cached up to 150 MB. The PDS store sends no CORS headers to browsers, so `lunar serve` relays the PDS image hosts (`/remote`, allowlisted, Range-forwarding, throttled like downloads); on a static copy of the page those images show a CORS error.
+Wheel zoom, drag pan, `+` `-` `0` (1:1) `F` (fit) `W` (fit width), rotation by any angle (`R` / `Shift+R` 90 deg, `[` `]` 5 deg, or the Angle box), Min / Max / Gamma contrast with an automatic 2-98 % stretch, and a sample / line / value readout in the status bar; decoded tiles are cached up to 150 MB. The PDS store sends no CORS headers to browsers, so `lunar serve` relays the PDS image hosts (`/remote`, allowlisted, Range-forwarding, throttled like downloads); the hosted copy cannot read them, so it says so and shows ShadowCam, Kaguya and local images only.
 
 ## Settings
 

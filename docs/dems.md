@@ -4,26 +4,9 @@
 
 ## Setup
 
-Install ASP 3.7 into a fresh conda env (it ships a custom ISIS 10 and ALE; installing it over an existing ISIS env mixes library builds and crashes on any camera load), add `rclone`, and keep `ISISDATA` outside the env:
+Install the Ames Stereo Pipeline by following its [installation guide](https://stereopipeline.readthedocs.io/en/latest/installation.html). ASP ships its own ISIS, so a separate [ISIS install](https://astrogeology.usgs.gov/docs/how-to-guides/environment-setup-and-maintenance/installing-isis-via-anaconda/) is only needed without ASP. Then set up the ISIS data area for LRO (base and lro, see the [ISIS data area docs](https://astrogeology.usgs.gov/docs/how-to-guides/environment-setup-and-maintenance/isis-data-area/)) and set `ISISDATA`. The [Docker image](install.md#docker) has all of this ready.
 
-```bash
-CONDA_CHANNEL_PRIORITY=flexible mamba create -n isis -c nasa-ames-stereo-pipeline -c usgs-astrogeology -c conda-forge stereo-pipeline=3.7.0
-mamba install -n isis -c conda-forge rclone
-conda env config vars set -n isis ISISROOT=$HOME/miniforge3/envs/isis ISISDATA=$HOME/isisdata
-```
-
-Minimal ISISDATA for LRO NAC, about 150 MB (`downloadIsisData lro --include=...` still pulls the whole 4.5 GB calibration tree, so use rclone directly):
-
-```bash
-conda activate isis
-C=$CONDA_PREFIX/etc/isis/rclone.conf
-rclone --config $C copy base: $ISISDATA/base --filter "+ kernels/{lsk,pck,fk}/**" --filter "- **"
-rclone --config $C copy lro: $ISISDATA/lro --filter "+ kernels/{fk,iak,ik,pck,tspk,mk}/**" \
-    --filter "+ kernels/sclk/kernels.*.db" --filter "+ kernels/sclk/lro_clkcor_2026287_v00.tsc" --filter "- **"
-rclone --config $C copy lro: $ISISDATA/lro --filter "+ calibration/NAC*" --filter "+ calibration/nac_darks/**" --filter "- **"
-```
-
-Use the newest `lro_clkcor_*.tsc` (`rclone --config $C lsf lro:kernels/sclk`). `spiceinit` uses the USGS SPICE web service by default (`web=True`), so the LRO SPK/CK kernels are not needed; `--local-spice` / `web_spice=False` uses local kernels. Check the camera stack with `cam_test` (ISIS vs CSM agree to ~0.01 px) or `ASP_ROOT=... pytest -m tools`.
+`spiceinit` uses the USGS SPICE web service by default (`web=True`), so the large LRO SPK and CK kernels are not needed, and `--local-spice` / `web_spice=False` uses local kernels. Check the camera stack with `cam_test` or `ASP_ROOT=... pytest -m tools`.
 
 Tools are looked up in `$ASP_ROOT/bin`, then `$ISISROOT/bin`, then `PATH`. The env does not need to be activated: its `conda env config vars` (`conda-meta/state`) are read, `ISISROOT`, `PROJ_DATA` and `GDAL_DATA` default to the tool's env prefix, and its `bin/` is put first on `PATH` for ASP's Python wrapper scripts.
 

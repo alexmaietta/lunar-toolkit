@@ -13,6 +13,9 @@ theme:
   highlightjs: true
   hljs_languages: [yaml, bash, python, sql, ini]
 
+extra_javascript:
+  - js/instant-nav.js
+
 markdown_extensions:
   - admonition
   - tables
@@ -39,6 +42,7 @@ plugins:
             docstring_style: numpy
             show_source: false
             show_root_heading: true
+            heading_level: 1
             members_order: source
             filters: ["!^_", "^__init__$"]
             merge_init_into_class: true
@@ -51,27 +55,35 @@ nav:
   - DEMs with ISIS + ASP: dems.md
   - CLI: cli.md
   - API:
-      - LROC index (CumIndex): api/cumindex.md
-      - LROC NAC: api/nac.md
-      - Kaguya TC and MI: api/kaguya.md
-      - ShadowCam: api/shadowcam.md
-      - ODE client: api/ode.md
-      - Observation schema: api/observation.md
-      - Geometry and AOIs: api/geometry.md
-      - Stereo pairs: api/stereo.md
-      - Image selection: api/selection.md
-      - Tool runner: api/tools.md
-      - ISIS wrappers: api/isis.md
-      - ASP wrappers: api/asp.md
-      - Stereo DEM: api/stereo_dem.md
-      - Shape-from-shading: api/sfs.md
-      - SfS products: api/sfs_products.md
-      - Reference data: api/reference.md
-      - Run configuration: api/config.md
-      - Provenance: api/provenance.md
-      - SfS report: api/sfs_report.md
-      - Downloads: api/downloader.md
-      - Constants: api/constants.md
+      - Overview: api/index.md
+      - Search and data access:
+          - LROC index (CumIndex): api/cumindex.md
+          - ODE client: api/ode.md
+          - Observation schema: api/observation.md
+          - Geometry and AOIs: api/geometry.md
+          - Downloads: api/downloader.md
+      - Instruments:
+          - LROC NAC: api/nac.md
+          - Kaguya TC and MI: api/kaguya.md
+          - ShadowCam: api/shadowcam.md
+      - ISIS and ASP tools:
+          - Tool runner: api/tools.md
+          - ISIS wrappers: api/isis.md
+          - ASP wrappers: api/asp.md
+          - CSM cameras: api/csm.md
+      - DEM pipelines:
+          - Stereo pairs: api/stereo.md
+          - Stereo DEM: api/stereo_dem.md
+          - Image selection: api/selection.md
+          - Shape-from-shading: api/sfs.md
+          - SfS products: api/sfs_products.md
+          - SfS report: api/sfs_report.md
+          - Workspace: api/workspace.md
+      - Configuration and reference:
+          - Run configuration: api/config.md
+          - Provenance: api/provenance.md
+          - Reference data: api/reference.md
+          - Constants: api/constants.md
   - References: references.md
   - Changelog: changelog.md
   - Coverage: https://alexmaietta.github.io/lunar-toolkit/coverage/
