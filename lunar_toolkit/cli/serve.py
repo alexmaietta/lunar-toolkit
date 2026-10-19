@@ -90,7 +90,7 @@ def add_server_args(p: argparse.ArgumentParser, host: str, port: int) -> None:
         "--runs-dir",
         default=None,
         metavar="DIR",
-        help="SfS runs listed in the Settings tab (default: LUNAR_RUNS_DIR).",
+        help="SfS runs listed in the Settings panel (default: LUNAR_RUNS_DIR).",
     )
     p.add_argument(
         "--admin-token",
@@ -116,7 +116,7 @@ Examples
   lunar serve --host 0.0.0.0           # share on the network; remote clients are read-only
   lunar serve --host 0.0.0.0 --admin-token auto   # ... and print a token for remote admin
 
-Admin (the Settings tab: build indexes, download, see local paths) is allowed from this
+Admin (the Settings panel: build indexes, download, see local paths) is allowed from this
 machine (loopback) and for requests carrying --admin-token; everyone else can browse,
 search and view. Use `lunar app` for a desktop window.
 """,

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lunar Toolkit Browser</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dockview@8.4.0/dist/styles/dockview.css">
   <style>
     /* Classic desktop look: flat grey panels, white sunken fields, one-pixel edges, square
        corners, a navy accent. */
@@ -60,16 +61,6 @@
     .main { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
 
     .controls { display: flex; flex-direction: column; min-height: 0; padding: 6px 3px 6px 6px; }
-    .tabbar { display: flex; position: relative; z-index: 1; }
-    .tabbar button {
-      font: inherit; color: var(--muted); padding: 3px 12px; margin-right: -1px; min-width: 0; min-height: 0;
-      background: var(--chrome); border: 1px solid var(--border); border-bottom: none; cursor: default;
-    }
-    .tabbar button:hover { background: var(--hover); }
-    .tabbar button[aria-selected="true"] {
-      color: var(--text); background: var(--window); margin-bottom: -1px; padding-bottom: 4px; position: relative; z-index: 1;
-    }
-    .tabbar button:focus-visible { outline: 1px dotted var(--text); outline-offset: -4px; }
     .panel {
       flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border);
       background: var(--window); padding: 2px 8px 8px;
@@ -120,29 +111,55 @@
     button:disabled { color: var(--disabled); }
     button.tool { min-width: 0; padding: 0 8px; min-height: 20px; font-size: 12px; }
 
-    /* Workspace: map over (results | details), with splitters */
-    .workspace {
-      display: grid; grid-template-rows: minmax(140px, var(--map-h, 55%)) 6px minmax(0, 1fr);
-      min-height: 0; padding: 6px 6px 4px 3px;
+    /* Workspace: dockview panels (Footprints, Image, Settings over Results | Details by default) */
+    .workspace { min-height: 0; min-width: 0; padding: 6px 6px 4px 3px; }
+    .dock { height: 100%; }
+    .dockpanel { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; background: var(--base); }
+    .dockview-theme-light {
+      --dv-group-view-background-color: var(--base);
+      --dv-tabs-and-actions-container-background-color: transparent;
+      --dv-tabs-and-actions-container-height: 23px;
+      --dv-tabs-and-actions-container-font-size: 13px;
+      --dv-activegroup-visiblepanel-tab-background-color: var(--window);
+      --dv-inactivegroup-visiblepanel-tab-background-color: var(--window);
+      --dv-activegroup-hiddenpanel-tab-background-color: var(--chrome);
+      --dv-inactivegroup-hiddenpanel-tab-background-color: var(--chrome);
+      --dv-activegroup-visiblepanel-tab-color: var(--text);
+      --dv-inactivegroup-visiblepanel-tab-color: var(--text);
+      --dv-activegroup-hiddenpanel-tab-color: var(--muted);
+      --dv-inactivegroup-hiddenpanel-tab-color: var(--muted);
+      --dv-tab-divider-color: transparent;
+      --dv-separator-border: transparent;
+      --dv-sash-color: transparent;
+      --dv-active-sash-color: color-mix(in srgb, var(--accent) 30%, transparent);
+      --dv-active-sash-transition-delay: 0s;
+      --dv-drag-over-background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+      --dv-drag-over-border-color: var(--accent);
+      --dv-tabs-container-scrollbar-color: var(--border);
+      color: var(--text);
     }
-    .lower { display: grid; grid-template-columns: minmax(0, 1fr) 6px minmax(200px, var(--det-w, 380px)); min-height: 0; }
-    .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border: 1px solid var(--border); background: var(--base); }
+    .dock .dv-tabs-and-actions-container { background: var(--chrome); box-shadow: inset 0 -1px 0 var(--border); }
+    .dock .dv-tab {
+      padding: 0 12px; margin-right: -1px; border: 1px solid var(--border); cursor: default;
+    }
+    .dock .dv-tab.dv-inactive-tab:hover { background: var(--hover); }
+    .dock .dv-tab.dv-active-tab { border-bottom-color: var(--window); position: relative; z-index: 1; }
+    .dock .dv-tab .dv-default-tab { padding: 0; }
+    .dock .dv-tab .dv-default-tab .dv-default-tab-action { display: none; }
+    .dock .dv-tab:focus-visible::after { outline: 1px dotted var(--text) !important; outline-offset: -4px; }
+    .dock .dv-content-container { border: 1px solid var(--border); border-top: none; }
     .panehead {
-      display: flex; align-items: center; gap: 6px; padding: 1px 2px 1px 6px; min-height: 23px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 1px 2px 1px 6px; min-height: 23px;
       background: var(--header); border-bottom: 1px solid var(--sep);
     }
-    .panehead .title { font-weight: bold; }
     .panehead .info { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .panehead .right { margin-left: auto; display: flex; gap: 3px; }
+    .panehead .right { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 3px; }
+    #view-results .panehead:has(> #nav:empty):has(> #results-loading[hidden]) { display: none; }
     .panebody { flex: 1; min-height: 0; overflow: auto; position: relative; }
     .panebody:empty::before, .mapbox:empty::before {
       content: attr(data-empty); position: absolute; inset: 0; display: flex; align-items: center;
       justify-content: center; color: var(--disabled); padding: 1em; text-align: center;
     }
-    .splitter { position: relative; touch-action: none; }
-    .splitter.rows { cursor: row-resize; }
-    .splitter.cols { cursor: col-resize; }
-    .splitter:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 
     /* Tables */
     table { border-collapse: separate; border-spacing: 0; }
@@ -220,11 +237,8 @@
     .map text.gl { fill: var(--muted); font-size: 10.5px; }
     .map text.axis { font-size: 11.5px; }
 
-    /* Top pane: Footprints | Image | Settings tabs; the image view is a framed canvas under a tool bar */
-    .viewwrap { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-    .viewwrap > .pane { flex: 1; }
-    .viewbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-    .viewbody > .mapbox { flex: 1; min-height: 0; height: auto; }
+    /* The image view is a framed canvas under a tool bar */
+    .dockpanel > .mapbox { flex: 1; min-height: 0; height: auto; }
     .toolbar {
       display: flex; flex-wrap: wrap; align-items: center; gap: 3px; padding: 2px 4px;
       background: var(--window); border-bottom: 1px solid var(--sep);
@@ -276,9 +290,9 @@
     .statusbar .cell { border-left: 1px solid var(--sep); }
     .statusbar #cursor { min-width: 22em; font-family: "DejaVu Sans Mono", Consolas, "Liberation Mono", monospace; font-size: 12px; }
 
-    /* Settings view: group boxes over the whole workspace */
-    .workspace.settings-on { grid-template-rows: minmax(0, 1fr); }
-    .workspace.settings-on > .splitter, .workspace.settings-on > .lower { display: none; }
+    .statusbar .layout { display: flex; gap: 3px; padding: 0 0 0 4px; }
+
+    /* Settings view: group boxes */
     .settings {
       flex: 1; min-height: 0; overflow: auto; padding: 0 10px 10px; background: var(--window);
       display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 0 16px; align-content: start;
@@ -329,16 +343,11 @@
       .main { grid-template-columns: minmax(0, 1fr); }
       .controls { padding: 6px; }
       .panel { overflow: visible; }
-      .workspace { display: flex; flex-direction: column; gap: 6px; padding: 0 6px 6px; }
-      .workspace > .viewwrap { height: 420px; flex: none; }
-      .workspace.settings-on > .viewwrap { height: auto; }
-      .settings { overflow: visible; }
-      .lower { display: flex; flex-direction: column; gap: 6px; }
-      .lower > .pane { height: 320px; flex: none; }
-      .splitter { display: none; }
+      .workspace { height: 1110px; padding: 0 6px 6px; }
       .statusbar { position: sticky; bottom: 0; flex-wrap: wrap; }
       .statusbar .status { flex-basis: 100%; white-space: normal; }
       .statusbar #cursor { min-width: 0; }
+      #layout-side { display: none; }
     }
   </style>
 </head>
@@ -417,171 +426,160 @@
       </div>
     </aside>
 
-    <main class="workspace" id="workspace">
-      <div class="viewwrap">
-        <div class="tabbar" role="tablist" aria-label="View">
-          <button role="tab" id="vtab-map" data-view="map" aria-selected="true" aria-controls="view-map">Footprints</button>
-          <button role="tab" id="vtab-image" data-view="image" aria-selected="false" aria-controls="view-image" tabindex="-1">Image</button>
-          <button role="tab" id="vtab-settings" data-view="settings" aria-selected="false" aria-controls="view-settings" tabindex="-1">Settings</button>
+    <main class="workspace" id="workspace"><div class="dock" id="dock"></div></main>
+    <div id="dock-park" hidden>
+      <div class="dockpanel" id="view-map">
+        <div class="mapbox" id="map" data-empty="No footprints. Run a search or look up product IDs."></div>
+      </div>
+      <div class="dockpanel" id="view-image">
+        <div class="panehead">
+          <span class="loading" id="view-loading" hidden></span>
+          <span class="info" id="view-info">No image</span>
         </div>
-        <section class="pane">
-          <div class="viewbody" id="view-map" role="tabpanel" aria-labelledby="vtab-map">
-            <div class="mapbox" id="map" data-empty="No footprints. Run a search or look up product IDs."></div>
-          </div>
-          <div class="viewbody" id="view-image" role="tabpanel" aria-labelledby="vtab-image" hidden>
-            <div class="panehead">
-              <span class="title">Image</span>
-              <span class="loading" id="view-loading" hidden></span>
-              <span class="info" id="view-info">No image</span>
-            </div>
-            <div class="toolbar" role="toolbar" aria-label="Image view">
-              <select id="view-source" aria-label="Image source" title="Image source" disabled><option value="">(no image)</option></select>
-              <button class="tool" id="view-open" type="button" title="Open a local GeoTIFF / COG (or PNG / JPEG)">Open file...</button>
-              <input id="view-file" type="file" accept=".tif,.tiff,image/tiff,.png,.jpg,.jpeg" hidden>
-              <span class="sep"></span>
-              <button class="tool" id="view-zoom-out" type="button" title="Zoom out (-)">-</button>
-              <button class="tool" id="view-zoom-in" type="button" title="Zoom in (+)">+</button>
-              <button class="tool" id="view-1to1" type="button" title="Full resolution: one image pixel per screen pixel (0)">1:1</button>
-              <button class="tool" id="view-fit" type="button" title="Fit the whole image (F)">Fit</button>
-              <button class="tool" id="view-fit-width" type="button" title="Fit the image width (W)">Fit width</button>
-              <span class="sep"></span>
-              <span class="lbl">Rotate</span>
-              <button class="tool" id="view-rot-left" type="button" title="Rotate 90 deg counterclockwise (Shift+R; [ ] rotate 5 deg)">-90</button>
-              <button class="tool" id="view-rot-right" type="button" title="Rotate 90 deg clockwise (R)">+90</button>
-              <input id="view-rot" type="number" step="any" value="0" aria-label="Rotation angle" title="Rotation in degrees, clockwise">
-              <span class="sep"></span>
-              <label class="lbl" for="view-min">Min</label><input id="view-min" type="number" step="any" disabled>
-              <label class="lbl" for="view-max">Max</label><input id="view-max" type="number" step="any" disabled>
-              <label class="lbl" for="view-gamma">Gamma</label><input id="view-gamma" type="number" step="0.1" min="0.1" max="10" value="1" disabled>
-              <button class="tool" id="view-auto" type="button" title="Stretch the 2nd - 98th percentile of the overview" disabled>Auto</button>
-            </div>
-            <div class="viewframe" id="view-frame">
-              <canvas id="view-canvas" tabindex="0" aria-label="Image (wheel zoom, drag pan, + - 0 F W R [ ] keys)"></canvas>
-              <div class="viewmsg" id="view-msg">Select a product with a browse image (LROC NAC / WAC pyramid, ShadowCam COG,
-                Kaguya JPEG), open a local GeoTIFF, or start <code>lunar serve --images DIR</code>.</div>
-            </div>
-          </div>
-          <div class="viewbody" id="view-settings" role="tabpanel" aria-labelledby="vtab-settings" hidden>
-            <div class="panehead">
-              <span class="title">Settings</span>
-              <span class="info" id="set-info">Needs lunar serve or lunar app</span>
-              <span class="right"><button class="tool" id="set-refresh" type="button" title="Read the status again (sizes, tools)">Refresh</button></span>
-            </div>
-            <div class="settings" id="settings">
-              <p class="note wide" id="set-note" hidden></p>
-
-              <fieldset class="wide">
-                <legend>Data and indexes</legend>
-                <div class="path" id="set-data-dir"></div>
-                <div class="tablebox" id="set-indexes"></div>
-                <div class="row">
-                  <label class="lbl" for="set-release">Release</label>
-                  <input id="set-release" type="text" class="mono" style="max-width: 24em" placeholder="newest (e.g. LROLRC_0066C)" spellcheck="false" data-admin>
-                  <span class="checks"><label><input id="set-volume-only" type="checkbox" data-admin> Volume index only</label></span>
-                </div>
-                <p class="hint">Build downloads the cumulative CUMINDEX.TAB (EDR about 3.8 GB) and writes the Parquet with
-                  DuckDB; "Volume index only" uses one release's INDEX.TAB (about 20 k rows). Update appends the volumes
-                  released since the build. Same as <code>lunar build-db</code>.</p>
-              </fieldset>
-
-              <fieldset class="wide">
-                <legend>Jobs</legend>
-                <div class="tablebox" id="set-jobs"></div>
-                <p class="hint" id="set-jobs-empty">No jobs yet. Builds and downloads run here in the background (two at a time)
-                  and resume from their .part files when started again.</p>
-              </fieldset>
-
-              <fieldset>
-                <legend>Reference data</legend>
-                <div class="row">
-                  <label class="lbl" for="set-region">Region</label>
-                  <select id="set-region" data-admin></select>
-                </div>
-                <div class="row">
-                  <span class="lbl">PGDA LOLA 5 m</span>
-                  <span class="checks" id="set-pgda-kinds"></span>
-                  <span class="push"><button id="set-pgda-btn" type="button" data-admin>Download</button></span>
-                </div>
-                <div class="row">
-                  <label class="lbl" for="set-sdem-pat">SfS DEM members</label>
-                  <input id="set-sdem-pat" type="text" class="mono" value="GLDELEV" spellcheck="false" data-admin
-                    title="Product codes / substrings or globs, e.g. GLDELEV GLDSIGM README">
-                  <span class="push">
-                    <button id="set-sdem-list" type="button" data-admin title="Read the Zenodo zip directory (HTTP Range)">List members</button>
-                    <button id="set-sdem-btn" type="button" data-admin>Extract</button>
-                  </span>
-                </div>
-                <select id="set-sdem-members" multiple aria-label="Zip members" hidden data-admin></select>
-                <div class="tablebox" id="set-reference"></div>
-                <p class="hint" id="set-ref-dir"></p>
-              </fieldset>
-
-              <fieldset>
-                <legend>Downloads</legend>
-                <textarea id="set-dl-ids" class="ids" rows="3" spellcheck="false" aria-label="Product IDs to download"
-                  placeholder="M1096757719LE M1096757719RE ..." data-admin></textarea>
-                <div class="row">
-                  <label class="lbl" for="set-dl-product">Product</label>
-                  <select id="set-dl-product" style="flex: 0 0 auto; width: 7em" data-admin>
-                    <option value="edr">EDR</option>
-                    <option value="cdr">CDR</option>
-                  </select>
-                  <label class="lbl" for="set-dl-dest">To</label>
-                  <input id="set-dl-dest" type="text" class="mono" spellcheck="false" data-admin>
-                  <span class="push"><button id="set-dl-btn" type="button" data-admin>Download</button></span>
-                </div>
-                <div class="tablebox" id="set-downloads"></div>
-                <div class="path" id="set-cache-dir" style="margin-top: 6px"></div>
-                <div class="tablebox" id="set-cache"></div>
-              </fieldset>
-
-              <fieldset>
-                <legend>Environment</legend>
-                <div class="tablebox" id="set-env" style="max-height: none"></div>
-              </fieldset>
-
-              <fieldset>
-                <legend>Runs</legend>
-                <div class="path" id="set-runs-dir"></div>
-                <div class="tablebox" id="set-runs"></div>
-              </fieldset>
-            </div>
-          </div>
-        </section>
+        <div class="toolbar" role="toolbar" aria-label="Image view">
+          <select id="view-source" aria-label="Image source" title="Image source" disabled><option value="">(no image)</option></select>
+          <button class="tool" id="view-open" type="button" title="Open a local GeoTIFF / COG (or PNG / JPEG)">Open file...</button>
+          <input id="view-file" type="file" accept=".tif,.tiff,image/tiff,.png,.jpg,.jpeg" hidden>
+          <span class="sep"></span>
+          <button class="tool" id="view-zoom-out" type="button" title="Zoom out (-)">-</button>
+          <button class="tool" id="view-zoom-in" type="button" title="Zoom in (+)">+</button>
+          <button class="tool" id="view-1to1" type="button" title="Full resolution: one image pixel per screen pixel (0)">1:1</button>
+          <button class="tool" id="view-fit" type="button" title="Fit the whole image (F)">Fit</button>
+          <button class="tool" id="view-fit-width" type="button" title="Fit the image width (W)">Fit width</button>
+          <span class="sep"></span>
+          <span class="lbl">Rotate</span>
+          <button class="tool" id="view-rot-left" type="button" title="Rotate 90 deg counterclockwise (Shift+R; [ ] rotate 5 deg)">-90</button>
+          <button class="tool" id="view-rot-right" type="button" title="Rotate 90 deg clockwise (R)">+90</button>
+          <input id="view-rot" type="number" step="any" value="0" aria-label="Rotation angle" title="Rotation in degrees, clockwise">
+          <span class="sep"></span>
+          <label class="lbl" for="view-min">Min</label><input id="view-min" type="number" step="any" disabled>
+          <label class="lbl" for="view-max">Max</label><input id="view-max" type="number" step="any" disabled>
+          <label class="lbl" for="view-gamma">Gamma</label><input id="view-gamma" type="number" step="0.1" min="0.1" max="10" value="1" disabled>
+          <button class="tool" id="view-auto" type="button" title="Stretch the 2nd - 98th percentile of the overview" disabled>Auto</button>
+        </div>
+        <div class="viewframe" id="view-frame">
+          <canvas id="view-canvas" tabindex="0" aria-label="Image (wheel zoom, drag pan, + - 0 F W R [ ] keys)"></canvas>
+          <div class="viewmsg" id="view-msg"><span>Select a product with a browse image (LROC NAC / WAC pyramid, ShadowCam COG,
+            Kaguya JPEG), open a local GeoTIFF, or start <code>lunar serve --images DIR</code>.</span></div>
+        </div>
       </div>
-      <div class="splitter rows" id="split-rows" role="separator" aria-orientation="horizontal" title="Drag to resize"></div>
-      <div class="lower" id="lower">
-        <section class="pane">
-          <div class="panehead">
-            <span class="title">Results</span>
-            <span class="loading" id="results-loading" hidden>Loading...</span>
-            <span class="right" id="nav"></span>
-          </div>
-          <div class="panebody" id="results" data-empty="No results"></div>
-        </section>
-        <div class="splitter cols" id="split-cols" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
-        <section class="pane">
-          <div class="panehead">
-            <span class="title">Details</span>
-            <span class="right"><button class="tool" id="detail-clear" type="button">Clear</button></span>
-          </div>
-          <div class="panebody" id="detail" data-empty="Click a row or footprint"></div>
-        </section>
+      <div class="dockpanel" id="view-settings">
+        <div class="panehead">
+          <span class="info" id="set-info">Needs lunar serve or lunar app</span>
+          <span class="right"><button class="tool" id="set-refresh" type="button" title="Read the status again (sizes, tools)">Refresh</button></span>
+        </div>
+        <div class="settings" id="settings">
+          <p class="note wide" id="set-note" hidden></p>
+
+          <fieldset class="wide">
+            <legend>Data and indexes</legend>
+            <div class="path" id="set-data-dir"></div>
+            <div class="tablebox" id="set-indexes"></div>
+            <div class="row">
+              <label class="lbl" for="set-release">Release</label>
+              <input id="set-release" type="text" class="mono" style="max-width: 24em" placeholder="newest (e.g. LROLRC_0066C)" spellcheck="false" data-admin>
+              <span class="checks"><label><input id="set-volume-only" type="checkbox" data-admin> Volume index only</label></span>
+            </div>
+            <p class="hint">Build downloads the cumulative CUMINDEX.TAB (EDR about 3.8 GB) and writes the Parquet with
+              DuckDB; "Volume index only" uses one release's INDEX.TAB (about 20 k rows). Update appends the volumes
+              released since the build. Same as <code>lunar build-db</code>.</p>
+          </fieldset>
+
+          <fieldset class="wide">
+            <legend>Jobs</legend>
+            <div class="tablebox" id="set-jobs"></div>
+            <p class="hint" id="set-jobs-empty">No jobs yet. Builds and downloads run here in the background (two at a time)
+              and resume from their .part files when started again.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Reference data</legend>
+            <div class="row">
+              <label class="lbl" for="set-region">Region</label>
+              <select id="set-region" data-admin></select>
+            </div>
+            <div class="row">
+              <span class="lbl">PGDA LOLA 5 m</span>
+              <span class="checks" id="set-pgda-kinds"></span>
+              <span class="push"><button id="set-pgda-btn" type="button" data-admin>Download</button></span>
+            </div>
+            <div class="row">
+              <label class="lbl" for="set-sdem-pat">SfS DEM members</label>
+              <input id="set-sdem-pat" type="text" class="mono" value="GLDELEV" spellcheck="false" data-admin
+                title="Product codes / substrings or globs, e.g. GLDELEV GLDSIGM README">
+              <span class="push">
+                <button id="set-sdem-list" type="button" data-admin title="Read the Zenodo zip directory (HTTP Range)">List members</button>
+                <button id="set-sdem-btn" type="button" data-admin>Extract</button>
+              </span>
+            </div>
+            <select id="set-sdem-members" multiple aria-label="Zip members" hidden data-admin></select>
+            <div class="tablebox" id="set-reference"></div>
+            <p class="hint" id="set-ref-dir"></p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Downloads</legend>
+            <textarea id="set-dl-ids" class="ids" rows="3" spellcheck="false" aria-label="Product IDs to download"
+              placeholder="M1096757719LE M1096757719RE ..." data-admin></textarea>
+            <div class="row">
+              <label class="lbl" for="set-dl-product">Product</label>
+              <select id="set-dl-product" style="flex: 0 0 auto; width: 7em" data-admin>
+                <option value="edr">EDR</option>
+                <option value="cdr">CDR</option>
+              </select>
+              <label class="lbl" for="set-dl-dest">To</label>
+              <input id="set-dl-dest" type="text" class="mono" spellcheck="false" data-admin>
+              <span class="push"><button id="set-dl-btn" type="button" data-admin>Download</button></span>
+            </div>
+            <div class="tablebox" id="set-downloads"></div>
+            <div class="path" id="set-cache-dir" style="margin-top: 6px"></div>
+            <div class="tablebox" id="set-cache"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Environment</legend>
+            <div class="tablebox" id="set-env" style="max-height: none"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Runs</legend>
+            <div class="path" id="set-runs-dir"></div>
+            <div class="tablebox" id="set-runs"></div>
+          </fieldset>
+        </div>
       </div>
-    </main>
+      <div class="dockpanel" id="view-results">
+        <div class="panehead">
+          <span class="loading" id="results-loading" hidden>Loading...</span>
+          <span class="right" id="nav"></span>
+        </div>
+        <div class="panebody" id="results" data-empty="No results"></div>
+      </div>
+      <div class="dockpanel" id="view-details">
+        <div class="panehead">
+          <span class="right"><button class="tool" id="detail-clear" type="button">Clear</button></span>
+        </div>
+        <div class="panebody" id="detail" data-empty="Click a row or footprint"></div>
+      </div>
+    </div>
   </div>
 
   <footer class="statusbar">
     <span class="status busy" id="status">Initializing DuckDB...</span>
     <span class="cell" id="count">0 rows</span>
     <span class="cell" id="view-zoom" hidden></span>
-    <span class="cell" id="jobs-summary" title="Open the Settings tab" hidden></span>
+    <span class="cell" id="jobs-summary" title="Open the Settings panel" hidden></span>
     <span class="cell" id="cursor"></span>
+    <span class="cell layout">
+      <button class="tool" id="layout-side" type="button" title="Footprints and Image side by side, Results and Details below">Map | Image</button>
+      <button class="tool" id="layout-reset" type="button" title="Restore the default panel layout">Reset layout</button>
+    </span>
   </footer>
 </div>
 
   <script type="module">
     import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm';
+    import { createDockview, themeLight } from 'https://cdn.jsdelivr.net/npm/dockview-core@8.4.0/+esm';
 
     // Mirrors lunar_toolkit.lroc.nac.METADATA_LABELS (PDS_URL is derived below);
     // tests/test_static.py keeps the two in sync.
@@ -736,27 +734,6 @@
       $('count').textContent = `${n} row${n === 1 ? '' : 's'}`;
     }
 
-    // Splitters: map | lower pane (rows), results | details (columns)
-    function splitter(handle, onmove) {
-      handle.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        handle.setPointerCapture(e.pointerId);
-        const move = (ev) => onmove(ev);
-        const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); };
-        handle.addEventListener('pointermove', move);
-        handle.addEventListener('pointerup', up);
-      });
-    }
-    splitter($('split-rows'), (e) => {
-      const r = $('workspace').getBoundingClientRect();
-      const h = Math.min(Math.max(e.clientY - r.top - 6, 140), r.height - 120);
-      $('workspace').style.setProperty('--map-h', `${h}px`);
-    });
-    splitter($('split-cols'), (e) => {
-      const r = $('lower').getBoundingClientRect();
-      const w = Math.min(Math.max(r.right - e.clientX - 3, 200), r.width - 200);
-      $('lower').style.setProperty('--det-w', `${w}px`);
-    });
     $('detail-clear').addEventListener('click', () => $('detail').replaceChildren());
 
     // Geometry: ports of lunar_toolkit.geometry (query_region, aoi_region, aoi_mask), so the
@@ -1454,7 +1431,6 @@
       const tools = el('span', { class: 'tools' }, ...Object.entries(MAP_TOOLS).map(([t, [label, title]]) =>
         el('button', { class: `tool${t === 'pan' ? ' on' : ''}`, type: 'button', 'data-tool': t, title }, label)));
       const bar = el('div', { class: 'panehead' },
-        el('span', { class: 'title' }, 'Footprints'),
         el('span', { class: 'info' }, generic ? `${MAP_PROJECTIONS[pj.id]}, R = ${MOON_RADIUS_KM} km`
           : hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
           : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
@@ -2743,7 +2719,6 @@
     };
     const viewCanvas = $('view-canvas');
     const frameSize = () => [viewCanvas.clientWidth, viewCanvas.clientHeight];
-    const viewActive = () => ($('view-image').hidden ? 'map' : 'image');
     const dpr = () => window.devicePixelRatio || 1;
 
     function viewMessage(text, isError = false) {
@@ -3613,23 +3588,83 @@
       }
     }
 
-    const viewTabs = () => [$('vtab-map'), $('vtab-image'), $('vtab-settings')];
-    function selectView(name) {
-      for (const t of viewTabs()) {
-        const on = t.dataset.view === name;
-        t.setAttribute('aria-selected', String(on));
-        t.tabIndex = on ? 0 : -1;
-      }
-      $('view-map').hidden = name !== 'map';
-      $('view-image').hidden = $('view-zoom').hidden = name !== 'image';
-      $('view-settings').hidden = name !== 'settings';
-      $('workspace').classList.toggle('settings-on', name === 'settings');
-      $('cursor').textContent = '';
-      if (name === 'settings') settingsShown();
-      if (name === 'image') {
+    // Docking workspace (dockview). Panels keep their DOM nodes, parked off-screen while hidden so
+    // lookups by id keep working; the layout is saved per viewer.
+    const PANELS = { map: 'Footprints', image: 'Image', settings: 'Settings', results: 'Results', details: 'Details' };
+    const LAYOUT_KEY = 'lunar-layout-v1';
+    const narrow = matchMedia('(max-width: 800px)');
+    let dock = null, saveTimer = 0;
+    const panelShown = (id) => !!dock?.getPanel(id)?.api.isVisible;
+
+    function panelVisible(id, on) {
+      if (id === 'image') $('view-zoom').hidden = !on;
+      if (!on) return;
+      if (id === 'settings') settingsShown();
+      if (id === 'image') {
         if (V.pending) { const p = V.pending; V.pending = null; viewProduct(p); }
         viewRedraw();
       }
+    }
+
+    function selectView(id) {
+      $('cursor').textContent = '';
+      dock.getPanel(id)?.api.setActive();
+    }
+
+    function buildLayout(kind) {
+      dock.clear();
+      const add = (id, position, inactive = false) => dock.addPanel({ id, component: id, title: PANELS[id], position, inactive });
+      add('map');
+      add('image', { referencePanel: 'map', direction: kind === 'side' ? 'right' : 'within' }, kind !== 'side');
+      add('settings', { referencePanel: 'image', direction: 'within' }, true);
+      add('results', { direction: 'below' });
+      add('details', { referencePanel: 'results', direction: kind === 'stacked' ? 'below' : 'right' });
+      const size = (id, s) => dock.getPanel(id).group.api.setSize(s);
+      if (kind === 'stacked') { size('map', { height: 440 }); size('results', { height: 320 }); }
+      else { size('map', { height: Math.round(dock.height * 0.55) }); size('details', { width: 380 }); }
+    }
+
+    function restoreLayout() {
+      if (!narrow.matches) {
+        try {
+          dock.fromJSON(JSON.parse(localStorage.getItem(LAYOUT_KEY)));
+          if (Object.keys(PANELS).every((id) => dock.getPanel(id))) return;
+        } catch { /* no saved layout */ }
+      }
+      buildLayout(narrow.matches ? 'stacked' : 'default');
+    }
+
+    function saveLayout() {
+      if (narrow.matches) return;
+      try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(dock.toJSON())); } catch { /* storage blocked */ }
+    }
+
+    function initDock() {
+      const park = $('dock-park');
+      dock = createDockview($('dock'), {
+        theme: { ...themeLight, gap: 6 },
+        disableFloatingGroups: true,
+        disableTabsOverflowList: true,
+        createComponent: ({ name }) => {
+          const element = $(`view-${name}`);
+          return {
+            element,
+            init: ({ api }) => api.onDidVisibilityChange(({ isVisible }) => panelVisible(name, isVisible)),
+            onHide: () => park.append(element),
+            dispose: () => park.append(element),
+          };
+        },
+      });
+      dock.layout($('dock').clientWidth, $('dock').clientHeight);
+      restoreLayout();
+      for (const id of Object.keys(PANELS)) panelVisible(id, panelShown(id));
+      dock.onDidLayoutChange(() => { clearTimeout(saveTimer); saveTimer = setTimeout(saveLayout, 300); });
+      narrow.addEventListener('change', restoreLayout);
+      $('layout-side').addEventListener('click', () => buildLayout('side'));
+      $('layout-reset').addEventListener('click', () => {
+        try { localStorage.removeItem(LAYOUT_KEY); } catch { /* storage blocked */ }
+        buildLayout(narrow.matches ? 'stacked' : 'default');
+      });
     }
 
     // A picked row / footprint: preview in its detail block, and the viewer follows if visible
@@ -3637,22 +3672,11 @@
       const prod = block._product;
       if (!prod) return;
       block._preview?._load?.();
-      if (viewActive() === 'image') viewProduct(prod);
+      if (panelShown('image')) viewProduct(prod);
       else V.pending = prod;
     }
 
     function initViewer() {
-      const all = viewTabs();
-      for (const t of all) {
-        t.addEventListener('click', () => selectView(t.dataset.view));
-        t.addEventListener('keydown', (e) => {
-          const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-          if (!d) return;
-          const next = all[(all.indexOf(t) + d + all.length) % all.length];
-          selectView(next.dataset.view);
-          next.focus();
-        });
-      }
       $('view-zoom-in').addEventListener('click', () => viewZoom(2));
       $('view-zoom-out').addEventListener('click', () => viewZoom(0.5));
       $('view-1to1').addEventListener('click', () => viewSetScale(1 / dpr()));
@@ -4139,7 +4163,7 @@
         applyAdmin();
         $('set-info').textContent = S.admin ? 'Admin' : 'Read-only';
         watchJobs();
-        if (!$('view-settings').hidden) loadStatus();
+        if (panelShown('settings')) loadStatus();
       } catch {
         for (const node of document.querySelectorAll('#settings [data-admin], #set-refresh')) node.disabled = true;
         $('set-note').hidden = false;
@@ -4148,6 +4172,7 @@
     }
 
     // Boot
+    initDock();
     initSearchForm();
     showFormRegion();
     initViewer();

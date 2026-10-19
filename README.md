@@ -6,6 +6,8 @@
 
 # Lunar Toolkit
 
+![Lunar Toolkit app](https://raw.githubusercontent.com/alexmaietta/lunar-toolkit/main/docs/images/hero.png)
+
 Lunar Toolkit finds, downloads and processes lunar orbital imagery and turns it into DEMs.
 
 It builds a searchable index of LROC images whose footprint search also works near the poles, finds ShadowCam, LROC and Kaguya products through the PDS Orbital Data Explorer, imports images into [ISIS](https://isis.astrogeology.usgs.gov/), and builds stereo and shape-from-shading (SfS) DEMs with the [Ames Stereo Pipeline](https://stereopipeline.readthedocs.io/) through configurable, reproducible pipelines. A desktop app browses the index, ODE, footprints and full-resolution images.

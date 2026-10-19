@@ -130,7 +130,7 @@ def test_relay_only_pds_image_files():
 
 def test_settings_view_and_job_api_in_page():
     for needle in (
-        'id="vtab-settings"',
+        "dockview-core@8.4.0",
         'id="view-settings"',
         'id="jobs-summary"',
         "api/jobs/events",

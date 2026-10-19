@@ -2,6 +2,8 @@
 
 The Lunar Toolkit app is a GUI to search the LROC index and the PDS Orbital Data Explorer, map footprints, view full-resolution images, and manage indexes and downloads. A search panel sits on the left, the footprint map, image viewer and Settings on the right, and results and details below. Run it as a desktop window, serve it to others, or open the [hosted copy](https://alexmaietta.github.io/lunar-toolkit/browser/).
 
+The Footprints, Image, Settings, Results and Details panels dock like an IDE: drag a tab onto another panel to stack it there or onto an edge to split left, right, above or below, and drag the gaps between panels to resize them. The browser remembers the layout; "Map | Image" in the status bar puts the map and the image side by side and "Reset layout" restores the default.
+
 ```bash
 lunar app # desktop window (server on 127.0.0.1, random port)
 lunar serve # http://localhost:8080 in your browser
@@ -23,7 +25,7 @@ The Basemap menu draws the LROC WAC mosaic or a LOLA hillshade under the footpri
 
 ## Image viewer
 
-Selecting a product shows a quick look in the Details pane (drag to pan, wheel to zoom, double click to reset); the Image tab opens it in a deep-zoom viewer that reads only the visible tiles over HTTP Range:
+Selecting a product shows a quick look in the Details pane (drag to pan, wheel to zoom, double click to reset); the Image panel opens it in a deep-zoom viewer that reads only the visible tiles over HTTP Range:
 
 | Product | Source |
 |---|---|
@@ -36,7 +38,7 @@ Wheel zoom, drag pan, `+` `-` `0` (1:1) `F` (fit) `W` (fit width), rotation by a
 
 ## Settings
 
-The Settings tab shows the data, cache, reference and runs dirs (`--runs-dir` or `$LUNAR_RUNS_DIR`), the built indexes (rows, release, size, build time), downloaded files and sizes, the ISIS / ASP / ISISDATA setup and tool versions, paused hosts and free disk space. It runs index builds and updates, PGDA and published SfS DEM downloads, and EDR / CDR downloads as background jobs with progress bars, rate, ETA and Cancel; downloads resume from `.part` files. The page reloads its index after a build finishes.
+The Settings panel shows the data, cache, reference and runs dirs (`--runs-dir` or `$LUNAR_RUNS_DIR`), the built indexes (rows, release, size, build time), downloaded files and sizes, the ISIS / ASP / ISISDATA setup and tool versions, paused hosts and free disk space. It runs index builds and updates, PGDA and published SfS DEM downloads, and EDR / CDR downloads as background jobs with progress bars, rate, ETA and Cancel; downloads resume from `.part` files. The page reloads its index after a build finishes.
 
 ## Access
 
