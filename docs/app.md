@@ -19,6 +19,8 @@ The Local index box lists the indexes that `lunar app` and `lunar serve` found i
 
 Results are drawn on the footprint map (lon/lat, or polar stereographic near the poles; scroll to zoom, drag to pan, click a footprint for its details).
 
+The Basemap menu draws the LROC WAC mosaic or a LOLA hillshade under the footprints, and near the south pole also the LOLA 5 m hillshade and the LROC NAC 1 m polar mosaic. A small overview bundled with the page (`lunar_toolkit/static/basemaps`, about 14 MB, rebuilt by `docker/basemaps.sh`) shows when zoomed out or offline, and the USGS Astrogeology COGs stream tile by tile once you zoom in past it. Contours draws elevation contours of the current view at a 1-2-5 interval picked from its relief, from the LOLA global DEM, the LOLA 5 m south pole DEM or the PGDA 20 m 80S DEM (through `lunar serve` only), falling back to the bundled DEM overview.
+
 ## Image viewer
 
 Selecting a product shows a quick look in the Details pane (drag to pan, wheel to zoom, double click to reset); the Image tab opens it in a deep-zoom viewer that reads only the visible tiles over HTTP Range:

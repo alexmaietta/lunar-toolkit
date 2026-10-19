@@ -36,6 +36,7 @@
       --fp: #1f4a8a;
       --fp-sel: #c62828;
       --region: #2e7d32;
+      --contour: #9a6a3a;
       --view-bg: #303030;
       --view-fg: #e8e8e8;
     }
@@ -178,15 +179,21 @@
     /* Footprint plot */
     .mapbox { height: 100%; position: relative; }
     .map { display: flex; flex-direction: column; height: 100%; }
-    .map svg { display: block; flex: 1 1 0; min-height: 0; width: 100%; touch-action: none; user-select: none; cursor: crosshair; }
+    .map .plotarea { position: relative; flex: 1 1 0; min-height: 0; }
+    .map svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; user-select: none; cursor: crosshair; }
+    .map canvas { position: absolute; background: var(--plot-bg); pointer-events: none; }
+    .mapbox.has-basemap .plot { fill: none; }
+    .map .contour { fill: none; stroke: var(--contour); stroke-width: 0.7; stroke-opacity: 0.85; vector-effect: non-scaling-stroke; pointer-events: none; }
+    .map .contour.major { stroke-width: 1.3; }
+    .panehead select { width: auto; height: 19px; padding: 0 20px 0 4px; font-size: 12px; background-position: right 10px top 7px, right 6px top 7px, 0 0; }
     .map svg.dragging { cursor: grabbing; }
     .map .plot { fill: var(--plot-bg); }
     .map .frame { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
     .map .tick { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
     .map .grid { fill: none; stroke: var(--plot-grid); stroke-width: 1; }
-    .map .fp { fill: var(--fp); fill-opacity: 0.08; fill-rule: evenodd; stroke: var(--fp); stroke-width: 0.8; cursor: pointer; }
-    .map .fp:hover { fill-opacity: 0.25; stroke-width: 1.3; }
-    .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.3; stroke: var(--fp-sel); stroke-width: 1.8; }
+    .map .fp { fill: var(--fp); fill-opacity: 0.06; fill-rule: evenodd; stroke: var(--fp); stroke-opacity: 0.55; stroke-width: 0.8; cursor: pointer; }
+    .map .fp:hover { fill-opacity: 0.22; stroke-opacity: 0.9; stroke-width: 1.3; }
+    .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.25; stroke: var(--fp-sel); stroke-opacity: 1; stroke-width: 1.8; }
     .mapbox.hide-fp .fp, .mapbox.hide-region .region { display: none; }
     .panehead .toggle { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; white-space: nowrap; }
     .map .region { fill: none; fill-rule: evenodd; stroke: var(--region); stroke-width: 1.4; stroke-dasharray: 6 3; pointer-events: none; }
@@ -1236,12 +1243,19 @@
       const NS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(NS, 'svg');
       const reset = el('button', { class: 'tool', type: 'button', title: 'Reset view (double click)' }, 'Reset view');
+      const canvas = el('canvas');
+      const spin = el('span', { class: 'loading', hidden: '' });
+      const cinfo = el('span', { class: 'info' });
+      const pick = el('select', { 'aria-label': 'Basemap', title: 'Basemap under the footprints' });
+      const cbox = el('input', { type: 'checkbox' });
       const bar = el('div', { class: 'panehead' },
         el('span', { class: 'title' }, 'Footprints'),
         el('span', { class: 'info' }, hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
           : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
-        el('span', { class: 'right' }, layerToggle(container, 'fp', 'Footprints'), layerToggle(container, 'region', 'Region'), reset));
-      container.replaceChildren(el('div', { class: 'map' }, bar, svg));
+        cinfo, spin,
+        el('span', { class: 'right' }, pick, el('label', { class: 'toggle', title: 'Elevation contours (LOLA)' }, cbox, ' Contours'),
+          layerToggle(container, 'fp', 'Footprints'), layerToggle(container, 'region', 'Region'), reset));
+      container.replaceChildren(el('div', { class: 'map' }, bar, el('div', { class: 'plotarea' }, canvas, svg)));
       const clipId = `clip-${container.id}`;
       const M = MARGIN;
 
@@ -1269,6 +1283,7 @@
       if (x1 - x0 < minSpan) [x0, x1] = [(x0 + x1 - minSpan) / 2, (x0 + x1 + minSpan) / 2];
       if (y1 - y0 < minSpan) [y0, y1] = [(y0 + y1 - minSpan) / 2, (y0 + y1 + minSpan) / 2];
       const home = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
+      const under = mapUnderlay({ container, hemi, kx, canvas, spin, cinfo, pick, cbox, home, redraw: () => redraw() });
       // SW x SH: whole svg; W x H: plot area inside the axis margins
       let view = null, SW = 0, SH = 0, W = 0, H = 0, sel = -1, touched = false;
       const fit = () => {
@@ -1364,11 +1379,13 @@
         if (sel >= 0) order.push(sel);
         svg.innerHTML = `<defs><clipPath id="${clipId}"><rect width="${W}" height="${H}"/></clipPath></defs>`
           + `<g transform="translate(${M.l} ${M.t})"><rect class="plot" width="${W}" height="${H}"/>`
-          + `<g clip-path="url(#${clipId})">${a.grid}`
+          + `<g clip-path="url(#${clipId})">${a.grid}<g class="cslot"/>`
           + order.map((i) => `<path class="fp${i === sel ? ' sel' : ''}" data-i="${i}" d="${pathD(fps[i])}"><title>${esc(items[i].title)}</title></path>`).join('')
           + (reg.length ? `<path class="region" d="${pathD(reg)}"/>` : '')
           + `</g><rect class="frame" x="0.5" y="0.5" width="${W - 1}" height="${H - 1}"/>`
           + `<path class="tick" d="${a.ticks}"/>${a.labels}</g>`;
+        svg.querySelector('.cslot').replaceWith(under.contours);
+        under.draw(view, W, H);
       }
 
       let frame = 0;
@@ -1454,9 +1471,9 @@
       return items;
     }
 
-    // Newest detail on top of the details pane
+    // The details pane shows the selected product only
     function showDetail(container, block) {
-      container.prepend(block);
+      container.replaceChildren(block);
       container.scrollTop = 0;
     }
 
@@ -1949,8 +1966,8 @@
     const MAX_OVERVIEW_PX = 2048;            // remote images without a level this small get no preview
     const STRIP_TILE = 512;                  // block size for untiled (striped) TIFFs
     const TILE_REQUESTS = 4;                 // concurrent tile reads (PDS rate-limits with HTTP 429)
-    // pds.mcp.nasa.gov drops its CORS header for browser requests; lunar serve relays those hosts
-    const RELAY_FIRST = ['pds.mcp.nasa.gov', 'pds.lroc.im-ldi.com'];
+    // pds.mcp.nasa.gov drops its CORS header for browser requests and PGDA sends none; lunar serve relays those hosts
+    const RELAY_FIRST = ['pds.mcp.nasa.gov', 'pds.lroc.im-ldi.com', 'pgda.gsfc.nasa.gov'];
     let geotiffLib = null;
     let serveConfig = { relay: [], images: false };
     let localImages = [];  // paths from `lunar serve --images`
@@ -1961,6 +1978,9 @@
     }));
     const hostOf = (url) => { try { return new URL(url, window.location.href).hostname; } catch { return ''; } };
     const relayable = (url) => /^https:/i.test(url) && serveConfig.relay.includes(hostOf(url));
+    // The PDS image hosts block reads from other sites; without the lunar serve relay they cannot load
+    const BLOCKED_TEXT = 'LROC images need lunar app or lunar serve, because the PDS image host blocks reads from other websites.';
+    const blocked = (url) => serveConfig.checked && RELAY_FIRST.includes(hostOf(url)) && !relayable(url);
     const relayUrl = (url) => new URL(`remote?url=${encodeURIComponent(url)}`, window.location.href).href;
     const readUrl = (url, viaRelay = RELAY_FIRST.includes(hostOf(url))) => (viaRelay && relayable(url) ? relayUrl(url) : url);
     const abortError = () => new DOMException('Aborted', 'AbortError');
@@ -2270,6 +2290,7 @@
       previewCtl?.abort();
       const ctl = previewCtl = new AbortController();
       const spec = previewSource(prod);
+      if (spec.url && blocked(spec.url)) return box.replaceChildren(el('span', { class: 'msg' }, BLOCKED_TEXT));
       const msg = (text, cls = 'msg') => box.replaceChildren(el('span', { class: cls }, text));
       msg(`Loading preview (${spec.label})`, 'msg busy');
       try {
@@ -2611,6 +2632,308 @@
       }
     }
 
+    // Basemaps and contours under the footprint map: a bundled overview (basemaps/, works offline),
+    // then COG tiles streamed when zoomed in past it. The map's lon/lat (x scaled by kx) and polar
+    // stereographic metres are the rasters' own coordinates, so placement is an affine scale.
+    const BM_MOON = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/wms_basemaps3/Moon/';
+    const BM_SP = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Lunar_safed/LMAP/SouthPolar/';
+    const PGDA_80S = 'https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF';
+    // [bundled overview, streamed COG] per map projection and basemap
+    const BASEMAPS = {
+      eqc: { wac: ['wac_global', `${BM_MOON}LRO_WAC_Mosaic_Global_303ppd_v3_cog.tif`],
+             shade: ['lola_shade_global', `${BM_MOON}LRO_LOLA_Shade_Global_128ppd_v04_cog.tif`] },
+      S: { wac: ['wac_south', `${BM_MOON}south_pole/WAC_morphology_SP_June2013_100m_8bit_cog.tif`],
+           shade: ['lola_shade_south', `${BM_MOON}south_pole/LRO_LOLA_ClrShade_SPole75_30m_v04_pct_cog.tif`],
+           shade5: ['lola_shade_south', `${BM_SP}ldem_87s_5mpp_hillshade_cog.tif`],
+           nac: ['wac_south', `${BM_SP}LRO_LROC_NAC_SPOLE-90_Mosaic_1m_controlled_cog.tif`] },
+      N: { wac: ['wac_north', `${BM_MOON}north_pole/WAC_morphology_NP_June2013_100m_8bit_cog.tif`],
+           shade: ['lola_shade_north', `${BM_MOON}north_pole/LRO_LOLA_ClrShade_NPole75_30m_v04_pct_cog.tif`] },
+    };
+    const BASEMAP_LABELS = { none: 'No basemap', wac: 'WAC mosaic', shade: 'LOLA hillshade', shade5: 'LOLA 5 m hillshade', nac: 'LROC NAC 1 m mosaic' };
+    // Contour DEMs, finest first, the bundled overview last (PGDA only through the relay)
+    const CONTOUR_DEMS = {
+      eqc: [`${BM_MOON}LRO_LOLA_DEM_Global_256ppd_v06_16bit_cog.tif`, 'lola_dem_global'],
+      S: [`${BM_SP}ldem_87s_5mpp_cog.tif`, PGDA_80S, 'lola_dem_south'],
+      N: ['lola_dem_north'],
+    };
+    const BM_STRETCH = { min: 0, max: 255, gamma: 1 };
+    const mapPrefs = { basemap: 'wac', contours: false };  // remembered across searches
+    const bmOpened = new Map();  // ref -> { promise, src, pending, failed }
+    let bmManifest = null, bmNotify = null;
+    const bmUrl = (file) => new URL(`basemaps/${file}`, window.location.href).href;
+
+    // A bundled overview (manifest name) or a remote COG; failures are retried after a minute
+    function bmLoad(ref) {
+      let e = bmOpened.get(ref);
+      if (e?.failed && Date.now() - e.failed > 60000) e = null;
+      if (e) return e;
+      e = { pending: true };
+      bmOpened.set(ref, e);
+      e.promise = (async () => {
+        let url = ref, meta = null;
+        if (!/^https:/.test(ref)) {
+          bmManifest ??= fetch(bmUrl('manifest.json')).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+          meta = (await bmManifest)[ref];
+          if (!meta) throw new Error(`No bundled ${ref}`);
+          url = bmUrl(meta.file);
+        }
+        if (meta?.bounds) {
+          const img = await loadImg(url);
+          return { key: url, pic: img, w0: img.naturalWidth, h0: img.naturalHeight, box: meta.bounds };
+        }
+        const src = await openTiff({ url });
+        const first = src.levels[0].img;
+        src.box ??= first.getBoundingBox();
+        src.palette ??= Number(first.fileDirectory.getValue('PhotometricInterpretation')) === 3;
+        return src;
+      })().then((src) => (e.src = src), () => { e.failed = Date.now(); return null; })
+        .finally(() => { e.pending = false; bmNotify?.(); });
+      return e;
+    }
+
+    async function loadBasemapTile({ key, src, li, tx, ty }, signal) {
+      const L = src.levels[li], [x0, y0] = [tx * L.tw, ty * L.th];
+      const win = [x0, y0, Math.min(x0 + L.tw, L.w), Math.min(y0 + L.th, L.h)];
+      const [w, h] = [win[2] - win[0], win[3] - win[1]];
+      const r = src.palette && !L.virtual ? await L.img.readRGB({ window: win, interleave: false, signal })
+        : await readWindow(src, L, win, signal);
+      const canvas = paint(Array.from(r), w, h, BM_STRETCH, src.palette ? null : src.noData);
+      tileAdd(key, { canvas, w, h, bytes: 0 }, w * h * 4);
+    }
+
+    // Marching squares over grid parts { z, w, h, x(i), y(j) }: SVG paths (minor, major every 5th)
+    function contourPaths(parts, noData, step, X, Y) {
+      const out = [[], []];
+      for (const { z, w, h, x, y } of parts) {
+        const seg = (k, [i0, j0], [i1, j1]) => out[k % 5 === 0 ? 1 : 0].push(
+          `M${X(x(i0)).toFixed(1)} ${Y(y(j0)).toFixed(1)}L${X(x(i1)).toFixed(1)} ${Y(y(j1)).toFixed(1)}`);
+        for (let j = 0; j < h - 1; j++) {
+          for (let i = 0; i < w - 1; i++) {
+            const a = z[j * w + i], b = z[j * w + i + 1], c = z[(j + 1) * w + i + 1], d = z[(j + 1) * w + i];
+            if (isFill(a, noData) || isFill(b, noData) || isFill(c, noData) || isFill(d, noData)) continue;
+            const k1 = Math.floor(Math.max(a, b, c, d) / step);
+            for (let k = Math.ceil(Math.min(a, b, c, d) / step); k <= k1; k++) {
+              const v = k * step, p = [];
+              if ((a < v) !== (b < v)) p.push([i + (v - a) / (b - a), j]);
+              if ((b < v) !== (c < v)) p.push([i + 1, j + (v - b) / (c - b)]);
+              if ((d < v) !== (c < v)) p.push([i + (v - d) / (c - d), j + 1]);
+              if ((a < v) !== (d < v)) p.push([i, j + (v - a) / (d - a)]);
+              if (p.length >= 2) seg(k, p[0], p[1]);
+              if (p.length === 4) seg(k, p[2], p[3]);
+            }
+          }
+        }
+      }
+      return out.map((a) => a.join(''));
+    }
+
+    // The basemap canvas and the contour layer of one footprint map
+    function mapUnderlay({ container, hemi, kx, canvas, spin, cinfo, pick, cbox, home, redraw }) {
+      bmNotify?.abort?.();
+      const proj = hemi ?? 'eqc', sc = hemi ? 1 : kx, NS = 'http://www.w3.org/2000/svg';
+      const ctl = new AbortController();
+      const st = { wanted: [], inflight: new Set(), failed: new Map(), timer: 0, ctimer: 0, ckey: '', gen: 0, cbusy: false, contour: null };
+      const notify = () => { if (container.isConnected) redraw(); };
+      notify.abort = () => ctl.abort();
+      bmNotify = notify;
+      const contours = document.createElementNS(NS, 'g');
+      const paths = ['contour', 'contour major'].map((c) => {
+        const p = document.createElementNS(NS, 'path');
+        p.setAttribute('class', c);
+        contours.append(p);
+        return p;
+      });
+      // Raster extent in map data coordinates (x right, y down)
+      const geom = (s) => { const [x0, y0, x1, y1] = s.box; return { X0: x0 * sc, X1: x1 * sc, Y0: -y1, Y1: -y0 }; };
+      // x offsets of the wrapped lon/lat copies of g overlapping [vx0, vx1]
+      const copies = (g, vx0, vx1) => {
+        if (hemi) return [0];
+        const p = 360 * sc, n0 = Math.ceil((vx0 - g.X1) / p), n1 = Math.floor((vx1 - g.X0) / p);
+        return n1 - n0 > 8 ? [] : Array.from({ length: n1 - n0 + 1 }, (_, i) => (n0 + i) * p);
+      };
+      const choices = Object.keys(BASEMAPS[proj]).filter((c) => !['shade5', 'nac'].includes(c)
+        || Math.max(Math.abs(home.cx) - home.w / 2, Math.abs(home.cy) - home.h / 2) < 182107);
+      const choice = () => (choices.includes(mapPrefs.basemap) ? mapPrefs.basemap
+        : { shade5: 'shade', nac: 'wac' }[mapPrefs.basemap] ?? 'none');
+      pick.replaceChildren(...['none', ...choices].map((c) => el('option', { value: c }, BASEMAP_LABELS[c])));
+      pick.value = choice();
+      container.classList.toggle('has-basemap', choice() !== 'none');
+      pick.addEventListener('change', () => {
+        mapPrefs.basemap = pick.value;
+        container.classList.toggle('has-basemap', pick.value !== 'none');
+        redraw();
+      });
+      cbox.checked = mapPrefs.contours;
+      cbox.addEventListener('change', () => {
+        mapPrefs.contours = cbox.checked;
+        st.ckey = '';
+        if (!cbox.checked) { st.gen++; st.cbusy = false; st.contour = null; paths.forEach((p) => p.removeAttribute('d')); cinfo.textContent = ''; }
+        redraw();
+      });
+
+      function status() {
+        const n = st.inflight.size + st.wanted.length, opening = [...bmOpened.values()].some((e) => e.pending);
+        spin.hidden = !(n || opening || st.cbusy);
+        spin.textContent = n || opening ? 'Loading basemap...' : 'Loading contours...';
+      }
+
+      function pump() {
+        while (st.inflight.size < TILE_REQUESTS && st.wanted.length) {
+          const job = st.wanted.shift();
+          if (st.inflight.has(job.key) || tiles.has(job.key) || (st.failed.get(job.key) ?? 0) >= 3) continue;
+          st.inflight.add(job.key);
+          loadBasemapTile(job, ctl.signal).then(notify, () => { st.failed.set(job.key, (st.failed.get(job.key) ?? 0) + 1); })
+            .finally(() => { st.inflight.delete(job.key); if (!ctl.signal.aborted) pump(); });
+        }
+        status();
+      }
+
+      function draw(view, W, H) {
+        const r = dpr();
+        Object.assign(canvas.style, { left: `${MARGIN.l}px`, top: `${MARGIN.t}px`, width: `${W}px`, height: `${H}px` });
+        if (canvas.width !== Math.round(W * r) || canvas.height !== Math.round(H * r)) [canvas.width, canvas.height] = [Math.round(W * r), Math.round(H * r)];
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(r, 0, 0, r, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
+        const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
+        // Source pixels of img (iw x ih over extent g, shifted by dx) clipped to the canvas
+        const put = (img, iw, ih, g, dx, sharp) => {
+          const ax = ((g.X1 - g.X0) / iw) * view.k, ay = ((g.Y1 - g.Y0) / ih) * view.k;
+          const ox = W / 2 + (g.X0 + dx - view.cx) * view.k, oy = H / 2 + (g.Y0 - view.cy) * view.k;
+          const u0 = Math.max(0, Math.floor(-ox / ax)), u1 = Math.min(iw, Math.ceil((W - ox) / ax));
+          const v0 = Math.max(0, Math.floor(-oy / ay)), v1 = Math.min(ih, Math.ceil((H - oy) / ay));
+          if (u1 <= u0 || v1 <= v0) return;
+          const [px0, py0] = [Math.round(ox + u0 * ax), Math.round(oy + v0 * ay)];
+          ctx.imageSmoothingEnabled = !sharp;
+          ctx.drawImage(img, u0, v0, u1 - u0, v1 - v0, px0, py0, Math.round(ox + u1 * ax) - px0, Math.round(oy + v1 * ay) - py0);
+        };
+        const want = [];
+        const stack = BASEMAPS[proj][choice()];
+        if (stack) {
+          const [b, c] = stack.map((ref) => bmLoad(ref).src);
+          let bpx = Infinity, inside = !hemi;
+          if (b) {
+            const g = geom(b);
+            for (const dx of copies(g, vx0, vx1)) put(b.pic, b.w0, b.h0, g, dx, false);
+            bpx = (g.Y1 - g.Y0) / b.h0;
+            inside ||= vx0 >= g.X0 && vx1 <= g.X1 && vy0 >= g.Y0 && vy1 <= g.Y1;
+          }
+          const g = c && geom(c);
+          // Stream when the overview is magnified, or the view reaches past it
+          if (c && (!hemi || (vx1 > g.X0 && vx0 < g.X1)) && vy1 > g.Y0 && vy0 < g.Y1) {
+            const py = (g.Y1 - g.Y0) / c.h0, target = targetLevel(c, view.k * py);
+            if (py * c.levels[target].fy * 1.5 < bpx || !inside) {
+              for (let li = c.levels.length - 1; li >= target; li--) {
+                const L = c.levels[li], ux = (g.X1 - g.X0) / L.w, uy = (g.Y1 - g.Y0) / L.h;
+                const [ty0, ty1] = [Math.max(0, Math.floor((vy0 - g.Y0) / uy / L.th)), Math.min(Math.ceil(L.h / L.th) - 1, Math.floor((vy1 - g.Y0) / uy / L.th))];
+                for (const dx of copies(g, vx0, vx1)) {
+                  const [tx0, tx1] = [Math.max(0, Math.floor((vx0 - g.X0 - dx) / ux / L.tw)), Math.min(Math.ceil(L.w / L.tw) - 1, Math.floor((vx1 - g.X0 - dx) / ux / L.tw))];
+                  for (let ty = ty0; ty <= ty1; ty++) {
+                    for (let tx = tx0; tx <= tx1; tx++) {
+                      const key = `bm|${c.key}|${li}|${tx}|${ty}`, t = tileGet(key);
+                      const tg = { X0: g.X0 + tx * L.tw * ux, Y0: g.Y0 + ty * L.th * uy };
+                      [tg.X1, tg.Y1] = [g.X0 + Math.min((tx + 1) * L.tw, L.w) * ux, g.Y0 + Math.min((ty + 1) * L.th, L.h) * uy];
+                      if (t) put(t.canvas, t.w, t.h, tg, dx, li === target && view.k * uy * r >= 1.5);
+                      else if (li === target) {
+                        want.push({ key, src: c, li, tx, ty, d: Math.hypot((tg.X0 + tg.X1) / 2 + dx - view.cx, (tg.Y0 + tg.Y1) / 2 - view.cy) });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        st.wanted = want.sort((a, b) => a.d - b.d);
+        clearTimeout(st.timer);
+        st.timer = setTimeout(pump, 80);
+        placeContours(view, W, H);
+        status();
+      }
+
+      function placeContours(view, W, H) {
+        const c = st.contour;
+        if (c) {
+          const f = view.k / c.k;
+          contours.setAttribute('transform', `translate(${(W / 2 + (c.cx - view.cx) * view.k - (f * c.W) / 2).toFixed(2)} `
+            + `${(H / 2 + (c.cy - view.cy) * view.k - (f * c.H) / 2).toFixed(2)}) scale(${f})`);
+        }
+        const key = `${view.cx}|${view.cy}|${view.k}|${W}|${H}`;
+        if (!mapPrefs.contours || key === st.ckey) return;
+        st.ckey = key;
+        clearTimeout(st.ctimer);
+        st.ctimer = setTimeout(() => computeContours({ ...view }, W, H), 300);
+      }
+
+      // DEM samples about 3 screen px apart over the view, from the coarsest adequate level
+      async function demGrid(src, view, W, H, want) {
+        const g = geom(src);
+        let li = 0;
+        src.levels.forEach((L, i) => { if (((g.Y1 - g.Y0) / L.h) <= want) li = i; });
+        const L = src.levels[li], ux = (g.X1 - g.X0) / L.w, uy = (g.Y1 - g.Y0) / L.h;
+        const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
+        const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
+        const r0 = Math.max(0, Math.floor((vy0 - g.Y0) / uy) - 1), r1 = Math.min(L.h, Math.ceil((vy1 - g.Y0) / uy) + 1);
+        const parts = [];
+        for (const dx of copies(g, vx0, vx1)) {
+          const c0 = Math.max(0, Math.floor((vx0 - g.X0 - dx) / ux) - 1), c1 = Math.min(L.w, Math.ceil((vx1 - g.X0 - dx) / ux) + 1);
+          if (c1 - c0 < 2 || r1 - r0 < 2) continue;
+          const z = (await readWindow({ ...src, samples: [0] }, L, [c0, r0, c1, r1], ctl.signal))[0];
+          parts.push({ z, w: c1 - c0, h: r1 - r0, x: (i) => g.X0 + dx + (c0 + i + 0.5) * ux, y: (j) => g.Y0 + (r0 + j + 0.5) * uy });
+        }
+        return { parts, mpp: hemi ? uy : uy * RAD * MOON_RADIUS_KM * 1000 };
+      }
+
+      async function computeContours(view, W, H) {
+        const gen = ++st.gen;
+        st.cbusy = true;
+        status();
+        try {
+          const want = 3 / view.k;
+          const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
+          const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
+          const refs = CONTOUR_DEMS[proj].filter((ref) => ref !== PGDA_80S || relayable(ref));
+          const bundled = await bmLoad(refs.at(-1)).promise;
+          const res = bundled ? (geom(bundled).Y1 - geom(bundled).Y0) / bundled.h0 : Infinity;
+          let grid = null, name = '';
+          for (const ref of refs) {
+            const last = ref === refs.at(-1);
+            if (last ? !bundled : res <= want) continue;
+            const src = last ? bundled : await bmLoad(ref).promise;
+            if (gen !== st.gen) return;
+            const g = src && geom(src);
+            if (!src || (!last && hemi && !(vx0 >= g.X0 && vx1 <= g.X1 && vy0 >= g.Y0 && vy1 <= g.Y1))) continue;
+            try {
+              grid = await demGrid(src, view, W, H, want);
+              grid.noData = src.noData;
+              name = fileName(ref.startsWith('https:') ? ref : bmUrl(ref)).replace(/(_cog)?\.tif$/i, '');
+              break;
+            } catch (err) {
+              if (ctl.signal.aborted) return;
+            }
+          }
+          if (gen !== st.gen) return;
+          let lo = Infinity, hi = -Infinity;
+          for (const { z } of grid?.parts ?? []) for (const v of z) if (!isFill(v, grid.noData)) { if (v < lo) lo = v; if (v > hi) hi = v; }
+          if (!(hi > lo)) { st.contour = null; paths.forEach((p) => p.removeAttribute('d')); cinfo.textContent = grid ? '| no relief in view' : ''; return; }
+          const step = step125(hi - lo, 10);
+          const X = (x) => W / 2 + (x - view.cx) * view.k, Y = (y) => H / 2 + (y - view.cy) * view.k;
+          const d = contourPaths(grid.parts, grid.noData, step, X, Y);
+          paths.forEach((p, i) => p.setAttribute('d', d[i]));
+          st.contour = { ...view, W, H };
+          contours.removeAttribute('transform');
+          const fmtM = (m) => (m >= 1000 ? `${+(m / 1000).toPrecision(2)} km` : `${+m.toPrecision(2)} m`);
+          cinfo.textContent = `| contours ${step} m, bold ${5 * step} m (${name}, ${fmtM(grid.mpp)}/px)`;
+          redraw();
+        } finally {
+          if (gen === st.gen) { st.cbusy = false; status(); }
+        }
+      }
+
+      return { draw, contours };
+    }
+
     // Pixel readout: 1-based sample / line at full resolution (ISIS convention); the value comes
     // from the full-resolution tile, fetched after the pointer rests, meanwhile from a coarser level
     function pixelAt(src, sx, sy) {
@@ -2717,6 +3040,11 @@
       const ctl = V.ctl = new AbortController();
       V.spec = spec;
       fillChoices();
+      if (spec.url && blocked(spec.url)) {
+        V.failedSpec = spec;
+        viewMessage(BLOCKED_TEXT);
+        return;
+      }
       viewMessage(`Loading ${spec.label ?? spec.file?.name ?? ''}...`);
       try {
         const src = await (spec.kind === 'img' ? openPicture(spec, ctl.signal) : openTiff(spec));
@@ -2880,6 +3208,7 @@
           if (list.ok) localImages = await list.json();
         }
       } catch { /* not lunar serve */ }
+      serveConfig.checked = true;
       fillChoices();
       const url = new URLSearchParams(window.location.search).get('image');
       if (url) {

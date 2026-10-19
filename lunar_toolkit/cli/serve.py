@@ -29,6 +29,7 @@ COMMAND = "serve"
 
 _STATIC_DIR = Path(__file__).parent.parent / "static"
 _INDEX = _STATIC_DIR / "index.html"
+_BASEMAPS = _STATIC_DIR / "basemaps"
 
 _IMAGE_TYPES = {
     ".tif": "image/tiff",
@@ -44,7 +45,11 @@ _RELAY_HOSTS = (
     "pds.lroc.im-ldi.com",
     "pds.shadowcam.im-ldi.com",
     "data.darts.isas.jaxa.jp",
+    "pgda.gsfc.nasa.gov",
 )
+# Hosts relayed only under these path prefixes (PGDA: the LOLA DEMs for the map's contours)
+_RELAY_PATHS = {"pgda.gsfc.nasa.gov": "/data/LOLA_20mpp/"}
+_BASEMAP_TYPES = {**_IMAGE_TYPES, ".json": "application/json"}
 _MAX_LISTED_IMAGES = 2000
 RELAY_MAX = 6
 RELAY_WAIT = 30.0
@@ -189,6 +194,7 @@ def _relay_allowed(url: str) -> bool:
         and port is None
         and not u.username
         and Path(u.path).suffix.lower() in _IMAGE_TYPES
+        and u.path.startswith(_RELAY_PATHS.get(u.hostname, "/"))
     )
 
 
@@ -382,6 +388,13 @@ class LunarHandler(http.server.BaseHTTPRequestHandler):
                 },
                 body,
             )
+        elif path.startswith("/basemaps/"):
+            name = path[len("/basemaps/") :]
+            ctype = _BASEMAP_TYPES.get(Path(name).suffix.lower())
+            if not ctype or "/" in name or name.startswith("."):
+                self._send_code(404)
+                return
+            self._serve(_BASEMAPS / name, ctype, body)
         elif path == "/api/images":
             self._json(_list_images(cfg.images_dir) if cfg.images_dir else [], body)
         elif path.startswith("/images/") and cfg.images_dir is not None:

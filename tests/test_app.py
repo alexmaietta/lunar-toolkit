@@ -106,6 +106,17 @@ def test_config_reports_admin_for_loopback_only(server, remote):
     assert _json(server, "/api/config?token=wrong")[1]["admin"] is False
 
 
+def test_basemaps_are_served_with_range(server):
+    code, headers, raw = _req(server, "/basemaps/manifest.json")
+    assert code == 200 and headers["Content-Type"] == "application/json"
+    manifest = json.loads(raw)
+    assert all((serve._BASEMAPS / m["file"]).is_file() for m in manifest.values())
+    code, headers, raw = _req(server, "/basemaps/lola_dem_global.tif", headers={"Range": "bytes=0-3"})
+    assert code == 206 and raw[:2] == b"II"
+    for bad in ("/basemaps/../index.html", "/basemaps/x.txt", "/basemaps/missing.jpg"):
+        assert _req(server, bad)[0] == 404, bad
+
+
 def test_loopback_is_admin_but_needs_a_local_host_header(server):
     assert _json(server, "/api/config")[1]["admin"] is True
     assert _json(server, "/api/config", headers={"Host": "evil.example:80"})[1]["admin"] is False
@@ -447,6 +458,7 @@ def test_backend_selection(monkeypatch):
     assert app.choose_backend("auto", "linux") == ("browser", None)
     binary[0] = "/usr/bin/chromium"
     assert app.choose_backend("auto", "linux") == ("chromium", "/usr/bin/chromium")
+    assert app.choose_backend("webview", "linux") == ("browser", None)
     present |= {"webview", "gi"}
     assert app.choose_backend("auto", "linux") == ("webview", "gtk")
     present |= {"qtpy", "PyQt6.QtWebEngineWidgets"}

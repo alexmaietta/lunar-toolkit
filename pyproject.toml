@@ -69,7 +69,7 @@ where = ["."]
 include = ["lunar_toolkit*"]
 
 [tool.setuptools.package-data]
-lunar_toolkit = ["static/*.html"]
+lunar_toolkit = ["static/*.html", "static/basemaps/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

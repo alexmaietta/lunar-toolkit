@@ -112,7 +112,9 @@ def test_relay_only_pds_image_files():
     ok = "https://pds.mcp.nasa.gov/data/store/img/lunar_reconnaissance_orbiter/pds4/lroc/x/M1_pyr.tif"
     assert _relay_allowed(ok)
     assert _relay_allowed("https://data.darts.isas.jaxa.jp/pub/pds3/x/browse/large/TC1.jpg")
+    assert _relay_allowed("https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF")
     for bad in (
+        "https://pgda.gsfc.nasa.gov/other/a.tif",
         ok.replace("https:", "http:"),
         "https://example.com/a.tif",
         "https://pds.mcp.nasa.gov.evil.com/a.tif",

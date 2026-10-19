@@ -1,0 +1,11 @@
+{
+  "wac_global": {"file": "wac_global.jpg", "proj": "eqc", "bounds": [-180, -90, 180, 90]},
+  "lola_shade_global": {"file": "lola_shade_global.jpg", "proj": "eqc", "bounds": [-180, -90, 180, 90]},
+  "lola_dem_global": {"file": "lola_dem_global.tif", "proj": "eqc"},
+  "wac_south": {"file": "wac_south.jpg", "proj": "S", "bounds": [-609600, -609600, 609600, 609600]},
+  "wac_north": {"file": "wac_north.jpg", "proj": "N", "bounds": [-609600, -609600, 609600, 609600]},
+  "lola_shade_south": {"file": "lola_shade_south.jpg", "proj": "S", "bounds": [-609600, -609600, 609600, 609600]},
+  "lola_shade_north": {"file": "lola_shade_north.jpg", "proj": "N", "bounds": [-609600, -609600, 609600, 609600]},
+  "lola_dem_south": {"file": "lola_dem_south.tif", "proj": "S"},
+  "lola_dem_north": {"file": "lola_dem_north.tif", "proj": "N"}
+}

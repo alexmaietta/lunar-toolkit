@@ -80,8 +80,9 @@ print.prt
 *.duckdb.wal
 *.build.duckdb*
 
-# Test fixtures are tracked
+# Test fixtures and the browser's bundled basemaps are tracked
 !tests/fixtures/**
+!lunar_toolkit/static/basemaps/*.tif
 
 # Local notes
 TODO.md

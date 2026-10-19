@@ -54,7 +54,7 @@ Examples
 
 The server runs on this machine (a free port on 127.0.0.1 by default) and stops when
 the window closes. Window backends, first available wins (--backend auto):
-  webview   pywebview: Qt WebEngine on Linux (pip install PyQt6 PyQt6-WebEngine qtpy,
+  webview   pywebview: Qt WebEngine on Linux (pip install "lunar-toolkit[app]",
             or PyGObject + WebKitGTK), Edge WebView2 on Windows, WebKit on macOS
   chromium  Chrome / Chromium / Edge / Brave in --app mode (own profile in the cache dir)
   browser   the default browser (Ctrl-C stops the server)
@@ -128,13 +128,16 @@ def chromium_binary(platform: str | None = None) -> str | None:
     return None
 
 
+INSTALL_HINT = 'pip install "lunar-toolkit[app]"'
+
+
 def choose_backend(requested: str = "auto", platform: str | None = None) -> tuple[str, str | None]:
     """``(backend, detail)``: the pywebview GUI name, the Chromium binary, or None for the browser."""
     if requested in ("auto", "webview"):
         gui = webview_gui(platform)
         if gui:
             return "webview", gui
-    if requested in ("auto", "chromium", "webview"):
+    if requested in ("auto", "chromium"):
         binary = chromium_binary(platform)
         if binary:
             return "chromium", binary
@@ -171,6 +174,12 @@ def _run_chromium(url: str, binary: str) -> None:
 def run(args: argparse.Namespace) -> int:
     from .serve import make_server, print_banner
 
+    backend, detail = choose_backend(args.backend)
+    if args.backend == "webview" and backend != "webview":
+        print(
+            f"No native window toolkit for pywebview here; {INSTALL_HINT}, or use --backend chromium / browser."
+        )
+        return 1
     try:
         server, cfg = make_server(args)
     except (ValueError, OSError) as exc:
@@ -179,7 +188,8 @@ def run(args: argparse.Namespace) -> int:
     url = print_banner(server, cfg, args.host, TITLE)
     thread = threading.Thread(target=server.serve_forever, name="lunar-server", daemon=True)
     thread.start()
-    backend, detail = choose_backend(args.backend)
+    if backend != "webview" and args.backend == "auto":
+        print(f"  note     : no native window toolkit; {INSTALL_HINT} for one")
     try:
         if backend == "webview" and detail:
             print(f"  window   : pywebview ({detail})")
@@ -193,7 +203,7 @@ def run(args: argparse.Namespace) -> int:
             print(f"  window   : {Path(detail).name} --app")
             _run_chromium(url, detail)
             return 0
-        print("  window   : none found (pip install PyQt6 PyQt6-WebEngine qtpy); opening a browser tab")
+        print("  window   : no Chrome / Chromium / Edge either; opening a browser tab")
         print("  Ctrl-C to stop.\n")
         webbrowser.open(url)
         while thread.is_alive():
