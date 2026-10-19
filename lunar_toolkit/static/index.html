@@ -214,6 +214,7 @@
     .stylepop select { width: auto; }
     .mapbox.hide-fp .fp, .mapbox.hide-fp .fpfill, .mapbox.hide-region .region { display: none; }
     .panehead .toggle { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; white-space: nowrap; }
+    .map .limb { fill: none; stroke: var(--border); stroke-width: 1; pointer-events: none; }
     .map .region { fill: none; fill-rule: evenodd; stroke: var(--region); stroke-width: 1.4; stroke-dasharray: 6 3; pointer-events: none; }
     .map text { fill: var(--plot-label); font-size: 11px; pointer-events: none; }
     .map text.gl { fill: var(--muted); font-size: 10.5px; }
@@ -1051,12 +1052,13 @@
       return replicate ? [...g, ...shiftX(g, 360), ...shiftX(g, -360)] : g;
     }
 
+    // hemi 'S' / 'N' polar stereographic, null lon/lat for the cylindrical map, 'LL' raw lon/lat rings
     function footprintGeometry(ringsList, hemi) {
       const parts = [];
       for (let rings of ringsList) {
         rings = rings.map(openRing);
         if (!rings.length || !rings[0].length) continue;
-        parts.push(polygon(hemi ? rings.map((r) => psRing(r, hemi))
+        parts.push(polygon(hemi === 'LL' ? rings : hemi ? rings.map((r) => psRing(r, hemi))
           : shiftTo0360(rings.map((r) => (r.length >= 3 ? llRing(r) : r)))));
       }
       return parts.length ? parts : null;
@@ -1094,7 +1096,7 @@
         span = Math.min(east >= west ? east - west : east - west + 360, 360);
       }
       const ring = boxRing(s, n, west, span);
-      return [[hemi ? psRing(ring, hemi) : ring]];
+      return [[hemi && hemi !== 'LL' ? psRing(ring, hemi) : ring]];
     }
 
     function bboxOf(rings) {
@@ -1176,7 +1178,7 @@
       const finite = (...vs) => vs.every((v) => v != null && Number.isFinite(v));
       if (mode === 'aoi') {
         const aoi = loadAoi($(`${p}-aoi`).value);
-        return { aoi, region: aoiRegion(aoi), shape: (hemi) => aoiGeometry(aoi, hemi, false) };
+        return { aoi, region: aoiRegion(aoi), shape: (hemi) => (hemi === 'LL' ? aoi.polygons : aoiGeometry(aoi, hemi, false)) };
       }
       if (mode === 'point') {
         const [lat, lon, r] = [`${p}-lat`, `${p}-lon`, `${p}-radius`].map(num);
@@ -1185,7 +1187,7 @@
         const ring = circleRing(lat, lon, radiusKm);
         return {
           region: queryRegion({ point: [lat, lon], radiusKm }),
-          shape: (hemi) => [[hemi ? psRing(ring, hemi) : ring.length > 2 ? llRing(ring) : ring]],
+          shape: (hemi) => [[hemi === 'LL' ? ring : hemi ? psRing(ring, hemi) : ring.length > 2 ? llRing(ring) : ring]],
         };
       }
       const [west, south, east, north] = [`${p}-west`, `${p}-south`, `${p}-east`, `${p}-north`].map(num);
@@ -1195,6 +1197,11 @@
         region,
         shape: (hemi) => {
           const [s, n] = region.lat;
+          if (hemi === 'LL') {
+            if (region.span < 360) return [[boxRing(s, n, region.west, region.span)]];
+            const rings = [s, n].filter((la) => Math.abs(la) < 90).map((la) => Array.from({ length: 360 }, (_, i) => [i, la]));
+            return rings.length ? [rings] : [];
+          }
           if (hemi && region.span >= 360) {
             // A full-longitude box is a disc or annulus around the pole
             const circle = (la) => psRing(Array.from({ length: 360 }, (_, i) => [i, la]), hemi);
@@ -1319,10 +1326,119 @@
       else renderMap(map, { hemi: mapHemi(sel.region, []), region: sel, items: [] });
     }
 
+    // Map projections: fwd(lon, lat) -> data [x, y] in metres (y down), null beyond the horizon
+    // (the limb for orthographic); inv([x, y]) -> [lon, lat] or null. Auto keeps the lon/lat map
+    // (x = lon * kx, y = -lat) or polar stereographic poleward of +/-60 deg.
+    const MAP_PROJECTIONS = {
+      auto: 'Auto', eqc: 'Cylindrical',
+      stS: 'Stereographic - south pole', stN: 'Stereographic - north pole', stNear: 'Stereographic - near side', stFar: 'Stereographic - far side',
+      orS: 'Orthographic - south pole', orN: 'Orthographic - north pole', orNear: 'Orthographic - near side', orFar: 'Orthographic - far side',
+    };
+    // Short menu text, to keep the pane head narrow
+    const projMenu = (v) => MAP_PROJECTIONS[v].replace('graphic -', '');
+    const PROJ_CENTRES = { S: [-90, 0], N: [90, 0], Near: [0, 0], Far: [0, 180] };
+
+    function azimuthal(ortho, lat0, lon0, cmin = ortho ? 0 : Math.cos(160 * RAD)) {
+      const R = MOON_RADIUS_KM * 1000, s0 = Math.sin(lat0 * RAD), c0 = Math.cos(lat0 * RAD);
+      // Unit-sphere components in data orientation, and the cosine of the distance from the centre
+      const raw = (lon, lat) => {
+        const p = lat * RAD, d = (lon - lon0) * RAD, cp = Math.cos(p);
+        return [cp * Math.sin(d), -(c0 * Math.sin(p) - s0 * cp * Math.cos(d)), s0 * Math.sin(p) + c0 * cp * Math.cos(d)];
+      };
+      const fwd = (lon, lat) => {
+        const [x, y, cc] = raw(lon, lat);
+        if (cc < cmin - 1e-12) return null;
+        const f = ortho ? R : (2 * R) / (1 + cc);
+        return [f * x, f * y];
+      };
+      const rOfC = ortho ? (c) => R * Math.sin(Math.min(c, Math.PI / 2)) : (c) => 2 * R * Math.tan(c / 2);
+      const cOfR = ortho ? (r) => (r <= R ? Math.asin(r / R) : NaN) : (r) => 2 * Math.atan(r / (2 * R));
+      const inv = ([x, y]) => {
+        y = -y;
+        const r = Math.hypot(x, y), c = cOfR(r);
+        if (!(c <= Math.acos(cmin) + 1e-9)) return null;
+        if (r < 1e-9) return [mod(lon0, 360), lat0];
+        const sc = Math.sin(c), cc = Math.cos(c);
+        const lat = Math.asin(Math.max(-1, Math.min(1, cc * s0 + (y * sc * c0) / r))) * DEG;
+        return [mod(lon0 + Math.atan2(x * sc, r * c0 * cc - y * s0 * sc) * DEG, 360), lat];
+      };
+      return { kind: ortho ? 'ortho' : 'stere', cmin, raw, fwd, inv, rOfC, cOfR, rMax: rOfC(Math.acos(cmin)),
+        cosc: (lon, lat) => raw(lon, lat)[2], hemi: lat0 === -90 ? 'S' : lat0 === 90 ? 'N' : null };
+    }
+
+    // pj.raster: the basemap family drawn natively (affine), else the map is reprojected
+    function mapProjection(choice, hemi) {
+      const az = /^(st|or)/.test(choice) && choice in MAP_PROJECTIONS;
+      if (choice === 'eqc' || (!az && !hemi)) return { id: 'eqc', kind: 'eqc', auto: choice !== 'eqc', raster: 'eqc', hemi: null };
+      if (!az) {
+        return { ...azimuthal(false, hemi === 'S' ? -90 : 90, 0, Math.cos(179 * RAD)), id: `ps${hemi}`, auto: true, raster: hemi, gratCap: 90, rMax: Infinity };
+      }
+      const [la, lo] = PROJ_CENTRES[choice.slice(2)];
+      const pj = { ...azimuthal(choice.startsWith('or'), la, lo), id: choice };
+      return { ...pj, raster: pj.kind === 'stere' ? pj.hemi : null, gratCap: Math.acos(pj.cmin) * DEG };
+    }
+
+    // Points along great circles at most step deg apart (footprint edges, which may cross a pole)
+    function densifyGC(ring, step) {
+      const v = ([lo, la]) => [Math.cos(la * RAD) * Math.cos(lo * RAD), Math.cos(la * RAD) * Math.sin(lo * RAD), Math.sin(la * RAD)];
+      const out = [];
+      ring.forEach((p, i) => {
+        const a = v(p), b = v(ring[(i + 1) % ring.length]);
+        const d = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]))), s = Math.sin(d);
+        out.push(p);
+        for (let j = 1, n = Math.ceil((d * DEG) / step); j < n && s > 1e-9; j++) {
+          const f0 = Math.sin(d * (1 - j / n)) / s, f1 = Math.sin((d * j) / n) / s;
+          const [x, y, z] = [0, 1, 2].map((c) => f0 * a[c] + f1 * b[c]);
+          out.push([Math.atan2(y, x) * DEG, Math.asin(Math.max(-1, Math.min(1, z))) * DEG]);
+        }
+      });
+      return out;
+    }
+
+    // Lon/lat ring -> data coordinates: edges densified, parts beyond the horizon cut along it
+    function projectRing(pj, ring) {
+      if (ring.length < 3) return ring.map(([lo, la]) => pj.fwd(lo, la)).filter(Boolean);
+      const pts = densifyGC(ring, 0.5), n = pts.length;
+      const cs = pts.map(([lo, la]) => pj.cosc(lo, la)), vis = cs.map((c) => c >= pj.cmin);
+      const start = vis.indexOf(true);
+      if (start < 0) return [];
+      if (vis.every(Boolean)) return pts.map(([lo, la]) => pj.fwd(lo, la));
+      const rb = pj.rMax, on = (a) => [rb * Math.cos(a), rb * Math.sin(a)], out = [];
+      let exitA = 0;
+      for (let k = 0; k < n; k++) {
+        const i = (start + k) % n, j = (i + 1) % n;
+        if (vis[i]) out.push(pj.fwd(...pts[i]));
+        if (vis[i] === vis[j]) continue;
+        const t = (pj.cmin - cs[i]) / (cs[j] - cs[i]);
+        const [rx, ry] = pj.raw(pts[i][0] + wrap180(pts[j][0] - pts[i][0]) * t, pts[i][1] + (pts[j][1] - pts[i][1]) * t);
+        const a = Math.atan2(ry, rx);
+        if (vis[i]) exitA = a;
+        else {
+          const d = mod(a - exitA + Math.PI, 2 * Math.PI) - Math.PI, m = Math.ceil(Math.abs(d) / (3 * RAD));
+          for (let q = 1; q < m; q++) out.push(on(exitA + (d * q) / m));
+        }
+        out.push(on(a));
+      }
+      return out;
+    }
+
+    const projectPolys = (pj, polys) => polys.map((P) => P.map((r) => projectRing(pj, r))).filter((P) => P[0].length)
+      .map((P) => [P[0], ...P.slice(1).filter((h) => h.length >= 3)]);
+
+    // Inverse polar stereographic (psXY)
+    function psLonLat(x, y, hemi) {
+      const sgn = hemi === 'S' ? 1 : -1;
+      return [mod(Math.atan2(x, sgn * y) * DEG, 360), sgn * (2 * Math.atan(Math.hypot(x, y) / (2 * MOON_RADIUS_KM * 1000)) - Math.PI / 2) * DEG];
+    }
+
     function renderMap(container, { hemi, region, items }) {
       container._resize?.disconnect();
       container._highlight = null;
       if (!items.length && !region) { container.replaceChildren(); return; }
+      // hemi: the Auto choice from the region; generic: projected and clipped from lon/lat rings
+      let autoHemi = hemi;
+      const pj = mapProjection(mapPrefs.proj, hemi), generic = !pj.auto && pj.kind !== 'eqc';
+      hemi = pj.kind === 'eqc' ? null : pj.hemi;
       const NS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(NS, 'svg');
       const reset = el('button', { class: 'tool', type: 'button', title: 'Reset view (double click)' }, 'Reset view');
@@ -1331,26 +1447,30 @@
       const cinfo = el('span', { class: 'info' });
       const pick = el('select', { 'aria-label': 'Basemap', title: 'Basemap under the footprints' });
       const cbox = el('input', { type: 'checkbox' });
+      const ppick = el('select', { 'aria-label': 'Projection', title: 'Map projection' },
+        ...Object.keys(MAP_PROJECTIONS).map((v) => el('option', { value: v, title: MAP_PROJECTIONS[v] }, projMenu(v))));
+      ppick.value = MAP_PROJECTIONS[mapPrefs.proj] ? mapPrefs.proj : 'auto';
       const coord = el('div', { class: 'mapcoord' });
       const tools = el('span', { class: 'tools' }, ...Object.entries(MAP_TOOLS).map(([t, [label, title]]) =>
         el('button', { class: `tool${t === 'pan' ? ' on' : ''}`, type: 'button', 'data-tool': t, title }, label)));
       const bar = el('div', { class: 'panehead' },
         el('span', { class: 'title' }, 'Footprints'),
-        el('span', { class: 'info' }, hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
+        el('span', { class: 'info' }, generic ? `${MAP_PROJECTIONS[pj.id]}, R = ${MOON_RADIUS_KM} km`
+          : hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
           : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
         cinfo, spin,
-        el('span', { class: 'right' }, tools, pick, el('label', { class: 'toggle', title: 'Elevation contours (LOLA)' }, cbox, ' Contours'),
+        el('span', { class: 'right' }, tools, ppick, pick, el('label', { class: 'toggle', title: 'Elevation contours (LOLA)' }, cbox, ' Contours'),
           layerToggle(container, 'fp', 'Footprints'), footprintStyle(container), layerToggle(container, 'region', 'Region'), reset));
       container.replaceChildren(el('div', { class: 'map' }, bar, el('div', { class: 'plotarea' }, canvas, svg, coord)));
       const clipId = `clip-${container.id}`;
       const M = MARGIN;
 
       // Lon/lat: center everything on the region (or the footprints) to avoid the seam
-      const regionGeom = region ? region.shape(hemi) : [];
-      let geoms = items.map((it) => it.geom);
+      const regionGeom = region && !generic ? region.shape(hemi) : [];
+      let geoms = generic ? [] : items.map((it) => (it.hemi === hemi ? it.geom : it.geomOf(hemi)));
       let kx = 1;
       let recenter = (g) => g;
-      if (!hemi) {
+      if (pj.kind === 'eqc') {
         const mids = [...regionGeom, ...geoms.flat()].map((P) => { const b = bboxOf([P[0]]); return (b[0] + b[1]) / 2; });
         const c = region ? (region.region.span < 360 ? region.region.west + region.region.span / 2 : 180)
           : Math.atan2(sumOf(mids.map((m) => Math.sin(m * RAD))), sumOf(mids.map((m) => Math.cos(m * RAD)))) * DEG;
@@ -1361,16 +1481,19 @@
         regionGeom.splice(0, regionGeom.length, ...recenter(regionGeom));
       }
       // Data coordinates: x right, y down
-      const toXY = (g) => g.map((P) => P.map((r) => r.map(([x, y]) => (hemi ? [x, -y] : [x * kx, -y]))));
-      let reg = toXY(regionGeom);
-      const fps = geoms.map(toXY);
+      if (pj.kind === 'eqc') pj.inv = ([x, y]) => [x / kx, -y];
+      const toXY = (g) => (generic ? projectPolys(pj, g) : g.map((P) => P.map((r) => r.map(([x, y]) => (hemi ? [x, -y] : [x * kx, -y])))));
+      const regionXY = (next) => toXY(generic ? next.shape('LL') : hemi ? next.shape(hemi) : recenter(next.shape(hemi)));
+      let reg = generic ? (region ? regionXY(region) : []) : toXY(regionGeom);
+      const fps = generic ? items.map((it) => toXY(it.geomOf('LL'))) : geoms.map(toXY);
       const all = [...reg, ...fps.flat()].flat();
-      let [x0, x1, y0, y1] = all.length ? bboxOf(all) : [-1, 1, -1, 1];
-      const minSpan = hemi ? 2000 : 0.05;
+      const R = MOON_RADIUS_KM * 1000;
+      let [x0, x1, y0, y1] = all.length ? bboxOf(all) : generic ? [-R, R, -R, R] : [-1, 1, -1, 1];
+      const minSpan = pj.kind === 'eqc' ? 0.05 : 2000;
       if (x1 - x0 < minSpan) [x0, x1] = [(x0 + x1 - minSpan) / 2, (x0 + x1 + minSpan) / 2];
       if (y1 - y0 < minSpan) [y0, y1] = [(y0 + y1 - minSpan) / 2, (y0 + y1 + minSpan) / 2];
       const home = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
-      const under = mapUnderlay({ container, hemi, kx, canvas, spin, cinfo, pick, cbox, home, redraw: () => redraw() });
+      const under = mapUnderlay({ container, pj, kx, canvas, spin, cinfo, pick, cbox, home, redraw: () => redraw() });
       // SW x SH: whole svg; W x H: plot area inside the axis margins
       let view = null, SW = 0, SH = 0, W = 0, H = 0, sel = -1, touched = false;
       const fit = () => {
@@ -1384,10 +1507,11 @@
         : 'M' + r.map(([x, y]) => `${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`).join('L') + 'Z')).join('')).join('');
       const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
       const sgn = hemi === 'S' ? 1 : -1;
-      const rho = (la) => 2 * MOON_RADIUS_KM * 1000 * Math.tan(Math.PI / 4 + sgn * (la * RAD) / 2);
-      const latOf = (r) => sgn * (2 * Math.atan(r / (2 * MOON_RADIUS_KM * 1000)) - Math.PI / 2) * DEG;
-      // Data coordinates (x right, y down) to [lon, lat]
-      const toLonLat = ([x, y]) => (hemi ? [mod(Math.atan2(x, -sgn * y) * DEG, 360), latOf(Math.hypot(x, y))] : [x / kx, -y]);
+      // Polar aspects: radius of a parallel, and its inverse
+      const rho = (la) => pj.rOfC(Math.PI / 2 + sgn * la * RAD);
+      const latOf = (r) => sgn * (pj.cOfR(r) - Math.PI / 2) * DEG;
+      // Data coordinates (x right, y down) to [lon, lat], null off the globe
+      const toLonLat = (p) => pj.inv(p);
       coord.style.left = `${M.l + 6}px`;
       coord.style.bottom = `${M.b + 6}px`;
       let tool = 'pan', sketch = null;
@@ -1408,7 +1532,16 @@
           labels.push(`<text x="-6" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${text}</text>`);
         };
         let xTitle, yTitle;
-        if (!hemi) {
+        const inView = (x, y) => x >= 4 && x <= W - 30 && y >= 12 && y <= H - 4;
+        const gl = (x, y, text) => { if (inView(x, y)) inner.push(`<text class="gl" x="${(x + 3).toFixed(1)}" y="${(y - 3).toFixed(1)}">${text}</text>`); };
+        // Frame ticks in projected km (y up)
+        const kmTicks = () => {
+          const xs = step125((vx1 - vx0) / 1000, Math.max(2, W / 90)), ys = step125((vy1 - vy0) / 1000, Math.max(2, H / 50));
+          for (let v = Math.ceil(vx0 / 1000 / xs) * xs; v <= vx1 / 1000; v += xs) xTick(sx(v * 1000), fmtDeg(v, xs));
+          for (let v = Math.ceil(-vy1 / 1000 / ys) * ys; v <= -vy0 / 1000; v += ys) yTick(sy(-v * 1000), fmtDeg(v, ys));
+          return ['x (km)', 'y (km)'];
+        };
+        if (pj.kind === 'eqc') {
           const lonStep = niceStep((vx1 - vx0) / kx), latStep = niceStep(vy1 - vy0);
           for (let lo = Math.ceil(vx0 / kx / lonStep) * lonStep; lo <= vx1 / kx; lo += lonStep) {
             const x = sx(lo * kx);
@@ -1422,14 +1555,14 @@
             yTick(y, fmtDeg(la, latStep));
           }
           [xTitle, yTitle] = ['Longitude (deg E)', 'Latitude (deg)'];
-        } else {
-          const inView = (x, y) => x >= 4 && x <= W - 30 && y >= 12 && y <= H - 4;
+        } else if (hemi) {
           const cx = Math.min(Math.max(0, vx0), vx1), cy = Math.min(Math.max(0, vy0), vy1);
           const rMin = Math.hypot(cx, cy);
-          const rMax = Math.max(...[[vx0, vy0], [vx0, vy1], [vx1, vy0], [vx1, vy1]].map(([x, y]) => Math.hypot(x, y)));
+          const rMax = Math.min(pj.rMax, Math.max(...[[vx0, vy0], [vx0, vy1], [vx1, vy0], [vx1, vy1]].map(([x, y]) => Math.hypot(x, y))));
           const [laIn, laOut] = [latOf(rMin), latOf(rMax)];
           const latStep = niceStep(Math.abs(laOut - laIn));
-          const poleward = (la) => (hemi === 'S' ? la <= 0 : la >= 0);
+          // Auto: the polar hemisphere only; otherwise up to the horizon
+          const poleward = (la) => 90 + sgn * la <= pj.gratCap + 1e-9;
           const angSpan = rMin > 0 ? Math.min(360, (2 * Math.hypot(vx1 - vx0, vy1 - vy0) / rMin) * DEG) : 360;
           const lonStep = Math.min(30, Math.max(0.5, niceStep(angSpan)));
           // Latitude labels between two meridians, towards the view centre
@@ -1441,22 +1574,56 @@
           for (const la of lats) {
             const r = rho(la) * view.k;
             lines.push(`M${(sx(0) - r).toFixed(1)} ${sy(0).toFixed(1)}a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(2 * r).toFixed(1)} 0a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(-2 * r).toFixed(1)} 0`);
-            const lx = sx(Math.cos(dirC) * rho(la)), ly = sy(Math.sin(dirC) * rho(la));
-            if (inView(lx, ly)) inner.push(`<text class="gl" x="${(lx + 3).toFixed(1)}" y="${(ly - 3).toFixed(1)}">${fmtDeg(la, latStep)}</text>`);
+            gl(sx(Math.cos(dirC) * rho(la)), sy(Math.sin(dirC) * rho(la)), fmtDeg(la, latStep));
           }
           const rLab = Math.max(Math.hypot(view.cx, view.cy), 0.3 * Math.min(W, H) / view.k);
-          for (let lo = 0; lo < 360; lo += lonStep) {
+          for (let lo = 0; lo < 360 && rMin < rMax; lo += lonStep) {
             // Data coords (y down): S x = rho sin, y = -rho cos; N y = rho cos
             const ux = Math.sin(lo * RAD), uy = -sgn * Math.cos(lo * RAD);
             lines.push(`M${sx(ux * rMin).toFixed(1)} ${sy(uy * rMin).toFixed(1)}L${sx(ux * rMax).toFixed(1)} ${sy(uy * rMax).toFixed(1)}`);
-            const lx = sx(ux * rLab), ly = sy(uy * rLab);
-            if (inView(lx, ly)) inner.push(`<text class="gl" x="${(lx + 3).toFixed(1)}" y="${(ly - 3).toFixed(1)}">${fmtDeg(lo, lonStep)}E</text>`);
+            if (rLab <= rMax) gl(sx(ux * rLab), sy(uy * rLab), `${fmtDeg(lo, lonStep)}E`);
           }
-          // Frame ticks in polar stereographic km (y up)
-          const xs = step125((vx1 - vx0) / 1000, Math.max(2, W / 90)), ys = step125((vy1 - vy0) / 1000, Math.max(2, H / 50));
-          for (let v = Math.ceil(vx0 / 1000 / xs) * xs; v <= vx1 / 1000; v += xs) xTick(sx(v * 1000), fmtDeg(v, xs));
-          for (let v = Math.ceil(-vy1 / 1000 / ys) * ys; v <= -vy0 / 1000; v += ys) yTick(sy(-v * 1000), fmtDeg(v, ys));
-          [xTitle, yTitle] = ['x (km)', 'y (km)'];
+          [xTitle, yTitle] = kmTicks();
+        } else {
+          // Equatorial aspects: meridians and parallels as projected polylines, labelled at the
+          // bottom (meridians) and left (parallels) of the view
+          const lls = [];
+          for (let j = 0; j <= 16; j++) {
+            for (let i = 0; i <= 16; i++) {
+              const ll = pj.inv([vx0 + ((vx1 - vx0) * i) / 16, vy0 + ((vy1 - vy0) * j) / 16]);
+              if (ll) lls.push(ll);
+            }
+          }
+          const poleIn = (la) => { const p = pj.fwd(0, la); return p && p[0] >= vx0 && p[0] <= vx1 && p[1] >= vy0 && p[1] <= vy1; };
+          if (lls.length) {
+            const laMin = poleIn(-90) ? -90 : minOf(lls.map((p) => p[1])), laMax = poleIn(90) ? 90 : maxOf(lls.map((p) => p[1]));
+            let [lw, lspan] = poleIn(-90) || poleIn(90) ? [0, 360] : coveringArc(lls.map(([lo]) => [lo, 0]));
+            const latStep = Math.min(30, niceStep(Math.max(laMax - laMin, 1e-4))), lonStep = Math.min(30, niceStep(Math.max(lspan, 1e-4)));
+            if (lspan < 360) [lw, lspan] = [lw - lonStep, Math.min(360, lspan + 2 * lonStep)];
+            const [la0, la1] = [Math.max(-90, laMin - latStep), Math.min(90, laMax + latStep)];
+            const line = (pts, text, pickLabel) => {
+              let d = '', pen = false, best = null;
+              for (const [lo, la] of pts) {
+                const p = pj.fwd(lo, la);
+                if (!p) { pen = false; continue; }
+                const x = sx(p[0]), y = sy(p[1]);
+                d += `${pen ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+                pen = true;
+                if (inView(x, y) && Math.abs(la) < 89 && (!best || pickLabel([x, y], best))) best = [x, y];
+              }
+              lines.push(d);
+              if (best) gl(best[0], best[1], text);
+            };
+            const N = 120;
+            for (let lo = Math.ceil(lw / lonStep) * lonStep; lo <= lw + lspan && lo < lw + 360; lo += lonStep) {
+              line(Array.from({ length: N + 1 }, (_, i) => [lo, la0 + ((la1 - la0) * i) / N]), `${fmtDeg(mod(lo, 360), lonStep)}E`, (p, b) => p[1] > b[1]);
+            }
+            for (let la = Math.ceil(laMin / latStep) * latStep; la <= laMax; la += latStep) {
+              if (Math.abs(la) >= 90) continue;
+              line(Array.from({ length: 2 * N + 1 }, (_, i) => [lw + (lspan * i) / (2 * N), la]), fmtDeg(la, latStep), (p, b) => p[0] < b[0]);
+            }
+          }
+          [xTitle, yTitle] = kmTicks();
         }
         labels.push(`<text class="axis" x="${(W / 2).toFixed(1)}" y="${H + 29}" text-anchor="middle">${xTitle}</text>`,
           `<text class="axis" transform="translate(${-M.l + 12} ${(H / 2).toFixed(1)}) rotate(-90)" text-anchor="middle">${yTitle}</text>`);
@@ -1472,7 +1639,9 @@
         const ds = fps.map((g) => pathD(g));
         svg.innerHTML = `<defs><clipPath id="${clipId}"><rect width="${W}" height="${H}"/></clipPath></defs>`
           + `<g transform="translate(${M.l} ${M.t})"><rect class="plot" width="${W}" height="${H}"/>`
-          + `<g clip-path="url(#${clipId})">${a.grid}<g class="cslot"/>`
+          + `<g clip-path="url(#${clipId})">${a.grid}`
+          + (pj.kind === 'ortho' ? `<circle class="limb" cx="${sx(0).toFixed(1)}" cy="${sy(0).toFixed(1)}" r="${(pj.rMax * view.k).toFixed(1)}"/>` : '')
+          + '<g class="cslot"/>'
           + `<g class="fpfill">${ds.map((d) => `<path d="${d}"/>`).join('')}</g>`
           + order.map((i) => `<path class="fp${i === sel ? ' sel' : ''}" data-i="${i}" d="${ds[i]}"><title>${esc(items[i].title)}</title></path>`).join('')
           + (reg.length ? `<path class="region" d="${pathD(reg)}"/>` : '')
@@ -1506,6 +1675,11 @@
           const [[ax, ay], [bx, by]] = [sketch.a, sketch.b];
           return `<path class="sketch" d="M${P([ax, ay])}L${P([bx, ay])}L${P([bx, by])}L${P([ax, by])}Z"/>`;
         }
+        if (sketch.tool === 'circle' && generic) {
+          const [a, b] = [toLonLat(sketch.a), toLonLat(sketch.b)];
+          const ring = a && b ? projectRing(pj, circleRing(a[1], a[0], greatCircleKm(a[1], a[0], b[1], b[0]))) : [];
+          return ring.length ? `<path class="sketch" d="M${ring.map(P).join('L')}Z"/>` : '';
+        }
         if (sketch.tool === 'circle') {
           const r = screenDist(sketch.a, sketch.b).toFixed(1);
           return `<circle class="sketch" cx="${sx(sketch.a[0]).toFixed(1)}" cy="${sy(sketch.a[1]).toFixed(1)}" r="${r}"/>`;
@@ -1522,7 +1696,7 @@
       };
       for (const b of tools.children) b.addEventListener('click', () => setTool(b.dataset.tool));
       // Densified ring in data coordinates -> lon/lat, so edges follow the map's straight lines
-      const ringLonLat = (pts, n = hemi ? 16 : 1) => pts.flatMap((p, i) => {
+      const ringLonLat = (pts, n = pj.kind === 'eqc' ? 1 : 16) => pts.flatMap((p, i) => {
         const q = pts[(i + 1) % pts.length];
         return Array.from({ length: n }, (_, j) => toLonLat([p[0] + ((q[0] - p[0]) * j) / n, p[1] + ((q[1] - p[1]) * j) / n]));
       });
@@ -1531,16 +1705,19 @@
         setTool('pan');
         if (!sk) return;
         if (sk.tool === 'circle') {
-          const [lon, lat] = toLonLat(sk.a), [lon2, lat2] = toLonLat(sk.b);
+          const [a, b] = [toLonLat(sk.a), toLonLat(sk.b)];
+          if (!a || !b) return;
+          const [[lon, lat], [lon2, lat2]] = [a, b];
           setFormRegion('point', { lat, lon, radius: greatCircleKm(lat, lon, lat2, lon2) });
-        } else if (sk.tool === 'box' && !hemi) {
+        } else if (sk.tool === 'box' && pj.kind === 'eqc') {
           const [[w, n], [e, s]] = [toLonLat([Math.min(sk.a[0], sk.b[0]), Math.min(sk.a[1], sk.b[1])]),
             toLonLat([Math.max(sk.a[0], sk.b[0]), Math.max(sk.a[1], sk.b[1])])];
           const full = e - w >= 360;
           setFormRegion('box', { west: full ? 0 : mod(w, 360), east: full ? 360 : mod(e, 360), south: s, north: n });
         } else {
           const pts = sk.tool === 'box' ? [sk.a, [sk.b[0], sk.a[1]], sk.b, [sk.a[0], sk.b[1]]] : sk.pts;
-          const ring = ringLonLat(pts).map(([lon, lat]) => [mod(lon, 360), lat]);
+          const ring = ringLonLat(pts).filter(Boolean).map(([lon, lat]) => [mod(lon, 360), lat]);
+          if (ring.length < 3) return;
           setFormRegion('aoi', { aoi: `POLYGON((${[...ring, ring[0]].map(([lon, lat]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(', ')}))` });
         }
       }
@@ -1550,9 +1727,10 @@
         if (mx < 0 || my < 0 || mx > W || my > H) { $('cursor').textContent = coord.textContent = ''; return; }
         const x = view.cx + (mx - W / 2) / view.k, y = -(view.cy + (my - H / 2) / view.k);
         let lat, lon, xy = '';
-        if (hemi) {
-          lat = latOf(Math.hypot(x, y));
-          lon = mod(Math.atan2(x, sgn * y) * DEG, 360);
+        if (pj.kind !== 'eqc') {
+          const ll = pj.inv([x, -y]);
+          if (!ll) { $('cursor').textContent = coord.textContent = ''; return; }
+          [lon, lat] = ll;
           xy = `  x ${(x / 1000).toFixed(2)} km  y ${(y / 1000).toFixed(2)} km`;
         } else {
           [lat, lon] = [y, mod(x / kx, 360)];
@@ -1611,12 +1789,20 @@
       });
       reset.addEventListener('click', home0);
       container._highlight = (row) => { sel = items.findIndex((it) => it.row === row); draw(); };
+      ppick.addEventListener('change', () => {
+        mapPrefs.proj = ppick.value;
+        saveMapPrefs();
+        const row = items[sel]?.row;
+        renderMap(container, { hemi: autoHemi, region, items });
+        if (row) container._highlight?.(row);
+      });
       // A new search region from the form or the map, keeping the view and the results
       container._setRegion = (next) => {
         const h = mapHemi(next.region, []);
-        if (h !== hemi) { renderMap(container, { hemi: h, region: next, items }); return; }
+        if (mapProjection(mapPrefs.proj, h).id !== pj.id) { renderMap(container, { hemi: h, region: next, items }); return; }
         region = next;
-        reg = toXY(hemi ? next.shape(hemi) : recenter(next.shape(hemi)));
+        autoHemi = h;
+        reg = regionXY(next);
         redraw();
       };
       let lastW = 0, lastH = 0;
@@ -1647,7 +1833,7 @@
       const items = [];
       for (const row of rows) {
         const geom = rowFootprint(row, wktCol, hemi);
-        if (geom) items.push({ geom, row, title: title(row), onclick: () => onclick(row) });
+        if (geom) items.push({ geom, hemi, geomOf: (h) => rowFootprint(row, wktCol, h), row, title: title(row), onclick: () => onclick(row) });
       }
       return items;
     }
@@ -2838,9 +3024,10 @@
       N: ['lola_dem_north'],
     };
     const BM_STRETCH = { min: 0, max: 255, gamma: 1 };
+    const POLAR_OVERVIEW_M = 609600;  // half width of the bundled polar overviews
     // Map preferences, remembered across searches and (when storage works) sessions
     const MAP_PREFS_KEY = 'lunar-toolkit-map';
-    const mapPrefs = { basemap: 'wac', contours: false, fpLine: 'dotted', fpFill: 'light', fpColor: 'blue' };
+    const mapPrefs = { proj: 'auto', basemap: 'wac', contours: false, fpLine: 'dotted', fpFill: 'light', fpColor: 'blue' };
     try { Object.assign(mapPrefs, JSON.parse(localStorage.getItem(MAP_PREFS_KEY) ?? '{}')); } catch { /* storage blocked */ }
     const saveMapPrefs = () => { try { localStorage.setItem(MAP_PREFS_KEY, JSON.stringify(mapPrefs)); } catch { /* storage blocked */ } };
     const bmOpened = new Map();  // ref -> { promise, src, pending, failed }
@@ -2886,12 +3073,15 @@
       tileAdd(key, { canvas, w, h, bytes: 0 }, w * h * 4);
     }
 
-    // Marching squares over grid parts { z, w, h, x(i), y(j) }: SVG paths (minor, major every 5th)
-    function contourPaths(parts, noData, step, X, Y) {
+    // Marching squares over grid parts { z, w, h, x(i), y(j) }: SVG paths (minor, major every 5th);
+    // P(x, y) gives the screen point, or null to drop the segment
+    function contourPaths(parts, noData, step, P) {
       const out = [[], []];
       for (const { z, w, h, x, y } of parts) {
-        const seg = (k, [i0, j0], [i1, j1]) => out[k % 5 === 0 ? 1 : 0].push(
-          `M${X(x(i0)).toFixed(1)} ${Y(y(j0)).toFixed(1)}L${X(x(i1)).toFixed(1)} ${Y(y(j1)).toFixed(1)}`);
+        const seg = (k, [i0, j0], [i1, j1]) => {
+          const a = P(x(i0), y(j0)), b = a && P(x(i1), y(j1));
+          if (b) out[k % 5 === 0 ? 1 : 0].push(`M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`);
+        };
         for (let j = 0; j < h - 1; j++) {
           for (let i = 0; i < w - 1; i++) {
             const a = z[j * w + i], b = z[j * w + i + 1], c = z[(j + 1) * w + i + 1], d = z[(j + 1) * w + i];
@@ -2912,10 +3102,15 @@
       return out.map((a) => a.join(''));
     }
 
-    // The basemap canvas and the contour layer of one footprint map
-    function mapUnderlay({ container, hemi, kx, canvas, spin, cinfo, pick, cbox, home, redraw }) {
+    // Re-rendering the map aborts the old map's reads; geotiff.js leaves some of those rejections unobserved
+    window.addEventListener('unhandledrejection', (e) => { if (e.reason?.name === 'AbortError') e.preventDefault(); });
+
+    // The basemap canvas and the contour layer of one footprint map. When the map projection is a
+    // raster's own (pj.raster) tiles are placed affinely, else reprojected pixel by pixel.
+    function mapUnderlay({ container, pj, kx, canvas, spin, cinfo, pick, cbox, home, redraw }) {
       bmNotify?.abort?.();
-      const proj = hemi ?? 'eqc', sc = hemi ? 1 : kx, NS = 'http://www.w3.org/2000/svg';
+      const native = pj.raster, hemi = native === 'eqc' ? null : native;
+      const proj = hemi ?? 'eqc', sc = native === 'eqc' ? kx : 1, NS = 'http://www.w3.org/2000/svg';
       const ctl = new AbortController();
       const st = { wanted: [], inflight: new Set(), failed: new Map(), timer: 0, ctimer: 0, ckey: '', gen: 0, cbusy: false, contour: null };
       const notify = () => { if (container.isConnected) redraw(); };
@@ -2928,12 +3123,16 @@
         contours.append(p);
         return p;
       });
-      // Raster extent in map data coordinates (x right, y down)
-      const geom = (s) => { const [x0, y0, x1, y1] = s.box; return { X0: x0 * sc, X1: x1 * sc, Y0: -y1, Y1: -y0 }; };
-      // x offsets of the wrapped lon/lat copies of g overlapping [vx0, vx1]
-      const copies = (g, vx0, vx1) => {
-        if (hemi) return [0];
-        const p = 360 * sc, n0 = Math.ceil((vx0 - g.X1) / p), n1 = Math.floor((vx1 - g.X0) / p);
+      // A chosen polar stereographic view reaching past the polar overviews is reprojected, so the
+      // global rasters fill it (Auto keeps the polar rasters only)
+      const affine = (view, W, H) => native && (pj.auto || !hemi
+        || Math.max(Math.abs(view.cx) + W / 2 / view.k, Math.abs(view.cy) + H / 2 / view.k) <= POLAR_OVERVIEW_M);
+      // Raster extent in map (or, reprojecting, the raster's own) data coordinates (x right, y down)
+      const geom = (s, k = sc) => { const [x0, y0, x1, y1] = s.box; return { X0: x0 * k, X1: x1 * k, Y0: -y1, Y1: -y0 }; };
+      // x offsets of the wrapped lon/lat copies of g overlapping [vx0, vx1] (period p, 0 for polar)
+      const copies = (g, vx0, vx1, p = hemi ? 0 : 360 * sc) => {
+        if (!p) return [0];
+        const n0 = Math.ceil((vx0 - g.X1) / p), n1 = Math.floor((vx1 - g.X0) / p);
         return n1 - n0 > 8 ? [] : Array.from({ length: n1 - n0 + 1 }, (_, i) => (n0 + i) * p);
       };
       const choices = Object.keys(BASEMAPS[proj]).filter((c) => !['shade5', 'nac'].includes(c)
@@ -2979,6 +3178,9 @@
         const r = dpr();
         Object.assign(canvas.style, { left: `${MARGIN.l}px`, top: `${MARGIN.t}px`, width: `${W}px`, height: `${H}px` });
         if (canvas.width !== Math.round(W * r) || canvas.height !== Math.round(H * r)) [canvas.width, canvas.height] = [Math.round(W * r), Math.round(H * r)];
+        if (!affine(view, W, H)) { queue(reproject(view, W, H, r), view, W, H); return; }
+        clearTimeout(rp.timer);
+        rp.vkey = '';
         const ctx = canvas.getContext('2d');
         ctx.setTransform(r, 0, 0, r, 0, 0);
         ctx.clearRect(0, 0, W, H);
@@ -3032,11 +3234,125 @@
             }
           }
         }
+        queue(want, view, W, H);
+      }
+
+      function queue(want, view, W, H) {
         st.wanted = want.sort((a, b) => a.d - b.d);
         clearTimeout(st.timer);
         st.timer = setTimeout(pump, 80);
         placeContours(view, W, H);
         status();
+      }
+
+      // Reprojection: inverse-project a grid of screen pixels (every 3rd device pixel while the view
+      // moves, every one once it rests) and sample the global raster, or the polar one poleward of
+      // 72 deg, from the tiles of the level that suits the zoom, else the bundled overview
+      const rp = { vkey: '', gkey: '', lon: null, lat: null, want: [], timer: 0, out: document.createElement('canvas') };
+      const overviewPx = (b) => {
+        if (!b.px) {
+          const c = Object.assign(document.createElement('canvas'), { width: b.w0, height: b.h0 });
+          const cx = c.getContext('2d', { willReadFrequently: true });
+          cx.drawImage(b.pic, 0, 0);
+          const d = cx.getImageData(0, 0, b.w0, b.h0).data;
+          b.px = new Uint8Array(b.w0 * b.h0);
+          for (let i = 0; i < b.px.length; i++) b.px[i] = d[4 * i];
+          c.width = 0;
+        }
+        return b.px;
+      };
+      const tilePx = (t) => {
+        if (!t.px) {
+          t.px = new Uint32Array(t.canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, t.w, t.h).data.buffer);
+          tileAdd(null, t, t.w * t.h * 4);
+        }
+        return t.px;
+      };
+
+      function reproject(view, W, H, r) {
+        const vkey = `${view.cx}|${view.cy}|${view.k}|${W}|${H}|${choice()}`;
+        clearTimeout(rp.timer);
+        if (vkey !== rp.vkey) {
+          rp.vkey = vkey;
+          render(view, W, H, r, 3);
+        }
+        rp.timer = setTimeout(() => { if (container.isConnected) queue(render(view, W, H, r, 1), view, W, H); }, 200);
+        return rp.want;
+      }
+
+      function render(view, W, H, r, f) {
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const ch = choice();
+        if (ch === 'none') { ctx.clearRect(0, 0, canvas.width, canvas.height); return (rp.want = []); }
+        const gw = Math.ceil((W * r) / f), gh = Math.ceil((H * r) / f), n = gw * gh;
+        const gkey = `${view.cx}|${view.cy}|${view.k}|${gw}|${gh}`;
+        if (gkey !== rp.gkey) {
+          rp.gkey = gkey;
+          [rp.lon, rp.lat] = [new Float64Array(n), new Float64Array(n)];
+          for (let j = 0, k = 0; j < gh; j++) {
+            const y = view.cy + (((j + 0.5) * f) / r - H / 2) / view.k;
+            for (let i = 0; i < gw; i++, k++) {
+              const ll = pj.inv([view.cx + (((i + 0.5) * f) / r - W / 2) / view.k, y]);
+              [rp.lon[k], rp.lat[k]] = ll ?? [NaN, NaN];
+            }
+          }
+        }
+        const mppScreen = 1 / (view.k * r), Rm = MOON_RADIUS_KM * 1000;
+        // Per family: overview pixels, and the streamed level when the overview is magnified
+        const sampler = (fam) => {
+          const stack = BASEMAPS[fam][ch], [b, c] = stack ? stack.map((ref) => bmLoad(ref).src) : [];
+          if (!b) return null;
+          const m = (box, w) => ((box[2] - box[0]) / w) * (fam === 'eqc' ? RAD * Rm : 1);
+          const S = { fam, b, px: overviewPx(b), lv: null };
+          if (c) {
+            let li = 0;
+            c.levels.forEach((L, i) => { if (m(c.box, L.w) <= mppScreen * 1.0001) li = i; });
+            const L = c.levels[li];
+            if (m(c.box, L.w) * 1.5 < m(b.box, b.w0)) S.lv = { c, li, L, ntx: Math.ceil(L.w / L.tw), tiles: new Map() };
+          }
+          return S;
+        };
+        const fams = { eqc: sampler('eqc'), S: sampler('S'), N: sampler('N') };
+        const img = new ImageData(gw, gh), out = new Uint32Array(img.data.buffer), want = [];
+        let lastId = -1, lastT = null, lastLv = null;
+        for (let k = 0; k < n; k++) {
+          const lo = rp.lon[k], la = rp.lat[k];
+          if (lo !== lo) continue;
+          const F = (la <= -72 && fams.S) || (la >= 72 && fams.N) || fams.eqc;
+          if (!F) continue;
+          let X = lo, Y = la;
+          if (F.fam !== 'eqc') [X, Y] = psXY(la, lo, F.fam);
+          const lv = F.lv;
+          if (lv) {
+            const bx = lv.c.box, u = (F.fam === 'eqc' ? mod(X - bx[0], 360) : X - bx[0]) / (bx[2] - bx[0]), v = (bx[3] - Y) / (bx[3] - bx[1]);
+            if (u >= 0 && u < 1 && v >= 0 && v < 1) {
+              const L = lv.L, px = Math.floor(u * L.w), py = Math.floor(v * L.h), tx = Math.floor(px / L.tw), ty = Math.floor(py / L.th);
+              const id = ty * lv.ntx + tx;
+              if (id !== lastId || lv !== lastLv) {
+                [lastId, lastLv] = [id, lv];
+                lastT = lv.tiles.get(id);
+                if (lastT === undefined) {
+                  const key = `bm|${lv.c.key}|${lv.li}|${tx}|${ty}`, t = tileGet(key);
+                  lastT = t ? { px: tilePx(t), w: t.w } : null;
+                  lv.tiles.set(id, lastT);
+                  if (!t) want.push({ key, src: lv.c, li: lv.li, tx, ty, d: Math.hypot((k % gw) - gw / 2, Math.floor(k / gw) - gh / 2) });
+                }
+              }
+              const val = lastT ? lastT.px[(py - ty * L.th) * lastT.w + (px - tx * L.tw)] : 0;
+              if (val >>> 24) { out[k] = val; continue; }
+            }
+          }
+          const bx = F.b.box, u = (F.fam === 'eqc' ? mod(X - bx[0], 360) : X - bx[0]) / (bx[2] - bx[0]), v = (bx[3] - Y) / (bx[3] - bx[1]);
+          if (!(u >= 0 && u < 1 && v >= 0 && v < 1)) continue;
+          out[k] = 0xff000000 | (F.px[Math.floor(v * F.b.h0) * F.b.w0 + Math.floor(u * F.b.w0)] * 0x010101);
+        }
+        if (rp.out.width !== gw || rp.out.height !== gh) [rp.out.width, rp.out.height] = [gw, gh];
+        rp.out.getContext('2d').putImageData(img, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(rp.out, 0, 0, gw * f, gh * f);
+        return (rp.want = want);
       }
 
       function placeContours(view, W, H) {
@@ -3053,23 +3369,53 @@
         st.ctimer = setTimeout(() => computeContours({ ...view }, W, H), 300);
       }
 
-      // DEM samples about 3 screen px apart over the view, from the coarsest adequate level
-      async function demGrid(src, view, W, H, want) {
-        const g = geom(src);
+      // DEM samples about 3 screen px apart over the window, from the coarsest adequate level
+      // (at most about 2 M samples)
+      async function demGrid(src, g, [vx0, vx1, vy0, vy1], want, period, polar) {
         let li = 0;
         src.levels.forEach((L, i) => { if (((g.Y1 - g.Y0) / L.h) <= want) li = i; });
+        const cells = (L) => (((vx1 - vx0) * L.w) / (g.X1 - g.X0)) * Math.min(L.h, ((vy1 - vy0) * L.h) / (g.Y1 - g.Y0));
+        while (li < src.levels.length - 1 && cells(src.levels[li]) > 2e6) li++;
         const L = src.levels[li], ux = (g.X1 - g.X0) / L.w, uy = (g.Y1 - g.Y0) / L.h;
-        const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
-        const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
         const r0 = Math.max(0, Math.floor((vy0 - g.Y0) / uy) - 1), r1 = Math.min(L.h, Math.ceil((vy1 - g.Y0) / uy) + 1);
         const parts = [];
-        for (const dx of copies(g, vx0, vx1)) {
+        for (const dx of copies(g, vx0, vx1, period)) {
           const c0 = Math.max(0, Math.floor((vx0 - g.X0 - dx) / ux) - 1), c1 = Math.min(L.w, Math.ceil((vx1 - g.X0 - dx) / ux) + 1);
           if (c1 - c0 < 2 || r1 - r0 < 2) continue;
           const z = (await readWindow({ ...src, samples: [0] }, L, [c0, r0, c1, r1], ctl.signal))[0];
           parts.push({ z, w: c1 - c0, h: r1 - r0, x: (i) => g.X0 + dx + (c0 + i + 0.5) * ux, y: (j) => g.Y0 + (r0 + j + 0.5) * uy });
         }
-        return { parts, mpp: hemi ? uy : uy * RAD * MOON_RADIUS_KM * 1000 };
+        return { parts, mpp: polar ? uy : uy * RAD * MOON_RADIUS_KM * 1000 };
+      }
+
+      // Reprojected map: the DEM family for the view (polar when it all lies poleward of 72 deg)
+      // and the view's window in that raster's data coordinates, from a grid of view points
+      function viewWindow(view, W, H) {
+        const vx0 = view.cx - W / 2 / view.k, vy0 = view.cy - H / 2 / view.k, pts = [];
+        for (let j = 0; j <= 16; j++) {
+          for (let i = 0; i <= 16; i++) {
+            const ll = pj.inv([vx0 + (W / view.k) * (i / 16), vy0 + (H / view.k) * (j / 16)]);
+            if (ll) pts.push(ll);
+          }
+        }
+        if (!pts.length) return null;
+        const poleIn = (la) => {
+          const p = pj.fwd(0, la);
+          return p && Math.abs(p[0] - view.cx) <= W / 2 / view.k && Math.abs(p[1] - view.cy) <= H / 2 / view.k;
+        };
+        const lats = pts.map((p) => p[1]);
+        const fam = lats.every((la) => la < -72) ? 'S' : lats.every((la) => la > 72) ? 'N' : 'eqc';
+        if (fam !== 'eqc') {
+          const xy = pts.map(([lo, la]) => psXY(la, lo, fam));
+          if (poleIn(fam === 'S' ? -90 : 90)) xy.push([0, 0]);
+          const [x0, x1, y0, y1] = bboxOf([xy]), pad = 0.03 * Math.max(x1 - x0, y1 - y0) + 1;
+          return { fam, win: [x0 - pad, x1 + pad, -y1 - pad, -y0 + pad] };
+        }
+        let [w, span] = poleIn(-90) || poleIn(90) ? [-180, 360] : coveringArc(pts.map(([lo]) => [lo, 0]));
+        if (span > 300) [w, span] = [-180, 360];
+        const s0 = poleIn(-90) ? -90 : minOf(lats), n0 = poleIn(90) ? 90 : maxOf(lats);
+        const px = 0.03 * span + 0.01, py = 0.03 * (n0 - s0) + 0.01;
+        return { fam, win: span >= 360 ? [-180, 180, -n0 - py, -s0 + py] : [w - px, w + span + px, -n0 - py, -s0 + py] };
       }
 
       async function computeContours(view, W, H) {
@@ -3077,22 +3423,25 @@
         st.cbusy = true;
         status();
         try {
-          const want = 3 / view.k;
-          const vx0 = view.cx - W / 2 / view.k, vx1 = view.cx + W / 2 / view.k;
-          const vy0 = view.cy - H / 2 / view.k, vy1 = view.cy + H / 2 / view.k;
-          const refs = CONTOUR_DEMS[proj].filter((ref) => ref !== PGDA_80S || relayable(ref));
-          const bundled = await bmLoad(refs.at(-1)).promise;
-          const res = bundled ? (geom(bundled).Y1 - geom(bundled).Y0) / bundled.h0 : Infinity;
+          const nat = affine(view, W, H);
+          const vw = nat ? { fam: proj, k: sc, win: [view.cx - W / 2 / view.k, view.cx + W / 2 / view.k, view.cy - H / 2 / view.k, view.cy + H / 2 / view.k] }
+            : { k: 1, ...viewWindow(view, W, H) };
+          const polar = vw.fam !== 'eqc', gm = (src) => geom(src, vw.k);
+          const want = 3 / view.k / (nat || polar ? 1 : RAD * MOON_RADIUS_KM * 1000);
+          const [vx0, vx1, vy0, vy1] = vw.win ?? [];
+          const refs = vw.fam ? CONTOUR_DEMS[vw.fam].filter((ref) => ref !== PGDA_80S || relayable(ref)) : [];
+          const bundled = refs.length ? await bmLoad(refs.at(-1)).promise : null;
+          const res = bundled ? (gm(bundled).Y1 - gm(bundled).Y0) / bundled.h0 : Infinity;
           let grid = null, name = '';
           for (const ref of refs) {
             const last = ref === refs.at(-1);
             if (last ? !bundled : res <= want) continue;
             const src = last ? bundled : await bmLoad(ref).promise;
             if (gen !== st.gen) return;
-            const g = src && geom(src);
-            if (!src || (!last && hemi && !(vx0 >= g.X0 && vx1 <= g.X1 && vy0 >= g.Y0 && vy1 <= g.Y1))) continue;
+            const g = src && gm(src);
+            if (!src || (!last && polar && !(vx0 >= g.X0 && vx1 <= g.X1 && vy0 >= g.Y0 && vy1 <= g.Y1))) continue;
             try {
-              grid = await demGrid(src, view, W, H, want);
+              grid = await demGrid(src, g, vw.win, want, polar ? 0 : 360 * vw.k, polar);
               grid.noData = src.noData;
               name = fileName(ref.startsWith('https:') ? ref : bmUrl(ref)).replace(/(_cog)?\.tif$/i, '');
               break;
@@ -3106,7 +3455,11 @@
           if (!(hi > lo)) { st.contour = null; paths.forEach((p) => p.removeAttribute('d')); cinfo.textContent = grid ? '| no relief in view' : ''; return; }
           const step = step125(hi - lo, 10);
           const X = (x) => W / 2 + (x - view.cx) * view.k, Y = (y) => H / 2 + (y - view.cy) * view.k;
-          const d = contourPaths(grid.parts, grid.noData, step, X, Y);
+          const P = nat ? (x, y) => [X(x), Y(y)] : (x, y) => {
+            const q = polar ? pj.fwd(...psLonLat(x, -y, vw.fam)) : pj.fwd(x, -y);
+            return q && [X(q[0]), Y(q[1])];
+          };
+          const d = contourPaths(grid.parts, grid.noData, step, P);
           paths.forEach((p, i) => p.setAttribute('d', d[i]));
           st.contour = { ...view, W, H };
           contours.removeAttribute('transform');
