@@ -49,7 +49,7 @@ class ReportInputs:
     Parameters
     ----------
     work_dir : Path
-        An :class:`~lunar_toolkit.sfs.SfsPipeline` work directory.
+        An [`SfsPipeline`][lunar_toolkit.sfs.SfsPipeline] work directory.
     sfs_dem, prior_dem : Path, optional
         Default ``products/<ROI>_GLDELEV_<RES>.tif`` (else ``sfs/run-DEM-final.tif``)
         and ``dem/prior-<RES>m.tif``.
@@ -60,7 +60,8 @@ class ReportInputs:
     ldec, toterr, slperr, ldem_slope : Path, optional
         PGDA LOLA count, elevation / slope uncertainty and slope rasters.
     lola_points : Path, optional
-        ASP CSV of LOLA points (:func:`lunar_toolkit.reference.write_asp_csv`).
+        ASP CSV of LOLA points
+        ([`lunar_toolkit.reference.write_asp_csv`][lunar_toolkit.reference.write_asp_csv]).
     lola_xyzi : Path, optional
         PGDA ``.xyzi`` point cloud, converted to *lola_points* when those are not given.
     published_dem : Path, optional
@@ -197,7 +198,8 @@ def stats(values: Any) -> dict[str, float]:
 
 
 def split_stats(values: np.ndarray, ldec: np.ndarray | None = None) -> dict[str, dict[str, float]]:
-    """:func:`stats` of all values and, with a LOLA count raster, of ``LDEC > 0`` / ``LDEC = 0`` pixels."""
+    """[`stats`][lunar_toolkit.sfs_report.stats] of all values and, with a LOLA count raster, of ``LDEC > 0``
+    / ``LDEC = 0`` pixels."""
     out = {"all": stats(values)}
     if ldec is not None:
         ok = np.isfinite(ldec)
@@ -417,7 +419,7 @@ def lola_differences(
 ) -> pd.DataFrame:
     """DEM minus LOLA points (``x``, ``y`` polar stereographic m; ``diff`` m).
 
-    Uses ``geodiff`` (:func:`~lunar_toolkit.sfs_products.compare_to_points`);
+    Uses ``geodiff`` ([`compare_to_points`][lunar_toolkit.sfs_products.compare_to_points]);
     without ASP, the nearest DEM pixel of each point (*z* on *grid*, read when not given).
     """
     from . import reference as ref
@@ -538,7 +540,7 @@ def _ba_section(m: Metrics, t: _Terrain) -> None:
 
 
 def open_workspace(work_dir: Path) -> Any:
-    """The work dir's ``lunar.duckdb`` :class:`~lunar_toolkit.workspace.Workspace` (read-only), or None.
+    """The work dir's ``lunar.duckdb`` [`Workspace`][lunar_toolkit.workspace.Workspace] (read-only), or None.
 
     None when there is none or it cannot be opened (e.g. locked by a running pipeline).
     """
@@ -734,12 +736,13 @@ def metrics(
     Parameters
     ----------
     inputs : ReportInputs or Path
-        Inputs, or a work dir (:meth:`ReportInputs.from_work_dir`).
+        Inputs, or a work dir
+        ([`ReportInputs.from_work_dir`][lunar_toolkit.sfs_report.ReportInputs.from_work_dir]).
     work : Path, optional
         Scratch directory for converted LOLA points and ``geodiff`` output
         (default: ``<work_dir>/report/work``).
     sections : iterable of str, optional
-        Subset of :data:`SECTIONS` (default: all).
+        Subset of `SECTIONS` (default: all).
     """
     inp = inputs if isinstance(inputs, ReportInputs) else ReportInputs.from_work_dir(inputs)
     work = Path(work) if work else inp.work_dir / "report" / "work"

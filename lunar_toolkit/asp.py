@@ -51,7 +51,7 @@ def bundle_adjust(
     onto become ``--mapprojected-data``, which finds matches between images of
     very different illumination.  Returns *out_prefix*.
 
-    Raises :class:`~lunar_toolkit.tools.ToolError` when the run writes no fresh
+    Raises [`ToolError`][lunar_toolkit.tools.ToolError] when the run writes no fresh
     ``.adjust`` file for some image: ASP exits 0 even when it finds nothing to
     optimize ("No points to optimize ... Cannot continue").
     """

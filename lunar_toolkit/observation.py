@@ -80,7 +80,7 @@ def normalize_observations(records: list[dict]) -> pd.DataFrame:
 
 
 def observations_from_cumindex(df: pd.DataFrame, dataset: str | None = "edr") -> pd.DataFrame:
-    """Map enriched ``CumIndex`` query results to :data:`OBSERVATION_COLUMNS`."""
+    """Map enriched ``CumIndex`` query results to `OBSERVATION_COLUMNS`."""
     import pandas as pd
 
     if df is None or df.empty:

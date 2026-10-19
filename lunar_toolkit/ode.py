@@ -106,7 +106,7 @@ class OdeError(RuntimeError):
 
 
 class OdeClient:
-    """Query ODE REST and return :data:`OBSERVATION_COLUMNS` DataFrames.
+    """Query ODE REST and return `OBSERVATION_COLUMNS` DataFrames.
 
     Parameters
     ----------
@@ -151,8 +151,8 @@ class OdeClient:
     ) -> dict[str, str]:
         """Translate search arguments into ODE query parameters.
 
-        An ``aoi`` (see :func:`lunar_toolkit.geometry.load_aoi`) is sent as
-        its bounding box; :meth:`search` refines the results exactly.
+        An ``aoi`` (see [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi]) is sent as
+        its bounding box; [`search`][lunar_toolkit.ode.OdeClient.search] refines the results exactly.
         """
         _, entry, pt = resolve_instrument(instrument, product_type)
         params: dict[str, str] = {
@@ -232,13 +232,13 @@ class OdeClient:
     ) -> pd.DataFrame:
         """Search ODE and return the common observation schema.
 
-        Region arguments follow :meth:`CumIndex.search`: ``lat=(min, max)``
-        and ``lon=(west, east)`` (``west > east`` crosses 0/360), or
+        Region arguments follow [`CumIndex.search`][lunar_toolkit.lroc.cumindex.CumIndex.search]:
+        ``lat=(min, max)`` and ``lon=(west, east)`` (``west > east`` crosses 0/360), or
         ``point=(lat, lon)`` with ``radius_km`` (converted to a bounding box;
         circles reaching a pole become a full-longitude cap).  ODE matches the
         box against product footprints (``loc=f``, its default).  With
         ``aoi`` (GeoJSON / WKT path, WKT string or
-        :class:`~lunar_toolkit.geometry.Aoi`) the AOI's
+        [`Aoi`][lunar_toolkit.geometry.Aoi]) the AOI's
         bounding box is queried and each ``footprint_wkt`` is then
         intersected with the polygon; paging continues until
         ``max_results`` products survive that refinement.
@@ -458,7 +458,8 @@ def to_dataframe(records: list[dict]) -> pd.DataFrame:
 
 
 def select_file_urls(df: pd.DataFrame, kind: str = "product", match: str | None = None) -> list[str]:
-    """Pick file URLs from the ``files`` column (see :meth:`OdeClient.download`)."""
+    """Pick file URLs from the ``files`` column (see
+    [`OdeClient.download`][lunar_toolkit.ode.OdeClient.download])."""
     kind = kind.lower()
     urls: list[str] = []
     for files in df.get("files", []):

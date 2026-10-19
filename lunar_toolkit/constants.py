@@ -145,7 +145,8 @@ def get_data_dir() -> Path:
 
 
 def find_parquet(name: str, data_dir: Path | None = None) -> Path:
-    """Path of Parquet database *name* in *data_dir* (default: :func:`get_data_dir`)."""
+    """Path of Parquet database *name* in *data_dir* (default:
+    [`get_data_dir`][lunar_toolkit.constants.get_data_dir])."""
     return Path(data_dir or get_data_dir()) / name
 
 

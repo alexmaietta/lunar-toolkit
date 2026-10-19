@@ -196,7 +196,8 @@ class ProductImage:
 
 
 def as_product_images(images: Iterable[ProductImage | Sequence[Any]]) -> list[ProductImage]:
-    """Accept :class:`ProductImage` or ``(path, sun_azimuth[, resolution])`` tuples."""
+    """Accept [`ProductImage`][lunar_toolkit.sfs_products.ProductImage] or
+    ``(path, sun_azimuth[, resolution])`` tuples."""
     out = []
     for im in images:
         if isinstance(im, ProductImage):
@@ -355,8 +356,8 @@ def terrain_products(
 
     ``None`` is the pixel scale (3×3 kernel), named with *resolution* as the
     baseline.  A baseline *b* (m) uses neighbours ``k = round(b / 2 res)``
-    pixels away (:func:`baseline_step`), so baselines up to ``2 res`` equal the
-    pixel scale.  Keys are ``slope`` / ``roughness`` for the pixel scale and
+    pixels away ([`baseline_step`][lunar_toolkit.sfs_products.baseline_step]), so baselines up to ``2 res``
+    equal the pixel scale.  Keys are ``slope`` / ``roughness`` for the pixel scale and
     ``slope_<b>`` / ``roughness_<b>`` otherwise.
     """
     out: dict[str, Path] = {}
@@ -433,7 +434,7 @@ def make_products(
     out_dir : Path
         Destination; intermediates go to ``out_dir/work``.
     images : sequence
-        Mapprojected SfS input images, as :class:`ProductImage` or
+        Mapprojected SfS input images, as [`ProductImage`][lunar_toolkit.sfs_products.ProductImage] or
         ``(path, sun_azimuth[, native_resolution])``.
     region_id : str
         ``ROIID`` of the file names.
@@ -456,8 +457,8 @@ def make_products(
     Returns
     -------
     dict
-        Product key (:data:`PRODUCT_CODES`, plus ``slope_<b>`` / ``roughness_<b>``)
-        → path.  Under :func:`~lunar_toolkit.tools.dry_run` only the CLI-tool
+        Product key (`PRODUCT_CODES`, plus ``slope_<b>`` / ``roughness_<b>``)
+        → path.  Under [`dry_run`][lunar_toolkit.tools.dry_run] only the CLI-tool
         products are planned; the raster-math ones need the real DEM.
     """
     out_dir = Path(out_dir)
@@ -598,8 +599,8 @@ def ensemble_uncertainty(
     Parameters
     ----------
     members : sequence of Path
-        SfS DEMs of the same crop (e.g. 2.5 km, :func:`crop_window`) from image
-        subsets (:func:`ensemble_subsets`).
+        SfS DEMs of the same crop (e.g. 2.5 km, [`crop_window`][lunar_toolkit.sfs_products.crop_window]) from
+        image subsets ([`ensemble_subsets`][lunar_toolkit.sfs_products.ensemble_subsets]).
     out_dir : Path
     region_id : str
     resolution : float
@@ -664,7 +665,7 @@ def compare_to_points(
     """Validate *dem* against altimetry points (e.g. LOLA RDR) with ``geodiff --csv-format``.
 
     Points off the DEM are dropped by ``geodiff``.  Returns an empty
-    comparison under :func:`~lunar_toolkit.tools.dry_run`.
+    comparison under [`dry_run`][lunar_toolkit.tools.dry_run].
     """
     diff_csv = Path(f"{out_prefix}-diff.csv")
     if not reuse_existing(diff_csv, force):

@@ -322,7 +322,7 @@ class CumIndex:
             than the sidecar's ``release`` (or ``max(VOLUME_ID)`` in the
             Parquet when no sidecar exists).
         on_stage : callable, optional
-            As in :meth:`build_db`.
+            As in [`build_db`][lunar_toolkit.lroc.cumindex.CumIndex.build_db].
 
         Returns
         -------
@@ -476,7 +476,7 @@ class CumIndex:
         −180..180 or 0..360, omitted ``lon`` = all longitudes), a circle
         (``point=(lat, lon)``, ``radius_km``) or an area of interest
         (``aoi=``: GeoJSON / WKT path, WKT string or
-        :class:`~lunar_toolkit.geometry.Aoi`).
+        [`Aoi`][lunar_toolkit.geometry.Aoi]).
 
         Matching is bounding-box based and conservative (may include a few
         false positives, never drops a true hit for convex-ish footprints):
@@ -647,7 +647,7 @@ def build_parquet(
 
     Parameters
     ----------
-    sources : list of ``(tab_path, lbl_columns)``
+    sources : list of (tab_path, lbl_columns)
         Each TAB is parsed with its own label layout (record lengths differ
         between volumes) and the results are combined ``UNION ALL BY NAME``.
     base_parquet : Path, optional
@@ -960,7 +960,8 @@ def footprint_wkt_sql(names: Iterable[str], west_expr: str = "FP_LON_WEST") -> s
 
 # Search regions
 def region_sql(region: dict) -> str:
-    """WHERE clause matching ``FP_*`` columns against a :func:`query_region`."""
+    """WHERE clause matching ``FP_*`` columns against a
+    [`query_region`][lunar_toolkit.geometry.query_region]."""
     s, n = region["lat"]
     conds = [f"FP_MAX_LAT >= {s!r}", f"FP_MIN_LAT <= {n!r}"]
     if region["span"] < 360.0:

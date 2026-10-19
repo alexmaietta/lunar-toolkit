@@ -34,7 +34,8 @@ PS_SRS = "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +
 """South polar stereographic on the 1737.4 km sphere (PGDA and Bertone et al. rasters)."""
 
 ASP_CSV_FORMAT = "1:easting 2:northing 3:height_above_datum"
-"""``--csv-format`` for :func:`write_asp_csv` output (use with ``--csv-srs`` :data:`PS_SRS`)."""
+"""``--csv-format`` for [`write_asp_csv`][lunar_toolkit.reference.write_asp_csv] output (use with
+``--csv-srs`` [`PS_SRS`][lunar_toolkit.reference.PS_SRS])."""
 
 ZENODO_RECORD = 17954508
 ZENODO_API_URL = f"https://zenodo.org/api/records/{ZENODO_RECORD}"
@@ -52,7 +53,7 @@ _RETRY_CODES = (403, 429, 500, 502, 503, 504)  # PGDA answers 403 to bursts of r
 
 @dataclass(frozen=True)
 class PsBox:
-    """Axis-aligned box in south polar stereographic metres (:data:`PS_SRS`).
+    """Axis-aligned box in south polar stereographic metres ([`PS_SRS`][lunar_toolkit.reference.PS_SRS]).
 
     Parameters
     ----------
@@ -111,13 +112,13 @@ class PsBox:
         return ring + ring[:1]
 
     def aoi(self, step_m: float = 100.0) -> Aoi:
-        """The box as a lon/lat :class:`~lunar_toolkit.geometry.Aoi` (edges straight in PS).
+        """The box as a lon/lat [`Aoi`][lunar_toolkit.geometry.Aoi] (edges straight in PS).
 
         Parameters
         ----------
         step_m : float
             Vertex spacing along the edges; the AOI matches the box to well
-            under a metre once :mod:`~lunar_toolkit.geometry` projects it back.
+            under a metre once [`geometry`][lunar_toolkit.geometry] projects it back.
         """
         geom = {"type": "Polygon", "coordinates": [self.ring_lonlat(step_m)]}
         aoi = load_aoi(geom, densify_deg=None)
@@ -125,7 +126,7 @@ class PsBox:
         return aoi
 
     def wkt(self, step_m: float = 100.0) -> str:
-        """``POLYGON`` WKT of :meth:`ring_lonlat` (lon/lat degrees)."""
+        """``POLYGON`` WKT of [`ring_lonlat`][lunar_toolkit.reference.PsBox.ring_lonlat] (lon/lat degrees)."""
         return "POLYGON((" + ", ".join(f"{lo:.7f} {la:.7f}" for lo, la in self.ring_lonlat(step_m)) + "))"
 
     def wkt_ps(self) -> str:
@@ -135,7 +136,7 @@ class PsBox:
 
 
 def ps_latlon(x: float, y: float) -> tuple[float, float]:
-    """Inverse of south-hemisphere :func:`~lunar_toolkit.geometry.ps_xy`: ``(lat, lon)`` degrees."""
+    """Inverse of south-hemisphere [`ps_xy`][lunar_toolkit.geometry.ps_xy]: ``(lat, lon)`` degrees."""
     rho = math.hypot(x, y)
     lat = math.degrees(2.0 * math.atan(rho / (2.0 * MOON_RADIUS_KM * 1000.0))) - 90.0
     return lat, math.degrees(math.atan2(x, y))
@@ -220,12 +221,12 @@ class Region:
 
     @property
     def projwin(self) -> tuple[float, float, float, float]:
-        """``(ulx, uly, lrx, lry)`` of :attr:`roi` in PS metres."""
+        """``(ulx, uly, lrx, lry)`` of `roi` in PS metres."""
         return self.roi.projwin
 
     @property
     def bbox_projwin(self) -> tuple[float, float, float, float]:
-        """``projwin`` of the PS envelope of the lon/lat :attr:`bbox` (a wedge; larger than :attr:`roi`)."""
+        """``projwin`` of the PS envelope of the lon/lat `bbox` (a wedge; larger than `roi`)."""
         return bbox_ps_box(self.bbox).projwin
 
     @property
@@ -233,13 +234,13 @@ class Region:
         return ZENODO_FILE_URL.format(name=self.zenodo_file)
 
     def aoi(self, step_m: float = 100.0) -> Aoi:
-        """:attr:`roi` as an :class:`~lunar_toolkit.geometry.Aoi`."""
+        """`roi` as an [`Aoi`][lunar_toolkit.geometry.Aoi]."""
         aoi = self.roi.aoi(step_m)
         aoi.source = f"A3CLR22 #{self.id} {self.name}"
         return aoi
 
     def bbox_aoi(self, densify_deg: float = 0.05) -> Aoi:
-        """The lon/lat :attr:`bbox` as an AOI, densified so it stays a wedge in PS."""
+        """The lon/lat `bbox` as an AOI, densified so it stays a wedge in PS."""
         w, s, e, n = self.bbox
         aoi = load_aoi(f"POLYGON(({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))", densify_deg=densify_deg)
         aoi.source = f"A3CLR22 #{self.id} {self.name} bbox"
@@ -369,11 +370,11 @@ def crop_window(
     Parameters
     ----------
     region : Region, int or str
-        Anything :func:`get_region` accepts.
+        Anything [`get_region`][lunar_toolkit.reference.get_region] accepts.
     size_km : float
         Side length (2.5 km is the Bertone et al. uncertainty-ensemble crop).
     center : (lat, lon), optional
-        Centre in degrees; default the centre of the region's :attr:`Region.roi`.
+        Centre in degrees; default the centre of the region's `Region.roi`.
     snap_m : float, optional
         Snap the edges to multiples of this many metres so the window lines
         up with the 5 m PGDA / SfS pixel grid; ``None`` keeps them exact.
@@ -419,7 +420,7 @@ def _classify_pgda(path: str) -> str | None:
 def parse_pgda_index(html: str) -> dict[str, dict[str, list[str]]]:
     """``site → kind → [url, ...]`` from the PGDA product page HTML.
 
-    Links may be absolute, root-relative or relative to :data:`PGDA_ROOT`
+    Links may be absolute, root-relative or relative to `PGDA_ROOT`
     (``DM2/Clones/DM2_final_adj_5mpp_0001_err.tif``); clones are sorted by
     number.
     """
@@ -471,7 +472,7 @@ def pgda_index(
     Parameters
     ----------
     refresh : bool
-        Re-fetch :data:`PGDA_PRODUCT_PAGE` even when a cached index exists.
+        Re-fetch `PGDA_PRODUCT_PAGE` even when a cached index exists.
     cache_dir : Path
         Where ``pgda_lola_5mpp_index.json`` is kept.
     html : str, optional
@@ -506,14 +507,15 @@ def pgda_urls(
     Parameters
     ----------
     site_or_region : Region, int or str
-        A PGDA site name (``"Site23"``) or anything :func:`get_region` accepts.
+        A PGDA site name (``"Site23"``) or anything [`get_region`][lunar_toolkit.reference.get_region]
+        accepts.
     kinds : iterable of str
-        Members of :data:`PGDA_KINDS`.
+        Members of `PGDA_KINDS`.
     clones : int or iterable of int, optional
         With ``"clones"``: the first *n* clones, or these clone numbers
         (1-based); default all 100.
     index : dict, optional
-        A :func:`pgda_index` result (default: the cached index).
+        A [`pgda_index`][lunar_toolkit.reference.pgda_index] result (default: the cached index).
     """
     site = _site_name(site_or_region)
     kinds = list(kinds)
@@ -583,7 +585,7 @@ def download_pgda(
     """Download PGDA LOLA 5 m files of one site by kind (sequentially; resumable).
 
     Files land in ``out_dir/<site>/`` (clones in ``out_dir/<site>/Clones/``);
-    existing ones are kept unless *force*.  Arguments as in :func:`pgda_urls`.
+    existing ones are kept unless *force*.  Arguments as in [`pgda_urls`][lunar_toolkit.reference.pgda_urls].
 
     Returns
     -------
@@ -638,15 +640,15 @@ def read_xyzi(path: Path, box: PsBox | None = None) -> pd.DataFrame:
 def write_asp_csv(points: pd.DataFrame | Path, out: Path, box: PsBox | None = None) -> Path:
     """Write LOLA points as an ASP CSV of ``easting, northing, height_above_datum``.
 
-    Use with ``--csv-format`` :data:`ASP_CSV_FORMAT` and ``--csv-srs``
-    :data:`PS_SRS` (the 1737.4 km sphere is then the datum), e.g.
+    Use with ``--csv-format`` [`ASP_CSV_FORMAT`][lunar_toolkit.reference.ASP_CSV_FORMAT] and ``--csv-srs``
+    [`PS_SRS`][lunar_toolkit.reference.PS_SRS] (the 1737.4 km sphere is then the datum), e.g.
     ``pc_align --csv-format '1:easting 2:northing 3:height_above_datum'
     --csv-srs '+proj=stere +lat_0=-90 +lon_0=0 +R=1737400 +units=m' dem.tif lola.csv``.
 
     Parameters
     ----------
     points : DataFrame or Path
-        A :func:`read_xyzi` table or an ``.xyzi`` path.
+        A [`read_xyzi`][lunar_toolkit.reference.read_xyzi] table or an ``.xyzi`` path.
     out : Path
         CSV to write; a ``#`` header line (ignored by ASP) names the columns.
     box : PsBox, optional
@@ -716,7 +718,7 @@ def download_sdem(
 class HttpRangeFile(io.RawIOBase):
     """Read-only, seekable view of a remote file through HTTP Range requests.
 
-    Lets :class:`zipfile.ZipFile` read a remote zip's central directory or a
+    Lets `zipfile.ZipFile` read a remote zip's central directory or a
     single member without downloading the archive.
     """
 
@@ -823,7 +825,8 @@ def extract_sdem(
         A downloaded zip, or a region whose Zenodo zip is then read remotely
         member by member (HTTP Range; only the selected members are fetched).
     members : iterable of str
-        :func:`select_members` patterns, e.g. ``("GLDELEV", "GLDSIGM", "README")``.
+        [`select_members`][lunar_toolkit.reference.select_members] patterns, e.g.
+        ``("GLDELEV", "GLDSIGM", "README")``.
     out_dir : Path
         Destination; paths below the zip's top-level folder are kept
         (``SLOPE_MAPS/A311_GLDTSLP_005_100.tif``).
@@ -910,7 +913,8 @@ def parse_image_status(text: str) -> pd.DataFrame:
 def image_status(
     source: Region | int | str | Path, out_dir: Path = REFERENCE_CACHE_DIR / "published", force: bool = False
 ) -> pd.DataFrame:
-    """A region's image status table (:func:`parse_image_status`), extracted once to *out_dir*."""
+    """A region's image status table ([`parse_image_status`][lunar_toolkit.reference.parse_image_status]),
+    extracted once to *out_dir*."""
     (path,) = extract_sdem(source, ["extra/image_status_*.csv"], Path(out_dir), force=force)
     return parse_image_status(path.read_text())
 
@@ -1041,20 +1045,20 @@ def published_cameras(
     Each file is an ASP / USGS CSM linescan model state (model-name line,
     then JSON) with the bundle adjustment and LOLA registration baked in.
     It describes the *full* image ISIS-``reduce``-d by an integer factor to
-    about 5 m/px (see :func:`published_reduce_factor` and
-    :func:`published_camera_native`).
+    about 5 m/px (see [`published_reduce_factor`][lunar_toolkit.reference.published_reduce_factor] and
+    [`published_camera_native`][lunar_toolkit.reference.published_camera_native]).
 
     Parameters
     ----------
     region : Region, int or str
-        Anything :func:`get_region` accepts.
+        Anything [`get_region`][lunar_toolkit.reference.get_region] accepts.
     out_dir : Path
         Destination; files land in ``out_dir/LROC-NAC-adjust/``.
     images : iterable of str, optional
         Only these product IDs.
     window : PsBox, optional
         Only images whose mapprojected extent overlaps this box
-        (:func:`published_extents`, cached in ``out_dir``).
+        ([`published_extents`][lunar_toolkit.reference.published_extents], cached in ``out_dir``).
     source : Path, optional
         A downloaded zip instead of the remote Zenodo file.
     force : bool
@@ -1098,8 +1102,8 @@ def published_camera_native(camera: CsmCamera | Path, native_size: tuple[int, in
     ``m_nLines`` / ``m_nSamples`` are the native size divided by ``f**2``
     (not ``f``), which only affects usgscsm's initial ground-to-image guess.
     The result is a state for the native image with consistent sizes; use
-    :func:`lunar_toolkit.csm.camera_for_cube` or
-    :func:`lunar_toolkit.csm.isis_reduce_with_csm` to get any crop or
+    [`lunar_toolkit.csm.camera_for_cube`][lunar_toolkit.csm.camera_for_cube] or
+    [`lunar_toolkit.csm.isis_reduce_with_csm`][lunar_toolkit.csm.isis_reduce_with_csm] to get any crop or
     reduction of it.
     """
     cam = camera if isinstance(camera, CsmCamera) else read_camera(camera)

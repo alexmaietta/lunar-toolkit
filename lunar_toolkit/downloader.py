@@ -37,7 +37,8 @@ _PROGRESS: contextvars.ContextVar[Progress | None] = contextvars.ContextVar("dow
 
 @contextlib.contextmanager
 def report_progress(callback: Progress) -> Iterator[None]:
-    """Send the progress of every :func:`download_file` in this thread / context to *callback*."""
+    """Send the progress of every [`download_file`][lunar_toolkit.downloader.download_file] in this thread /
+    context to *callback*."""
     token = _PROGRESS.set(callback)
     try:
         yield
@@ -127,8 +128,9 @@ class PdsDownloader:
     ) -> dict[str, Path | None]:
         """Download a plain list of URLs in parallel.
 
-        Existing files are reused unless *force* (see :meth:`download`).
-        Returns a dict mapping each URL to its local path (or None on error).
+        Existing files are reused unless *force* (see
+        [`download`][lunar_toolkit.downloader.PdsDownloader.download]). Returns a dict mapping each URL to its
+        local path (or None on error).
         """
         path_map: dict[str, Path | None] = {}
         for url, (path, err) in self._download_all(urls, output_dir, show_progress, force).items():
@@ -189,7 +191,7 @@ class _Host:
     """One host's download slots, request pacing and throttling cooldown.
 
     The cooldown is wall-clock time shared by every worker in this process and saved
-    to :data:`COOLDOWN_FILE`, so a restarted run honours a server's earlier
+    to `COOLDOWN_FILE`, so a restarted run honours a server's earlier
     ``Retry-After`` instead of tripping its rate limit again.
     """
 
@@ -286,10 +288,10 @@ def download_file(
     count as failures; they give up only after *max_wait* seconds in total (default
     ``$LUNAR_MAX_WAIT``, else 6 h).  Other *retry_codes* (5xx), connection errors and
     interrupted transfers are retried *retries* times with back-off.  Each retry resumes
-    the ``.part`` file; checksum mismatches are not retried.  See :func:`_download_once`.
+    the ``.part`` file; checksum mismatches are not retried.  See `_download_once`.
 
-    *progress* (default: the :func:`report_progress` callback, if any) gets the bytes
-    done after each chunk; an exception it raises stops the download and keeps the
+    *progress* (default: the [`report_progress`][lunar_toolkit.downloader.report_progress] callback, if any)
+    gets the bytes done after each chunk; an exception it raises stops the download and keeps the
     ``.part`` file for a later resume.
     """
     progress = progress or _PROGRESS.get()
@@ -365,7 +367,7 @@ def _download_once(
       is already complete.
     * When *expected_md5* is given the finished file is verified before the
       atomic rename; on mismatch the part file is deleted and
-      :class:`ChecksumError` is raised.
+      [`ChecksumError`][lunar_toolkit.downloader.ChecksumError] is raised.
     * On network errors the ``.part`` file is kept so the next call resumes.
     """
     from tqdm import tqdm

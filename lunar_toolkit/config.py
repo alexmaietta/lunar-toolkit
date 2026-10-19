@@ -35,9 +35,10 @@ class ConfigError(ValueError):
 
 @dataclass
 class RunConfig:
-    """Everything a ``lunar sfs`` run needs: inputs, region and the :class:`SfsConfig`.
+    """Everything a ``lunar sfs`` run needs: inputs, region and the
+    [`SfsConfig`][lunar_toolkit.sfs.SfsConfig].
 
-    In YAML the run keys below and the :class:`SfsConfig` fields share one flat
+    In YAML the run keys below and the [`SfsConfig`][lunar_toolkit.sfs.SfsConfig] fields share one flat
     mapping.  Relative paths are relative to the current directory.
 
     Parameters
@@ -52,11 +53,11 @@ class RunConfig:
         Prior DEM path, or ``"pgda"`` for the region's PGDA LOLA 5 m DEM (the
         default with a *region*).
     region : str or int, optional
-        Artemis III region (:func:`lunar_toolkit.reference.get_region`): sets
+        Artemis III region ([`lunar_toolkit.reference.get_region`][lunar_toolkit.reference.get_region]): sets
         the ``projwin`` (its ROI, or a *crop_km* window), ``region_id`` and the
         image search AOI.
     crop_km : float, optional
-        Side of a square window at the region centre (:func:`~lunar_toolkit.reference.crop_window`).
+        Side of a square window at the region centre ([`crop_window`][lunar_toolkit.reference.crop_window]).
     crop_center : (lat, lon), optional
         Centre of that window (default: the ROI centre).
     aoi : str, optional
@@ -71,7 +72,7 @@ class RunConfig:
         stereo convergence for registration, and ``max_sfs_slew`` keeps them out of SfS.
     max_images : int, optional
         Cap on the searched images before download (stereo pairs + illumination coverage;
-        :func:`lunar_toolkit.sfs.cap_candidates`).
+        [`lunar_toolkit.sfs.cap_candidates`][lunar_toolkit.sfs.cap_candidates]).
     pgda_dir : Path, optional
         Where PGDA files are downloaded (default: the reference cache).
     data_dir : Path, optional
@@ -157,7 +158,7 @@ def _coerce(key: str, value: Any, hint: Any) -> Any:
 
 
 def from_dict(data: Mapping[str, Any], source: str = "config") -> RunConfig:
-    """A validated :class:`RunConfig` from a flat mapping (keys as in :data:`KEYS`).
+    """A validated [`RunConfig`][lunar_toolkit.config.RunConfig] from a flat mapping (keys as in `KEYS`).
 
     Raises
     ------
@@ -245,7 +246,7 @@ def dump_config(cfg: RunConfig, path: Path | None = None) -> str:
 
 
 def config_hash(cfg: RunConfig) -> str:
-    """SHA-256 of the settings (canonical JSON of :func:`to_dict`)."""
+    """SHA-256 of the settings (canonical JSON of [`to_dict`][lunar_toolkit.config.to_dict])."""
     return hashlib.sha256(json.dumps(to_dict(cfg), sort_keys=True).encode()).hexdigest()
 
 

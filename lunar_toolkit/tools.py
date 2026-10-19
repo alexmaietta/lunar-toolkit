@@ -118,7 +118,8 @@ def dry_run() -> Iterator[list[list[str]]]:
 
 @contextlib.contextmanager
 def record_commands() -> Iterator[list[dict[str, Any]]]:
-    """Log the commands :func:`run` executes: ``argv``, ``cwd``, ``started`` (Unix time), ``seconds``, ``returncode``."""
+    """Log the commands [`run`][lunar_toolkit.tools.run] executes: ``argv``, ``cwd``, ``started`` (Unix time),
+    ``seconds``, ``returncode``."""
     log_: list[dict[str, Any]] = []
     token = _COMMAND_LOG.set(log_)
     try:
@@ -160,7 +161,7 @@ def run(
     capture: bool = False,
     check: bool = True,
 ) -> subprocess.CompletedProcess:
-    """Run *tool* with *args*; raise :class:`ToolError` on failure.
+    """Run *tool* with *args*; raise [`ToolError`][lunar_toolkit.tools.ToolError] on failure.
 
     With ``capture=True`` stdout/stderr are returned instead of streamed.
     """

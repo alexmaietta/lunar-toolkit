@@ -82,7 +82,8 @@ def region_args(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def ode_filters(args: argparse.Namespace) -> dict[str, Any]:
-    """:meth:`OdeClient.search` filters from ``--inc`` / ``--emi`` / ``--phase`` / ``--time``."""
+    """[`OdeClient.search`][lunar_toolkit.ode.OdeClient.search] filters from ``--inc`` / ``--emi`` /
+    ``--phase`` / ``--time``."""
     return {
         "incidence": tuple(args.inc) if args.inc else None,
         "emission": tuple(args.emi) if args.emi else None,

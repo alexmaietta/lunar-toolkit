@@ -238,7 +238,7 @@ def _local_host_header(host: str) -> bool:
 
 @dataclass
 class ServerConfig:
-    """What a :class:`LunarServer` serves and where its jobs write."""
+    """What a `LunarServer` serves and where its jobs write."""
 
     data_dir: Path
     explicit_dir: Path | None = None
@@ -651,7 +651,7 @@ def _regions() -> dict[str, Any]:
 
 
 def make_server(args: argparse.Namespace) -> tuple[LunarServer, ServerConfig]:
-    """Bind a :class:`LunarServer` from the shared options (ValueError for a bad option)."""
+    """Bind a `LunarServer` from the shared options (ValueError for a bad option)."""
     import os
 
     from ..config import RUNS_DIR_ENV

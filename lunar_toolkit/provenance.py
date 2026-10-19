@@ -62,7 +62,7 @@ def tool_versions() -> dict[str, str | None]:
 
 
 def isis_paths() -> dict[str, str | None]:
-    """``ISISROOT`` / ``ISISDATA`` as the tools see them (:func:`~lunar_toolkit.tools.tool_env`)."""
+    """``ISISROOT`` / ``ISISDATA`` as the tools see them ([`tool_env`][lunar_toolkit.tools.tool_env])."""
     tool = find_tool("spiceinit") or find_tool("sfs")
     env = tool_env(tool) if tool else dict(os.environ)
     return {k: env.get(k) for k in ("ISISROOT", "ISISDATA")}
@@ -188,7 +188,7 @@ class Provenance:
 
     @contextlib.contextmanager
     def step(self, name: str) -> Iterator[dict[str, Any]]:
-        """Record a step: times, the commands :func:`~lunar_toolkit.tools.run` executes and status.
+        """Record a step: times, the commands [`run`][lunar_toolkit.tools.run] executes and status.
 
         Set ``entry["result"]`` inside the block to list its existing output files.
         """

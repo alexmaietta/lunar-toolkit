@@ -150,7 +150,8 @@ def lookup_products(
     product_ids: Iterable[str],
     client: OdeClient | None = None,
 ) -> pd.DataFrame:
-    """Query ODE by product ID and return the observation DataFrame (see :meth:`OdeClient.lookup`)."""
+    """Query ODE by product ID and return the observation DataFrame (see
+    [`OdeClient.lookup`][lunar_toolkit.ode.OdeClient.lookup])."""
     from ..ode import OdeClient
 
     return (client or OdeClient()).lookup(product_ids, instrument_label="Kaguya TC")
@@ -212,9 +213,9 @@ class TcProcessor:
 
     Each product ends up in *output_dir* as ``<id>.cub`` (spiceinit'ed),
     ``<id>.json`` (CSM camera, when *csm*) and, when *mapproject*,
-    ``<id>.tif`` (:data:`~lunar_toolkit.constants.GEOTIFF_OPTIONS`), the
+    ``<id>.tif`` (`GEOTIFF_OPTIONS`), the
     same flat layout and resume / *keep* / *force* behaviour as
-    :class:`~lunar_toolkit.lroc.nac.NacProcessor`.  Steps whose output
+    [`NacProcessor`][lunar_toolkit.lroc.nac.NacProcessor].  Steps whose output
     exists are skipped unless *force*.
 
     Parameters
@@ -240,8 +241,8 @@ class TcProcessor:
     force : bool
         Redo every step even when its output exists.
     kaguyatc2isis_params, spiceinit_params : dict, optional
-        Overrides merged into :data:`KAGUYATC2ISIS_PARAMS` /
-        :data:`SPICEINIT_PARAMS`.
+        Overrides merged into `KAGUYATC2ISIS_PARAMS` /
+        `SPICEINIT_PARAMS`.
     """
 
     def __init__(
@@ -274,7 +275,7 @@ class TcProcessor:
     def process(self, source: TcProduct | str | Path) -> TcOutputs:
         """Download (if needed) and import one product.
 
-        *source* is a :class:`TcProduct`, a local ``.lbl`` path or a product
+        *source* is a [`TcProduct`][lunar_toolkit.kaguya.tc.TcProduct], a local ``.lbl`` path or a product
         ID (looked up on ODE).
         """
         if isinstance(source, TcProduct):
@@ -361,7 +362,8 @@ class TcProcessor:
 
 
 def import_tc(label: Path, output_dir: Path | None = None, **kwargs: Any) -> TcOutputs:
-    """Import one downloaded TC product; see :class:`TcProcessor` for *kwargs*."""
+    """Import one downloaded TC product; see [`TcProcessor`][lunar_toolkit.kaguya.tc.TcProcessor] for
+    *kwargs*."""
     label = Path(label)
     return TcProcessor(output_dir or label.parent, **kwargs).import_label(label)
 

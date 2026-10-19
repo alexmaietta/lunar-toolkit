@@ -66,7 +66,7 @@ class Job:
         return self._cancel.is_set()
 
     def check(self) -> None:
-        """Raise :class:`Cancelled` if the job was cancelled."""
+        """Raise `Cancelled` if the job was cancelled."""
         if self._cancel.is_set():
             raise Cancelled()
 
@@ -101,7 +101,8 @@ class Job:
         )  # fmt: skip
 
     def on_bytes(self, name: str, done: int, total: int | None) -> None:
-        """Download progress callback (:data:`lunar_toolkit.downloader.Progress`)."""
+        """Download progress callback
+        ([`lunar_toolkit.downloader.Progress`][lunar_toolkit.downloader.Progress])."""
         self.check()
         if done < 0:
             self.update(stage="Waiting: the host asked us to slow down", rate=None, eta=None)
@@ -213,7 +214,7 @@ class JobManager:
             return job
 
     def wait(self, version: int, timeout: float) -> int:
-        """Block until :attr:`version` differs from *version* (or *timeout* / close); the new version."""
+        """Block until `version` differs from *version* (or *timeout* / close); the new version."""
         with self._cond:
             self._cond.wait_for(lambda: self.version != version or self.closed, timeout)
             return self.version

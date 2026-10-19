@@ -132,7 +132,7 @@ def convergence_angle(
 
 
 def _rotate_onto_many(v: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """Row-wise :func:`_rotate_onto` of ``(n, 3)`` arrays."""
+    """Row-wise `_rotate_onto` of ``(n, 3)`` arrays."""
     k = np.cross(a, b)
     s = np.linalg.norm(k, axis=-1)
     c = np.sum(a * b, axis=-1)
@@ -154,7 +154,8 @@ def convergence_angles(
     centre2: tuple[Any, Any] | None = None,
     radius_km: float = MOON_RADIUS_KM,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """:func:`convergence_angle` for arrays: each tuple element is an array over pairs.
+    """[`convergence_angle`][lunar_toolkit.stereo.convergence_angle] for arrays: each tuple element is an
+    array over pairs.
 
     Returns
     -------
@@ -190,7 +191,7 @@ class TangentPlane:
         return cls(*_latlon(np.asarray(v, float)))
 
     def ring(self, ring: Ring) -> list[tuple[float, float]]:
-        """Project a lon/lat ring (deg) to plane (x, y) km (a :data:`~lunar_toolkit.geometry.Projection`)."""
+        """Project a lon/lat ring (deg) to plane (x, y) km (a `Projection`)."""
         a = np.asarray(ring, float).reshape(-1, 2)
         v = unit_vector(a[:, 1], a[:, 0])
         d = np.maximum(v @ self.c, 0.05)  # far side (callers prefilter): clamp
@@ -203,7 +204,7 @@ class TangentPlane:
 def observation_footprints(df: pd.DataFrame) -> tuple[list, np.ndarray, np.ndarray]:
     """Footprint rings, centre unit vectors and angular radii (deg) of observation rows.
 
-    Rings are :func:`lunar_toolkit.geometry.footprint_rings` of each row
+    Rings are [`lunar_toolkit.geometry.footprint_rings`][lunar_toolkit.geometry.footprint_rings] of each row
     (``footprint_wkt``, else the ``min_lat``…``lon_east`` box), ``None``
     (centre 0, radius 0) where a row has no footprint polygon.
     """
@@ -229,7 +230,7 @@ def _cap(rings: list) -> tuple[np.ndarray, float]:
 def aoi_plane(aoi: AoiLike) -> tuple[TangentPlane, Any, np.ndarray, float]:
     """Tangent plane about an AOI, the AOI in it (km), and its centre / angular radius.
 
-    *aoi* is anything :func:`lunar_toolkit.geometry.load_aoi` accepts,
+    *aoi* is anything [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi] accepts,
     e.g. ``{"point": (lat, lon), "radius_km": r}``,
     ``{"lat": (s, n), "lon": (w, e)}``, a GeoJSON / WKT path or string.
 
@@ -282,7 +283,7 @@ def find_stereo_pairs(
     aoi : dict, str, Path or Aoi, optional
         Area of interest: ``{"point": (lat, lon), "radius_km": r}``,
         ``{"lat": (s, n), "lon": (w, e)}`` or anything
-        :func:`lunar_toolkit.geometry.load_aoi` accepts (GeoJSON / WKT file
+        [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi] accepts (GeoJSON / WKT file
         or string).  Overlaps are then clipped to the AOI, pairs not
         overlapping inside it are dropped and the convergence angle is
         evaluated at the centroid of the clipped overlap.
@@ -311,7 +312,7 @@ def find_stereo_pairs(
         Minimum start-time separation; also, NAC LE/RE halves of one
         observation are never paired (their convergence is ~0).
     weights : dict, optional
-        Score weights, keys as :data:`DEFAULT_WEIGHTS`.
+        Score weights, keys as `DEFAULT_WEIGHTS`.
 
     Returns
     -------
@@ -463,8 +464,9 @@ def score_pairs(
     weights: dict[str, float] | None = None,
     aoi: bool = False,
 ) -> np.ndarray:
-    """The :func:`find_stereo_pairs` ``score`` of pair rows (``convergence``, ``overlap_frac`` or
-    ``aoi_coverage`` with *aoi*, ``incidence_diff``, ``azimuth_diff``, ``resolution_ratio``)."""
+    """The [`find_stereo_pairs`][lunar_toolkit.stereo.find_stereo_pairs] ``score`` of pair rows
+    (``convergence``, ``overlap_frac`` or ``aoi_coverage`` with *aoi*, ``incidence_diff``, ``azimuth_diff``,
+    ``resolution_ratio``)."""
     w = dict(DEFAULT_WEIGHTS, **(weights or {}))
     conv = pairs["convergence"].to_numpy(float)
     s_conv = np.where(np.isnan(conv), 0.5, _ramp(conv, convergence[0], *ideal_convergence, convergence[1]))

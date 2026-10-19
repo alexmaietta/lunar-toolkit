@@ -41,7 +41,7 @@ def aoi_coverage(obs_df: pd.DataFrame, aoi: AoiLike) -> pd.Series:
 
     *aoi* is ``{"point": (lat, lon), "radius_km": r}``,
     ``{"lat": (s, n), "lon": (w, e)}`` or anything
-    :func:`lunar_toolkit.geometry.load_aoi` accepts.
+    [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi] accepts.
     """
     import pandas as pd
 
@@ -89,7 +89,8 @@ def _candidates(
 
 
 def _quality(df: pd.DataFrame, prefer: Prefer) -> pd.Series:
-    """Selection score (higher is better); see :func:`select_illumination_diverse`."""
+    """Selection score (higher is better); see
+    [`select_illumination_diverse`][lunar_toolkit.selection.select_illumination_diverse]."""
     import pandas as pd
 
     if callable(prefer):
@@ -168,7 +169,7 @@ def select_illumination_diverse(
         score (higher is better).
     aoi : dict, str, Path or Aoi, optional
         ``{"point": (lat, lon), "radius_km": r}``, ``{"lat": ..., "lon": ...}``
-        or anything :func:`lunar_toolkit.geometry.load_aoi` accepts; images
+        or anything [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi] accepts; images
         not overlapping it are dropped.
     min_aoi_coverage : float
         Minimum fraction of the AOI an image must cover (with *aoi*).
@@ -192,15 +193,16 @@ def select_illumination_diverse(
     -------
     DataFrame
         The selected rows (original index kept) sorted by
-        ``sub_solar_azimuth`` (see :func:`sort_by_sun_azimuth`), with extra
-        columns ``aoi_coverage`` (NaN without *aoi*), ``azimuth_bin`` (bin
+        ``sub_solar_azimuth`` (see [`sort_by_sun_azimuth`][lunar_toolkit.selection.sort_by_sun_azimuth]), with
+        extra columns ``aoi_coverage`` (NaN without *aoi*), ``azimuth_bin`` (bin
         start, deg; NaN for greedy), ``incidence_bin`` (if binned) and
         ``selection_score``.
 
     Notes
     -----
     This uses each image's single scene-centre Sun azimuth; for a large AOI
-    where per-pixel diversity matters, use :func:`select_for_coverage`.
+    where per-pixel diversity matters, use
+    [`select_for_coverage`][lunar_toolkit.selection.select_for_coverage].
     """
     import pandas as pd
 
@@ -277,8 +279,8 @@ def select_for_coverage(
     has fewer than *views_per_cell* views and the candidate's azimuth is at
     least *azimuth_sep_deg* from every azimuth already there.  At each step
     the image maximising ``helped_cells * (0.5 + 0.5 * score)`` is taken
-    (score as in :func:`select_illumination_diverse`, normalised to 0–1),
-    until no image helps *min_gain* cells or *max_images* is reached.
+    (score as in [`select_illumination_diverse`][lunar_toolkit.selection.select_illumination_diverse],
+    normalised to 0–1), until no image helps *min_gain* cells or *max_images* is reached.
 
     Returns
     -------
@@ -492,7 +494,8 @@ def kmedoids(
 
 @dataclass
 class KMedoidsSelection:
-    """Result of :func:`select_kmedoids` (indices refer to the input rows).
+    """Result of [`select_kmedoids`][lunar_toolkit.selection.select_kmedoids] (indices refer to the input
+    rows).
 
     Attributes
     ----------
@@ -539,9 +542,9 @@ def select_kmedoids(
 ) -> KMedoidsSelection:
     """k-medoids image selection with coverage and illumination refinement (Bertone et al. 2026, sec. 2).
 
-    1. Cluster the images with :func:`kmedoids` on
-       :func:`selection_distances` (Sun azimuth and coverage differences)
-       and take the *n_clusters* medoids.
+    1. Cluster the images with [`kmedoids`][lunar_toolkit.selection.kmedoids] on
+       [`selection_distances`][lunar_toolkit.selection.selection_distances] (Sun azimuth and coverage
+       differences) and take the *n_clusters* medoids.
     2. Add the image lighting the most still-uncovered cells until fewer
        than *max_uncovered* of the potentially lit cells (lit in any image)
        are uncovered.
@@ -572,7 +575,8 @@ def select_kmedoids(
     max_images : int, optional
         Cap on the total (medoids are truncated to it first).
     weights, init, seed, n_init
-        See :func:`selection_distances` and :func:`kmedoids`.
+        See [`selection_distances`][lunar_toolkit.selection.selection_distances] and
+        [`kmedoids`][lunar_toolkit.selection.kmedoids].
     """
     lit = np.asarray(lit, bool)
     az = np.asarray(azimuth, float)
@@ -661,8 +665,8 @@ def coverage_matrix(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Footprint coverage of the AOI grid cells: ``(cover[n_images, n_cells], x, y)``.
 
-    The grid is the one :func:`select_for_coverage` uses (cell centres in
-    the AOI's tangent plane, km).
+    The grid is the one [`select_for_coverage`][lunar_toolkit.selection.select_for_coverage] uses (cell
+    centres in the AOI's tangent plane, km).
     """
     geoms, target = _aoi_cover(obs_df, aoi)
     cx, cy = _grid(target, grid_km)
@@ -685,9 +689,10 @@ def select_kmedoids_footprints(
     grid_km: float | None = None,
     **options: Any,
 ) -> pd.DataFrame:
-    """:func:`select_kmedoids` on catalogue footprints over an AOI (footprint = lit, no shadows).
+    """[`select_kmedoids`][lunar_toolkit.selection.select_kmedoids] on catalogue footprints over an AOI
+    (footprint = lit, no shadows).
 
-    *options* go to :func:`select_kmedoids`.  Returns the selected rows
+    *options* go to [`select_kmedoids`][lunar_toolkit.selection.select_kmedoids].  Returns the selected rows
     sorted by ``sub_solar_azimuth`` with ``selection_order``,
     ``selection_stage`` and ``cluster`` columns; ``attrs`` holds
     ``uncovered``, ``poorly_lit`` and ``n_cells``.

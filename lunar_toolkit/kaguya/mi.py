@@ -79,7 +79,7 @@ def select_mi_files(files: Iterable[dict], product_id: str | None = None) -> MiP
     """Pick the data and label files of an MI product from its ODE ``files`` list.
 
     MI products have the TC layout (detached ``.lbl`` + ``.img.gz``), so
-    this follows :func:`~lunar_toolkit.kaguya.tc.select_tc_files`.
+    this follows [`select_tc_files`][lunar_toolkit.kaguya.tc.select_tc_files].
 
     Returns
     -------
@@ -112,7 +112,8 @@ def mi_products(df: pd.DataFrame) -> list[MiProduct]:
 
 
 def lookup_mi_products(product_ids: Iterable[str], client: OdeClient | None = None) -> pd.DataFrame:
-    """Query ODE by product ID and return the observation DataFrame (see :meth:`OdeClient.lookup`)."""
+    """Query ODE by product ID and return the observation DataFrame (see
+    [`OdeClient.lookup`][lunar_toolkit.ode.OdeClient.lookup])."""
     from ..ode import OdeClient
 
     return (client or OdeClient()).lookup(product_ids, instrument_label="Kaguya MI")
@@ -127,7 +128,7 @@ def download_mi_product(
 ) -> Path:
     """Download (and gunzip) one product's label and image; returns the label path.
 
-    See :func:`~lunar_toolkit.kaguya.tc.download_product`.
+    See [`download_product`][lunar_toolkit.kaguya.tc.download_product].
     """
     tc = TcProduct(product.product_id, product.image_url, product.label_url, product.image_kbytes)
     return download_product(tc, output_dir, force=force, keep_gz=keep_gz, show_progress=show_progress)
@@ -162,8 +163,8 @@ class MiProcessor:
     force : bool
         Redo every step even when its output exists.
     kaguyami2isis_params, spiceinit_params : dict, optional
-        Overrides merged into :data:`KAGUYAMI2ISIS_PARAMS` /
-        :data:`SPICEINIT_PARAMS`.
+        Overrides merged into `KAGUYAMI2ISIS_PARAMS` /
+        `SPICEINIT_PARAMS`.
     """
 
     def __init__(
@@ -194,7 +195,7 @@ class MiProcessor:
     def process(self, source: MiProduct | str | Path) -> MiOutputs:
         """Download (if needed) and import one product.
 
-        *source* is a :class:`MiProduct`, a local ``.lbl`` path or a product
+        *source* is a [`MiProduct`][lunar_toolkit.kaguya.mi.MiProduct], a local ``.lbl`` path or a product
         ID (looked up on ODE).
         """
         if isinstance(source, MiProduct):
@@ -269,6 +270,7 @@ class MiProcessor:
 
 
 def import_mi(label: Path, output_dir: Path | None = None, **kwargs: Any) -> MiOutputs:
-    """Import one downloaded MI product; see :class:`MiProcessor` for *kwargs*."""
+    """Import one downloaded MI product; see [`MiProcessor`][lunar_toolkit.kaguya.mi.MiProcessor] for
+    *kwargs*."""
     label = Path(label)
     return MiProcessor(output_dir or label.parent, **kwargs).import_label(label)

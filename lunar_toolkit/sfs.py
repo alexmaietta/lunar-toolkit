@@ -128,7 +128,7 @@ _OVERLAP_OPTIONS = ("overlap_list", "auto_overlap_params", "auto_overlap_buffer"
 
 @dataclass
 class SfsConfig:
-    """Settings for :class:`SfsPipeline`.
+    """Settings for [`SfsPipeline`][lunar_toolkit.sfs.SfsPipeline].
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ class SfsConfig:
     projwin : tuple, optional
         ``(ulx, uly, lrx, lry)`` crop of the prior DEM, in its projected units.
     preset : {"bertone", "asp"}
-        Option defaults: Bertone et al. (2026) or the ASP SfS recipe (:data:`PRESETS`).
+        Option defaults: Bertone et al. (2026) or the ASP SfS recipe (`PRESETS`).
     ba_resolution : float, optional
         Grid spacing of the images mapprojected for bundle-adjustment matching and
         stereo registration (default 1 m, NAC native; None = *resolution*).
@@ -176,11 +176,12 @@ class SfsConfig:
     min_matches : int
         Drop images with fewer inlier matches.
     min_images : int
-        Stop with :class:`PipelineError` when a quality filter leaves fewer images.
+        Stop with [`PipelineError`][lunar_toolkit.sfs.PipelineError] when a quality filter leaves fewer
+        images.
     selection : {"coverage", "image_subset", "all"}
         SfS image selection: greedy per-pixel illumination coverage
-        (:func:`select_by_illumination`), ASP ``image_subset`` per Sun-azimuth bin,
-        or all kept images.
+        ([`select_by_illumination`][lunar_toolkit.sfs.select_by_illumination]), ASP ``image_subset`` per
+        Sun-azimuth bin, or all kept images.
     max_shadow_fraction : float, optional
         Images at least this shadowed (below the SfS shadow threshold) are dropped.
     selection_views, selection_azimuth_sep : int, float
@@ -191,11 +192,12 @@ class SfsConfig:
         Medoids seeding ``"kmedoids"`` selection (Bertone et al. 2026, §2: ~30).
     sfs_cameras : {"csm", "isis"}
         Camera models for SfS on reduced cubes: CSM cameras re-mapped to the reduced
-        image (:func:`lunar_toolkit.csm.isis_reduce_with_csm`, as in Bertone et al.
-        2026, App. A) or ISIS cameras with ``--use-approx-camera-models``.
+        image ([`lunar_toolkit.csm.isis_reduce_with_csm`][lunar_toolkit.csm.isis_reduce_with_csm], as in
+        Bertone et al. 2026, App. A) or ISIS cameras with ``--use-approx-camera-models``.
     cameras_from : {"ba", "published"}
         ``"published"`` uses the bundle-adjusted cameras of Bertone et al. (2026) for
-        *published_region* (:func:`lunar_toolkit.reference.published_cameras`) and skips
+        *published_region*
+        ([`lunar_toolkit.reference.published_cameras`][lunar_toolkit.reference.published_cameras]) and skips
         bundle adjustment, registration and refinement; images without one are removed.
     published_region : str or int, optional
         Region of the published cameras (default: from ``region_id`` ``A3NN``).
@@ -317,7 +319,8 @@ class RemovedImage:
 class SfsPipeline:
     """Build an SfS DEM over a region from NAC images and a prior DEM.
 
-    :meth:`run` follows Bertone et al. (2026, PSJ 7:118) and the ASP large-area SfS recipe:
+    [`run`][lunar_toolkit.sfs.SfsPipeline.run] follows Bertone et al. (2026, PSJ 7:118) and the ASP large-area
+    SfS recipe:
 
     1. calibrate the images and write CSM cameras (``images/``);
     2. crop the prior DEM and resample it to the target grid (``dem/``);
@@ -333,7 +336,8 @@ class SfsPipeline:
        all images and per 30° Sun-azimuth bin (``qa/``);
     9. select an illumination-diverse subset (``selection/``);
     10. reduce the selected cubes to the target resolution and run ``parallel_sfs`` (``sfs/``);
-    11. products (``products/`` via :mod:`lunar_toolkit.sfs_products`, else hillshade + diff).
+    11. products (``products/`` via [`lunar_toolkit.sfs_products`][lunar_toolkit.sfs_products], else hillshade
+        + diff).
 
     Steps whose outputs exist are skipped, so a rerun resumes.
 
@@ -347,16 +351,17 @@ class SfsPipeline:
     force : bool
         Recompute steps even when their outputs exist.
     observations : DataFrame, optional
-        Observation table (:mod:`lunar_toolkit.observation` schema) with the input
+        Observation table ([`lunar_toolkit.observation`][lunar_toolkit.observation] schema) with the input
         images, for native pixel scales and stereo pairs; looked up in the local
         EDR ``CumIndex`` when needed and not given.
     aoi : optional
         Region the stereo pairs must overlap in: anything
-        :func:`lunar_toolkit.stereo.find_stereo_pairs` takes (dict, GeoJSON / WKT).
+        [`lunar_toolkit.stereo.find_stereo_pairs`][lunar_toolkit.stereo.find_stereo_pairs] takes (dict,
+        GeoJSON / WKT).
     data_dir : Path, optional
         ``CumIndex`` data directory.
     run_config : RunConfig, optional
-        The full run settings (:mod:`lunar_toolkit.config`) written to ``config.yaml``
+        The full run settings ([`lunar_toolkit.config`][lunar_toolkit.config]) written to ``config.yaml``
         and ``provenance.json``; default: *work_dir*, *prior_dem*, the sources and *config*.
     provenance : bool
         Write ``config.yaml`` and append this run to ``provenance.json`` (never in a dry run).
@@ -416,7 +421,7 @@ class SfsPipeline:
         """All steps; returns the final SfS DEM.
 
         Writes ``config.yaml`` and appends a run to ``provenance.json`` first (see
-        :meth:`start_provenance`), then records each step there.
+        [`start_provenance`][lunar_toolkit.sfs.SfsPipeline.start_provenance]), then records each step there.
         """
         sources = [Path(s) for s in sources]
         self.start_provenance(sources)
@@ -457,7 +462,8 @@ class SfsPipeline:
         return dem
 
     def effective_config(self, sources: Sequence[Path] = ()) -> RunConfig:
-        """:attr:`run_config` with this pipeline's work dir, prior DEM and :class:`SfsConfig`."""
+        """`run_config` with this pipeline's work dir, prior DEM and
+        [`SfsConfig`][lunar_toolkit.sfs.SfsConfig]."""
         from .config import RunConfig
 
         if self.run_config is None:
@@ -641,7 +647,7 @@ class SfsPipeline:
         """``parallel_bundle_adjust`` with matches from the mapprojected images.
 
         ``--mapproj-dem`` writes the per-image match-offset report used by
-        :meth:`filter_images`.
+        [`filter_images`][lunar_toolkit.sfs.SfsPipeline.filter_images].
         """
         done = Path(f"{self.ba_prefix}-final_residuals_stats.txt")
         if self._skip(done):
@@ -680,13 +686,15 @@ class SfsPipeline:
         return opts
 
     def workspace(self, read_only: bool = False) -> Workspace:
-        """The work dir's DuckDB workspace (``lunar.duckdb``, :mod:`lunar_toolkit.workspace`)."""
+        """The work dir's DuckDB workspace (``lunar.duckdb``,
+        [`lunar_toolkit.workspace`][lunar_toolkit.workspace])."""
         from .workspace import Workspace
 
         return Workspace(self.work_dir, threads=self.config.threads, read_only=read_only)
 
     def filter_images(self, prefix: Path, stage: str) -> list[RemovedImage]:
-        """Drop images that ASP's bundle-adjustment reports flag (see :func:`flag_images`).
+        """Drop images that ASP's bundle-adjustment reports flag (see
+        [`flag_images`][lunar_toolkit.sfs.flag_images]).
 
         Loads ``<prefix>-*`` reports (residual stats and raw pixels, match offsets, point
         maps, convergence angles) into the workspace as run ``<prefix>``'s directory name
@@ -793,7 +801,8 @@ class SfsPipeline:
         )
 
     def stereo_pairs(self) -> pd.DataFrame:
-        """Up to ``stereo_pairs`` kept-image pairs ranked by :func:`~lunar_toolkit.stereo.find_stereo_pairs`."""
+        """Up to ``stereo_pairs`` kept-image pairs ranked by
+        [`find_stereo_pairs`][lunar_toolkit.stereo.find_stereo_pairs]."""
         from .stereo import find_stereo_pairs
 
         obs = self._observations()
@@ -855,7 +864,7 @@ class SfsPipeline:
         """Bundle-adjust the kept, registered cameras again with ``--heights-from-dem``.
 
         Reuses the ``ba/`` matches (``--match-files-prefix``); ``--mapproj-dem`` gives
-        the match-offset report for a second :meth:`filter_images`.
+        the match-offset report for a second [`filter_images`][lunar_toolkit.sfs.SfsPipeline.filter_images].
         """
         done = Path(f"{self.refine_prefix}-final_residuals_stats.txt")
         if self._skip(done):
@@ -1071,10 +1080,11 @@ class SfsPipeline:
 
         Cubes needing it are ``reduce``-d to the target resolution (Bertone et al. 2026,
         App. A: SfS's own resampling leaves artifacts).  With ``sfs_cameras="csm"`` each
-        CSM camera is re-mapped to its reduced cube (:func:`csm.isis_reduce_with_csm`);
-        otherwise ISIS cameras are used.  The final ``.adjust`` files (resolution
-        independent) are copied under :attr:`sfs_camera_prefix` with the new names;
-        published cameras need none.  Returns ``(cubes, cameras, prefix, isis_cameras)``.
+        CSM camera is re-mapped to its reduced cube
+        ([`csm.isis_reduce_with_csm`][lunar_toolkit.csm.isis_reduce_with_csm]); otherwise ISIS cameras are
+        used.  The final ``.adjust`` files (resolution independent) are copied under
+        [`sfs_camera_prefix`][lunar_toolkit.sfs.SfsPipeline.sfs_camera_prefix] with the new names; published
+        cameras need none.  Returns ``(cubes, cameras, prefix, isis_cameras)``.
         """
         from . import csm
 
@@ -1112,8 +1122,9 @@ class SfsPipeline:
         """Replace the cameras with the published Bertone et al. (2026) adjusted ones.
 
         Each published camera (a CSM state of the reduced full image) is re-mapped to
-        the image of its cube (:func:`reference.published_camera_native`) and written to
-        ``images/<id>.published.json``; images without one are removed.
+        the image of its cube
+        ([`reference.published_camera_native`][lunar_toolkit.reference.published_camera_native]) and written
+        to ``images/<id>.published.json``; images without one are removed.
         """
         from . import csm
         from . import reference as ref
@@ -1156,8 +1167,8 @@ class SfsPipeline:
     ) -> Path:
         """``parallel_sfs`` on the target-grid prior DEM; returns ``<prefix>-DEM-final.tif``.
 
-        *images* default to :attr:`selected` (else all kept images), *prefix* to
-        ``sfs/run`` and *dem* (input DEM, e.g. a crop) to :attr:`dem`.  *options*
+        *images* default to `selected` (else all kept images), *prefix* to
+        ``sfs/run`` and *dem* (input DEM, e.g. a crop) to `dem`.  *options*
         override the configured SfS options.
         """
         images = list(images) if images is not None else (self.selected or self.images)
@@ -1175,7 +1186,8 @@ class SfsPipeline:
         )
 
     def products(self, dem: Path) -> dict[str, Path]:
-        """Standard products via :func:`lunar_toolkit.sfs_products.make_products` when available.
+        """Standard products via
+        [`lunar_toolkit.sfs_products.make_products`][lunar_toolkit.sfs_products.make_products] when available.
 
         Otherwise (module missing or its dependencies not installed) a hillshade of the
         SfS DEM and its difference from the prior.
@@ -1212,8 +1224,8 @@ class SfsPipeline:
     def ensemble(self) -> dict[str, Path]:
         """SfS ensemble over a central crop and its spread (``ensemble/``, ``products/``).
 
-        Members are :func:`~lunar_toolkit.sfs_products.ensemble_subsets` of the kept
-        images; returns :func:`~lunar_toolkit.sfs_products.ensemble_uncertainty`'s maps.
+        Members are [`ensemble_subsets`][lunar_toolkit.sfs_products.ensemble_subsets] of the kept
+        images; returns [`ensemble_uncertainty`][lunar_toolkit.sfs_products.ensemble_uncertainty]'s maps.
         """
         from . import sfs_products
 
@@ -1262,7 +1274,7 @@ def flag_images(
     an 85th-percentile mapprojected match offset over *max_offset_p85* m, or more than
     *max_large_residual_fraction* of its reprojection errors over *large_residual_px*.
     The value is the reason.  The rules are the workspace's ``image_rejections`` view
-    (:mod:`lunar_toolkit.workspace`), evaluated in an in-memory database.
+    ([`lunar_toolkit.workspace`][lunar_toolkit.workspace]), evaluated in an in-memory database.
     """
     from .workspace import flag_images_sql
 
@@ -1288,11 +1300,12 @@ def select_by_illumination(
 ) -> tuple[list[int], np.ndarray]:
     """Greedy per-pixel illumination-diverse image selection on a raster grid.
 
-    The raster analogue of :func:`lunar_toolkit.selection.select_for_coverage`, after
-    Bertone et al. (2026, §2): a lit cell is *helped* by an image lighting it if it has
-    fewer than *views* illumination directions so far and the image's Sun azimuth is at
-    least *azimuth_sep* from each of them.  Each step takes the image helping most
-    cells, until none helps *min_gain* cells or *max_images* are chosen.
+    The raster analogue of
+    [`lunar_toolkit.selection.select_for_coverage`][lunar_toolkit.selection.select_for_coverage], after
+    Bertone et al. (2026, §2): a lit cell is *helped* by an image lighting it if it has fewer than *views*
+    illumination directions so far and the image's Sun azimuth is at least *azimuth_sep* from each of them.
+    Each step takes the image helping most cells, until none helps *min_gain* cells or *max_images* are
+    chosen.
 
     Parameters
     ----------
@@ -1340,7 +1353,7 @@ def prefilter_candidates(
     Works on ``CumIndex`` rows (``SLEW_ANGLE``, ``RESOLUTION``) or observation rows
     (``slew_angle``, ``pixel_scale``).  Rows with unknown values are dropped.  The
     nadir cut of Bertone et al. (2026, §2) belongs to SfS selection
-    (:attr:`SfsConfig.max_sfs_slew`), so searches keep slewed images by default: they
+    (`SfsConfig.max_sfs_slew`), so searches keep slewed images by default: they
     give the stereo convergence the registration step needs.
     """
     import pandas as pd
@@ -1373,7 +1386,7 @@ def cap_candidates(
 
     Keeps both images of the best stereo pairs (up to half the budget; they feed the
     registration step), then nadir images (``|slew| < max_sfs_slew``) chosen for
-    illumination coverage over *aoi* (:func:`~lunar_toolkit.selection.select_for_coverage`:
+    illumination coverage over *aoi* ([`select_for_coverage`][lunar_toolkit.selection.select_for_coverage]:
     *views* directions at least *azimuth_sep* apart per cell), then the finest remaining
     nadir images.  Returns the chosen rows in their original order.
     """
@@ -1441,7 +1454,8 @@ def search_images(
 ) -> pd.DataFrame:
     """NAC EDRs over *aoi* from the local ``CumIndex``, pre-filtered and capped; observation schema.
 
-    *config* supplies the SfS slew cut and stereo settings used by :func:`cap_candidates`.
+    *config* supplies the SfS slew cut and stereo settings used by
+    [`cap_candidates`][lunar_toolkit.sfs.cap_candidates].
     """
     from .lroc.cumindex import CumIndex
 
@@ -1519,8 +1533,8 @@ class PolarStereographic:
 def aoi_projwin(aoi: Any, dem: Path, snap: float | None = None) -> tuple[float, float, float, float]:
     """``(ulx, uly, lrx, lry)`` bounding *aoi* in the polar stereographic projection of *dem*.
 
-    *aoi* is anything :func:`lunar_toolkit.geometry.load_aoi` takes (GeoJSON / WKT file,
-    WKT string).  The window is widened to multiples of *snap* (m) when given.
+    *aoi* is anything [`lunar_toolkit.geometry.load_aoi`][lunar_toolkit.geometry.load_aoi] takes (GeoJSON /
+    WKT file, WKT string).  The window is widened to multiples of *snap* (m) when given.
     """
     proj = PolarStereographic.from_proj4(asp.srs_proj4(dem))
     pts = [proj.xy(lat, lon) for poly in load_aoi(aoi).polygons for lon, lat in poly[0]]

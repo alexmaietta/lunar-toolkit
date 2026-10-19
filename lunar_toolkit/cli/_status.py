@@ -330,7 +330,7 @@ def redact(obj: Any) -> Any:
 
 
 class StatusCache:
-    """``/api/status`` documents, rebuilt at most every :data:`CACHE_SECONDS` (or on refresh)."""
+    """``/api/status`` documents, rebuilt at most every `CACHE_SECONDS` (or on refresh)."""
 
     def __init__(self, dirs: StatusDirs) -> None:
         self.dirs = dirs

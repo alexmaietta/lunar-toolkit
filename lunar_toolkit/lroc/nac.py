@@ -104,7 +104,7 @@ def _raw(value: Any) -> Any:
 
 
 class IndexColumn(Generic[_V]):
-    """Read-only :class:`NacImage` attribute holding one CUMINDEX column.
+    """Read-only [`NacImage`][lunar_toolkit.lroc.nac.NacImage] attribute holding one CUMINDEX column.
 
     The value is converted by *cast*; ``None`` when the column is missing
     or null.
@@ -408,7 +408,7 @@ class NacImage:
     def process(self, output_dir: Path, **kwargs: Any) -> Path:
         """Run the ISIS + GDAL pipeline on the EDR, returning the GeoTIFF.
 
-        *kwargs* are :class:`NacProcessor` options (``projection``,
+        *kwargs* are [`NacProcessor`][lunar_toolkit.lroc.nac.NacProcessor] options (``projection``,
         ``resolution``, ``web``, ``keep``, ``force``).
         """
         url = self.edr_url
@@ -418,7 +418,8 @@ class NacImage:
 
     # Quick view
     def to_png(self, output_dir: Path, input_path: Path) -> Path:
-        """Convert an image (e.g. a GeoTIFF from :meth:`process`) to ``<output_dir>/<id>.png``."""
+        """Convert an image (e.g. a GeoTIFF from [`process`][lunar_toolkit.lroc.nac.NacImage.process]) to
+        ``<output_dir>/<id>.png``."""
         return to_png(input_path, Path(output_dir) / f"{self._product_id}.png")
 
     def show(self, input_path: Path) -> None:
@@ -556,7 +557,7 @@ class NacImageCollection:
     def process(self, output_dir: Path, workers: int = 4, **kwargs: Any) -> dict[str, Path | None]:
         """Run the ISIS + GDAL pipeline on all EDRs in parallel.
 
-        *kwargs* are :class:`NacProcessor` options.  Returns a dict mapping
+        *kwargs* are [`NacProcessor`][lunar_toolkit.lroc.nac.NacProcessor] options.  Returns a dict mapping
         product_id → GeoTIFF Path (or None on failure).
         """
         urls = {img.product_id: img.edr_url for img in self._images}
@@ -598,7 +599,7 @@ class NacProcessor:
     """Download, calibrate and map-project LROC NAC EDRs into GeoTIFFs.
 
     Each image ends up in *output_dir* as ``<id>.tif`` (map-projected I/F,
-    :data:`~lunar_toolkit.constants.GEOTIFF_OPTIONS`).  Intermediates
+    `GEOTIFF_OPTIONS`).  Intermediates
     (a downloaded ``<id>.IMG``, ``<id>.cal.echo.cub``, ``<id>.map.cub``) are
     written beside it and removed after success unless *keep*; after a
     failure they stay, so a re-run resumes.  Steps whose output exists are

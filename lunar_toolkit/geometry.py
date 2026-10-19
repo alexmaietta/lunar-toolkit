@@ -103,7 +103,8 @@ def _ps_bbox_of_box(
 
 
 def region_bbox(region: dict) -> tuple[float, float, float, float]:
-    """``(west, south, east, north)`` of a :func:`query_region` (east may be < west)."""
+    """``(west, south, east, north)`` of a [`query_region`][lunar_toolkit.geometry.query_region] (east may be
+    < west)."""
     s, n = region["lat"]
     if region["span"] >= 360.0:
         return 0.0, s, 360.0, n
@@ -173,7 +174,7 @@ def load_aoi(source: AoiLike, densify_deg: float | None = 1.0) -> Aoi:
         mapping, a region dict ``{"point": (lat, lon), "radius_km": r}``
         (spherical cap) or ``{"lat": (south, north), "lon": (west, east)}``
         (``west > east`` crosses 0/360; omit ``lon`` for all longitudes), or
-        an existing :class:`Aoi` (returned unchanged).  Only
+        an existing [`Aoi`][lunar_toolkit.geometry.Aoi] (returned unchanged).  Only
         Polygon / MultiPolygon parts are used (also inside
         GeometryCollections); coordinates are lon/lat degrees, positive east,
         in either −180..180 or 0..360.  Polygons may cross the 0/360 (or
@@ -363,11 +364,11 @@ def _covering_arc(arcs: list[tuple[float, float]]) -> tuple[float, float]:
 
 
 def aoi_region(aoi: AoiLike) -> dict:
-    """Bounding region of an AOI, in :func:`query_region` form.
+    """Bounding region of an AOI, in [`query_region`][lunar_toolkit.geometry.query_region] form.
 
     Returns ``{"lat": (s, n), "west", "span", "ps"}`` so the bbox prefilter
     used for boxes and circles applies unchanged; refine the prefiltered
-    rows with :func:`filter_aoi`.
+    rows with [`filter_aoi`][lunar_toolkit.geometry.filter_aoi].
     """
     aoi = load_aoi(aoi)
     lats = [la for poly in aoi.polygons for la in (p[1] for p in poly[0])]
@@ -409,7 +410,8 @@ def _polar_hemi(region: dict) -> str | None:
 
 
 def ps_projection(hemi: str) -> Projection:
-    """Ring projection to polar stereographic (:func:`ps_xy`) for hemisphere *hemi*."""
+    """Ring projection to polar stereographic ([`ps_xy`][lunar_toolkit.geometry.ps_xy]) for hemisphere
+    *hemi*."""
     # Clamp away from the opposite pole, where the projection diverges
     lim = 89.0
     return lambda ring: [ps_xy(min(la, lim) if hemi == "S" else max(la, -lim), lo, hemi) for lo, la in ring]
@@ -449,7 +451,7 @@ def aoi_geometry(aoi: AoiLike, proj: Projection | None = None):
 def footprint_geometry(rings_list: list[list[Ring]], proj: Projection | None):
     """Footprint polygons (per polygon: lon/lat exterior, *holes) as shapely geometry.
 
-    Rings are projected by *proj* (e.g. :func:`ps_projection`), else kept in
+    Rings are projected by *proj* (e.g. [`ps_projection`][lunar_toolkit.geometry.ps_projection]), else kept in
     lon/lat (pole-enclosing rings closed via the pole) starting in 0..360.
     """
     parts = []
@@ -515,7 +517,8 @@ def footprint_rings(row: dict, wkt_column: str | None = None) -> list[list[Ring]
 
 
 def row_footprint(row: dict, wkt_column: str | None = None, proj: Projection | None = None):
-    """Shapely footprint (:func:`footprint_geometry`) of a result row, or ``None``."""
+    """Shapely footprint ([`footprint_geometry`][lunar_toolkit.geometry.footprint_geometry]) of a result row,
+    or ``None``."""
     rings = footprint_rings(row, wkt_column)
     return None if rings is None else footprint_geometry(rings, proj)
 
@@ -528,9 +531,9 @@ def aoi_mask(df: pd.DataFrame, aoi: AoiLike, wkt_column: str | None = None) -> l
     corner lat/lon columns, else the ``FP_*`` / ``min_lat``…``lon_east``
     bounding box.  Rows with no geometry at all are kept.
 
-    *aoi* is anything :func:`load_aoi` accepts.  Regions entirely poleward
+    *aoi* is anything [`load_aoi`][lunar_toolkit.geometry.load_aoi] accepts.  Regions entirely poleward
     of ±60° (``POLAR_LAT_THRESHOLD``) are intersected in polar
-    stereographic (:func:`ps_xy`, footprint edges straight in the
+    stereographic ([`ps_xy`][lunar_toolkit.geometry.ps_xy], footprint edges straight in the
     projection); others in lon/lat with the AOI replicated at ±360° so
     footprints across the 0/360 seam match.
     """
@@ -550,7 +553,8 @@ def aoi_mask(df: pd.DataFrame, aoi: AoiLike, wkt_column: str | None = None) -> l
 
 
 def filter_aoi(df: pd.DataFrame, aoi: AoiLike, wkt_column: str | None = None) -> pd.DataFrame:
-    """Keep only rows whose footprint intersects the AOI (see :func:`aoi_mask`)."""
+    """Keep only rows whose footprint intersects the AOI (see
+    [`aoi_mask`][lunar_toolkit.geometry.aoi_mask])."""
     if df is None or len(df) == 0:
         return df
     return df[aoi_mask(df, aoi, wkt_column=wkt_column)].reset_index(drop=True)

@@ -293,15 +293,16 @@ class Workspace:
     spatial : bool
         Load the spatial extension (``INSTALL spatial`` once needs network; it is
         cached in ``~/.duckdb``).  Without it the bundle-adjustment tables and views
-        work, while :meth:`add_observations` and :meth:`pairs` raise
-        :class:`WorkspaceError`.
+        work, while [`add_observations`][lunar_toolkit.workspace.Workspace.add_observations] and
+        [`pairs`][lunar_toolkit.workspace.Workspace.pairs] raise
+        [`WorkspaceError`][lunar_toolkit.workspace.WorkspaceError].
 
     Notes
     -----
     Tables: ``images`` (observation columns plus ``footprint``, a GEOMETRY in metres
-    in the polar stereographic projection of ``hemi``, :data:`PS_PROJ4`),
-    ``pairs`` (the last :meth:`pairs` result), ``ba_runs``, ``ba_residual_stats``,
-    ``ba_pixel_residuals``, ``ba_match_offsets``, ``ba_points``, ``ba_convergence``,
+    in the polar stereographic projection of ``hemi``, `PS_PROJ4`),
+    ``pairs`` (the last [`pairs`][lunar_toolkit.workspace.Workspace.pairs] result), ``ba_runs``,
+    ``ba_residual_stats``, ``ba_pixel_residuals``, ``ba_match_offsets``, ``ba_points``, ``ba_convergence``,
     ``ba_camera_offsets`` (by ``run``) and ``rejection_params``.  Views:
     ``ba_image_stats`` (per image before / after), ``ba_run_summary`` and
     ``image_rejections`` (Bertone et al. 2026 rules with ``rejection_params``); the
@@ -449,19 +450,19 @@ class Workspace:
         Parameters
         ----------
         df : DataFrame
-            :mod:`lunar_toolkit.observation` schema rows; missing columns are NULL.
+            [`lunar_toolkit.observation`][lunar_toolkit.observation] schema rows; missing columns are NULL.
         rings : sequence, optional
-            Per row, :func:`lunar_toolkit.geometry.footprint_rings` output to use instead
-            of the rows' own (``footprint_wkt``, else the ``min_lat`` ... ``lon_east`` box).
+            Per row, [`lunar_toolkit.geometry.footprint_rings`][lunar_toolkit.geometry.footprint_rings] output
+            to use instead of the rows' own (``footprint_wkt``, else the ``min_lat`` ... ``lon_east`` box).
 
         Returns
         -------
         int
             Rows written.  ``footprint`` is the footprint polygon in polar stereographic
-            metres (:func:`lunar_toolkit.geometry.footprint_geometry` with
-            :func:`~lunar_toolkit.geometry.ps_projection` of ``hemi``, the hemisphere of
+            metres ([`lunar_toolkit.geometry.footprint_geometry`][lunar_toolkit.geometry.footprint_geometry]
+            with [`ps_projection`][lunar_toolkit.geometry.ps_projection] of ``hemi``, the hemisphere of
             the image centre; edges densified along great circles every
-            :data:`GREAT_CIRCLE_STEP_DEG`), ``footprint_km2`` its area corrected for the projection's
+            `GREAT_CIRCLE_STEP_DEG`), ``footprint_km2`` its area corrected for the projection's
             scale, ``cap_lat`` / ``cap_lon`` the centre of its vertices, ``obs_key`` the
             observation (NAC LE / RE halves share one).  ``idx`` numbers rows in insertion
             order.
@@ -545,7 +546,8 @@ class Workspace:
         return len(frame)
 
     def add_index_rows(self, df: pd.DataFrame, dataset: str | None = "edr") -> int:
-        """:meth:`add_observations` of ``CumIndex`` rows (footprints from ``FP_WKT``, corners or ``FP_*``)."""
+        """[`add_observations`][lunar_toolkit.workspace.Workspace.add_observations] of ``CumIndex`` rows
+        (footprints from ``FP_WKT``, corners or ``FP_*``)."""
         from .geometry import footprint_rings
         from .observation import observations_from_cumindex
 
@@ -582,14 +584,14 @@ class Workspace:
     ) -> pd.DataFrame:
         """Rank stereo pairs of ``images`` with a SQL spatial self-join.
 
-        Parameters are those of :func:`lunar_toolkit.stereo.find_stereo_pairs`, plus
-        *product_ids* (only these images) and *table* (where the result is stored;
-        None keeps it out of the database).
+        Parameters are those of
+        [`lunar_toolkit.stereo.find_stereo_pairs`][lunar_toolkit.stereo.find_stereo_pairs], plus *product_ids*
+        (only these images) and *table* (where the result is stored; None keeps it out of the database).
 
         Returns
         -------
         DataFrame
-            :data:`lunar_toolkit.stereo.PAIR_COLUMNS`; ``index_1`` / ``index_2`` are
+            `lunar_toolkit.stereo.PAIR_COLUMNS`; ``index_1`` / ``index_2`` are
             ``images.idx``.
 
         Notes
@@ -601,10 +603,10 @@ class Workspace:
         centroid), AOI coverage, incidence / azimuth / emission / resolution / time
         differences and the overlap centroid are SQL.  The convergence angle and
         ``b_h`` are then computed for the candidates with numpy
-        (:func:`lunar_toolkit.stereo.convergence_angles`: sub-spacecraft point +
-        altitude, pushbroom-corrected), exactly as ``find_stereo_pairs``, and the
-        score is :func:`lunar_toolkit.stereo.score_pairs`.  Footprint edges are great
-        circles in both (densified here), so overlap areas and fractions agree with
+        ([`lunar_toolkit.stereo.convergence_angles`][lunar_toolkit.stereo.convergence_angles]: sub-spacecraft
+        point + altitude, pushbroom-corrected), exactly as ``find_stereo_pairs``, and the
+        score is [`lunar_toolkit.stereo.score_pairs`][lunar_toolkit.stereo.score_pairs].  Footprint edges are
+        great circles in both (densified here), so overlap areas and fractions agree with
         ``find_stereo_pairs`` to ~1e-3 relative.
         """
         import pandas as pd
@@ -789,7 +791,8 @@ class Workspace:
         return res
 
     def set_rejection_params(self, config: SfsConfig | None = None, **overrides: Any) -> None:
-        """Thresholds of the ``image_rejections`` view, from *config* (default :class:`~lunar_toolkit.sfs.SfsConfig`).
+        """Thresholds of the ``image_rejections`` view, from *config* (default
+        [`SfsConfig`][lunar_toolkit.sfs.SfsConfig]).
 
         Keyword overrides: ``max_offset_p85``, ``max_large_residual_fraction``,
         ``large_residual_px``, ``min_matches`` (None disables the first two rules).
@@ -980,7 +983,9 @@ class Workspace:
         return dict(rows)
 
     def ba_report(self, run: str) -> pd.DataFrame | None:
-        """Per-image table of *run* in :func:`lunar_toolkit.sfs_report.read_ba_reports` form, or None."""
+        """Per-image table of *run* in
+        [`lunar_toolkit.sfs_report.read_ba_reports`][lunar_toolkit.sfs_report.read_ba_reports] form, or
+        None."""
         if run not in self.runs():
             return None
         cols = ["image"] + [f"{k}_{s}" for k in ("initial", "final") for s in ("mean", "median", "count")]
@@ -1111,7 +1116,8 @@ def _read_raw_pixels(path: Path) -> pd.DataFrame:
 def find_stereo_pairs_duckdb(
     obs_df: pd.DataFrame, aoi: Any = None, *, workspace: Workspace | None = None, **kwargs: Any
 ) -> pd.DataFrame:
-    """:func:`lunar_toolkit.stereo.find_stereo_pairs` through :meth:`Workspace.pairs`.
+    """[`lunar_toolkit.stereo.find_stereo_pairs`][lunar_toolkit.stereo.find_stereo_pairs] through
+    [`Workspace.pairs`][lunar_toolkit.workspace.Workspace.pairs].
 
     The observations are written to ``images`` of *workspace* (default: a scratch
     in-memory one) and ``index_1`` / ``index_2`` are mapped back to *obs_df* row
@@ -1147,7 +1153,8 @@ def flag_images_sql(
     offsets: Mapping[str, MatchOffsetStats],
     **thresholds: Any,
 ) -> dict[str, str]:
-    """``image_rejections`` of parsed final-stage reports (see :func:`lunar_toolkit.sfs.flag_images`)."""
+    """``image_rejections`` of parsed final-stage reports (see
+    [`lunar_toolkit.sfs.flag_images`][lunar_toolkit.sfs.flag_images])."""
     import pandas as pd
 
     raw = pd.DataFrame(

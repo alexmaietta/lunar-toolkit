@@ -165,7 +165,9 @@ def lookup_products(
     client: OdeClient | None = None,
     product: str = "raw",
 ) -> pd.DataFrame:
-    """Query ODE by observation / product ID (see :func:`product_id_for`, :meth:`OdeClient.lookup`)."""
+    """Query ODE by observation / product ID (see
+    [`product_id_for`][lunar_toolkit.shadowcam.sc.product_id_for],
+    [`OdeClient.lookup`][lunar_toolkit.ode.OdeClient.lookup])."""
     from ..ode import OdeClient
 
     ids = [product_id_for(p, product) for p in product_ids]
@@ -227,7 +229,7 @@ class ScProcessor:
     Per product *output_dir* gets ``<id>.cub``, ``<id>.json`` (when *csm*),
     ``<id>.cam_test.txt`` (when *validate*) and ``<id>.tif`` (when
     *mapproject*).  Steps whose output exists (for ``spiceinit``: a cube
-    whose History records it, see :func:`has_spice`) are skipped unless
+    whose History records it, see [`has_spice`][lunar_toolkit.shadowcam.sc.has_spice]) are skipped unless
     *force*.
 
     Parameters
@@ -261,7 +263,7 @@ class ScProcessor:
     force : bool
         Redo every processing step (downloads are always reused).
     spiceinit_params : dict, optional
-        Overrides merged into :data:`SPICEINIT_PARAMS`.
+        Overrides merged into `SPICEINIT_PARAMS`.
     """
 
     def __init__(
@@ -300,7 +302,7 @@ class ScProcessor:
     def process(self, source: ScProduct | str | Path) -> ScOutputs:
         """Download (if needed) and process one product.
 
-        *source* is a :class:`ScProduct`, a local ``.cub`` path or an
+        *source* is a [`ScProduct`][lunar_toolkit.shadowcam.sc.ScProduct], a local ``.cub`` path or an
         observation / product ID (looked up on ODE).
         """
         if isinstance(source, ScProduct):
@@ -332,7 +334,7 @@ class ScProcessor:
         return results
 
     def cube_path(self, product: ScProduct) -> Path:
-        """Where :meth:`process` downloads *product*'s cube."""
+        """Where [`process`][lunar_toolkit.shadowcam.sc.ScProcessor.process] downloads *product*'s cube."""
         return self.output_dir / product.cube_name
 
     def process_cube(self, cube: Path) -> ScOutputs:
@@ -383,7 +385,8 @@ class ScProcessor:
 
 
 def import_sc(cube: Path, output_dir: Path | None = None, **kwargs: Any) -> ScOutputs:
-    """Process one downloaded ShadowCam cube; see :class:`ScProcessor` for *kwargs*."""
+    """Process one downloaded ShadowCam cube; see [`ScProcessor`][lunar_toolkit.shadowcam.sc.ScProcessor] for
+    *kwargs*."""
     cube = Path(cube)
     return ScProcessor(output_dir or cube.parent, **kwargs).process_cube(cube)
 

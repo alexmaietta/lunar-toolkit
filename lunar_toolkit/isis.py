@@ -48,7 +48,7 @@ def spiceinit(from_cub: Path, spksmithed: bool = True, web: bool = True, **param
 def system_shape_available() -> bool:
     """Whether ``$ISISDATA`` (as the ISIS tools see it) has the default lunar shape model.
 
-    True when ``spiceinit`` cannot be found or under :func:`~lunar_toolkit.tools.dry_run`
+    True when ``spiceinit`` cannot be found or under [`dry_run`][lunar_toolkit.tools.dry_run]
     (nothing to decide then).
     """
     tool = find_tool("spiceinit")
@@ -202,8 +202,9 @@ def prepare_lronac(
     """Calibrated cube and optional CSM camera for one NAC image.
 
     A ``.cub`` *src* is used as is; anything else (an EDR ``.IMG``) goes through
-    :func:`calibrate_lronac` into *out_dir*.  With *csm*, ``<id>.json`` is written
-    in *out_dir* by :func:`isd_generate`.  Existing outputs are reused unless *force*.
+    [`calibrate_lronac`][lunar_toolkit.isis.calibrate_lronac] into *out_dir*.  With *csm*, ``<id>.json`` is
+    written in *out_dir* by [`isd_generate`][lunar_toolkit.isis.isd_generate].  Existing outputs are reused
+    unless *force*.
 
     Returns
     -------
