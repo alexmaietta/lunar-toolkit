@@ -168,11 +168,15 @@ class SfsConfig:
         ``--heights-from-dem`` (reusing the matches).
     max_offset_p85 : float, optional
         Drop images whose 85th-percentile mapprojected match offset (m) is larger.
+        Applied to the DEM-registered, refined cameras (ASP's ``ba_align_ref``
+        report); with *refine* off, to the unregistered ``ba/`` cameras.
     max_large_residual_fraction : float, optional
         Drop images with more than this fraction of reprojection errors over
         *large_residual_px* pixels.
     min_matches : int
         Drop images with fewer inlier matches.
+    min_images : int
+        Stop with :class:`PipelineError` when a quality filter leaves fewer images.
     selection : {"coverage", "image_subset", "all"}
         SfS image selection: greedy per-pixel illumination coverage
         (:func:`select_by_illumination`), ASP ``image_subset`` per Sun-azimuth bin,
@@ -236,6 +240,7 @@ class SfsConfig:
     max_large_residual_fraction: float | None = 0.85
     large_residual_px: float = 1.0
     min_matches: int = 1
+    min_images: int = 3
     selection: str = "coverage"
     max_shadow_fraction: float | None = 0.95
     selection_views: int = 3
@@ -281,6 +286,10 @@ class SfsConfig:
         return {**PRESETS[self.preset][step], **extra}
 
 
+class PipelineError(RuntimeError):
+    """The SfS pipeline cannot continue (e.g. too few images left)."""
+
+
 @dataclass
 class SfsImage:
     """One input image: cube, optional CSM camera, Sun angles and derived files."""
@@ -315,11 +324,11 @@ class SfsPipeline:
     3. sort by Sun azimuth (``sfs --query``);
     4. mapproject at native resolution (``prj/``) and bundle-adjust with matches between
        the mapprojected images (``ba/``);
-    5. drop images with no matches, large mapprojected match offsets or mostly large
-       residuals (``selection/removed.csv``);
+    5. drop images with no matches or mostly large residuals (``selection/removed.csv``);
     6. register the cameras to the prior DEM, translation only, from stereo DEMs
        (``stereo/``) or the BA points; apply to all cameras (``align/``, ``ba_align/``);
-    7. refine with ``--heights-from-dem`` and filter again (``ba_refine/``);
+    7. refine with ``--heights-from-dem`` and filter again, now also on mapprojected
+       match offsets (``ba_refine/``); fewer than ``min_images`` left stops the run;
     8. mapproject at the target resolution (``prj_sfs/``), write max-lit QA mosaics,
        all images and per 30° Sun-azimuth bin (``qa/``);
     9. select an illumination-diverse subset (``selection/``);
@@ -684,6 +693,11 @@ class SfsPipeline:
         (``ba``, ``ba_refine``) and removes the images of its ``image_rejections`` view,
         with this config's thresholds.  Removed images are logged and appended to
         ``selection/removed.csv``.
+
+        At ``ba`` the match-offset rule waits for the refinement when that runs: before
+        registration the network floats tens of metres off the DEM, so convergent pairs
+        mapproject apart by ``dh * tan(convergence)`` however well they are tied (ASP:
+        "do not use this option for any initial evaluation of bundle adjustment").
         """
         cfg = self.config
         files = {
@@ -695,11 +709,17 @@ class SfsPipeline:
             )
         }
         if not any(p.exists() for p in files.values()):
-            if not is_dry_run():
-                log.warning("No bundle-adjustment reports under %s; keeping all images", prefix)
-            return []
+            if is_dry_run():
+                return []
+            raise PipelineError(f"No bundle-adjustment reports under {prefix}")
+        overrides: dict[str, Any] = {}
+        if stage == "ba" and cfg.max_offset_p85 is not None:
+            if cfg.refine:
+                overrides["max_offset_p85"] = None
+            else:
+                log.warning("Match offsets of unregistered cameras overstate misalignment; consider refine")
         with self.workspace() as ws:
-            ws.set_rejection_params(cfg)
+            ws.set_rejection_params(cfg, **overrides)
             ws.load_bundle_adjust(prefix, run=Path(prefix).parent.name)
             flags = ws.rejections(Path(prefix).parent.name)
         removed = [
@@ -721,6 +741,11 @@ class SfsPipeline:
             ["product_id", "stage", "reason"],
             [[r.image.product_id, r.stage, r.reason] for r in self.removed],
         )
+        if len(self.images) < self.config.min_images:
+            raise PipelineError(
+                f"{len(self.images)} images left after the {removed[0].stage} filter, fewer than "
+                f"min_images={self.config.min_images}; see {self.work_dir / 'selection' / 'removed.csv'}"
+            )
         return removed
 
     def register(self) -> Path:

@@ -446,18 +446,18 @@ def test_rejection_view_files_and_config(tmp_path):
 
 
 def test_pipeline_filter_uses_workspace(tmp_path):
-    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif", SfsConfig(max_offset_p85=1.0))
+    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif", SfsConfig(max_offset_p85=1.0, min_images=1))
     names = ["A", "B", "C"]
     p.images = [SfsImage(i, Path(f"/w/images/{i}.cal.echo.cub")) for i in names]
     p.all_images = list(p.images)
-    _write_ba(p.ba_prefix, names, np.random.default_rng(2), offsets_p85=[0.5, 0, 1.5])
-    removed = p.filter_images(p.ba_prefix, "ba")
+    _write_ba(p.refine_prefix, names, np.random.default_rng(2), offsets_p85=[0.5, 0, 1.5])
+    removed = p.filter_images(p.refine_prefix, "refine")
     assert [(r.image.product_id, r.reason) for r in removed] == [
         ("B", "0 matches"),
         ("C", "match offset p85 1.50 m > 1 m"),
     ]
     with p.workspace(read_only=True) as ws:
-        assert ws.runs() == ["ba"]
+        assert ws.runs() == ["ba_refine"]
         assert ws.query("SELECT max_offset_p85 FROM rejection_params").max_offset_p85[0] == 1.0
 
 

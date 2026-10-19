@@ -354,21 +354,43 @@ def test_flag_images():
     }
 
 
+def _offsets(prefix, p85s):
+    prefix.parent.mkdir(parents=True, exist_ok=True)
+    Path(f"{prefix}-mapproj_match_offset_stats.txt").write_text(
+        "# image_name 25% 50% 75% 85% 95% count\n"
+        + "".join(f"/w/images/{i}.cal.echo.cub 0.2 0.4 0.9 {v} 3.0 4000\n" for i, v in p85s.items())
+    )
+
+
 def test_filter_images_reads_reports(tmp_path):
-    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif")
+    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif", SfsConfig(min_images=1))
     p.images = [SfsImage(i, Path(f"/w/images/{i}.cal.echo.cub")) for i in ("A", "B")]
     p.all_images = list(p.images)
-    (tmp_path / "w" / "ba").mkdir(parents=True)
-    (tmp_path / "w" / "ba" / "run-mapproj_match_offset_stats.txt").write_text(
-        "# image_name 25% 50% 75% 85% 95% count\n"
-        "/w/images/A.cal.echo.cub 0.2 0.4 0.9 1.2 2.5 5120\n"
-        "/w/images/B.cal.echo.cub 0.5 1.1 1.7 2.1 3.0 4000\n"
-    )
-    removed = p.filter_images(p.ba_prefix, "ba")
+    _offsets(p.ba_prefix, {"A": 1.2, "B": 2.1})
+    _offsets(p.refine_prefix, {"A": 1.2, "B": 2.1})
+    assert p.filter_images(p.ba_prefix, "ba") == []  # offsets wait for the registered, refined cameras
+    removed = p.filter_images(p.refine_prefix, "refine")
     assert [r.image.product_id for r in removed] == ["B"] and [im.product_id for im in p.images] == ["A"]
     rows = (tmp_path / "w" / "selection" / "removed.csv").read_text().splitlines()
-    assert rows[0] == "product_id,stage,reason" and rows[1].startswith("B,ba,match offset p85 2.10 m")
-    assert p.filter_images(tmp_path / "none" / "run", "refine") == []
+    assert rows[0] == "product_id,stage,reason" and rows[1].startswith("B,refine,match offset p85 2.10 m")
+    with pytest.raises(sfs.PipelineError, match="No bundle-adjustment reports"):
+        p.filter_images(tmp_path / "none" / "run", "refine")
+
+
+def test_filter_images_offsets_at_ba_without_refine(tmp_path):
+    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif", SfsConfig(refine=False, min_images=1))
+    p.images = [SfsImage(i, Path(f"/w/images/{i}.cal.echo.cub")) for i in ("A", "B")]
+    _offsets(p.ba_prefix, {"A": 1.2, "B": 2.1})
+    assert [r.image.product_id for r in p.filter_images(p.ba_prefix, "ba")] == ["B"]
+
+
+def test_filter_stops_below_min_images(tmp_path):
+    p = SfsPipeline(tmp_path / "w", tmp_path / "ldem.tif")
+    p.images = [SfsImage(i, Path(f"/w/images/{i}.cal.echo.cub")) for i in "ABCD"]
+    _offsets(p.refine_prefix, {"A": 1.2, "B": 2.1, "C": 12.5, "D": 0.9})
+    with pytest.raises(sfs.PipelineError, match="2 images left after the refine filter"):
+        p.filter_images(p.refine_prefix, "refine")
+    assert (tmp_path / "w" / "selection" / "removed.csv").read_text().count("refine,") == 2
 
 
 def test_select_by_illumination():

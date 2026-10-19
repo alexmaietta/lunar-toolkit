@@ -83,7 +83,7 @@ Calibrate -> CSM cameras -> `bundle_adjust` -> `parallel_stereo` (`asp_mgm`, sub
 | Cameras | CSM | `csm`, `--no-csm` |
 | Mapproject for BA | native ~1 m/px onto the LDEM | `ba_resolution`, `--ba-res` |
 | Bundle adjust | next 200 images in Sun order, 100 m camera position uncertainty, intrinsics fixed | `PRESETS["bertone"]["bundle_adjust"]`, `--ba-opt` |
-| Image rejection | match-offset p85 > 1.8 m, no matches, > 85 % of residuals > 1 px | `max_offset_p85`, `max_large_residual_fraction`, `min_matches` |
+| Image rejection | match-offset p85 > 1.8 m (on the registered, refined cameras, as ASP's `ba_align_ref`), no matches, > 85 % of residuals > 1 px; stops if fewer than `min_images` remain | `max_offset_p85`, `max_large_residual_fraction`, `min_matches`, `min_images` |
 | QA | max-lit mosaics, all + 30 deg bins | `qa/` |
 | Registration | stereo DEMs from up to 30 pairs (convergence >= 5 deg), translation to the LDEM | `registration`, `--stereo-pairs` |
 | Refinement | quick re-alignment | `refine`, `--refine-opt` |

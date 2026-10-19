@@ -170,6 +170,27 @@ def test_bundle_adjust_mapprojected_data(tmp_path):
     assert not (tmp_path / "ba").exists()
 
 
+def test_bundle_adjust_fails_without_adjustments(tmp_path, monkeypatch):
+    prefix = tmp_path / "ba" / "run"
+    stale = asp.bundle_adjust_file_name(prefix, Path("b.cub"), Path("b.json"))
+    written = []
+
+    def fake_run(tool, args, **kw):
+        for name in written:
+            asp.bundle_adjust_file_name(prefix, Path(f"{name}.cub"), Path(f"{name}.json")).write_text("")
+        return subprocess.CompletedProcess(args, 0, "No points to optimize. Cannot continue.", "")
+
+    monkeypatch.setattr(asp, "run", fake_run)
+    images, cams = [Path("a.cub"), Path("b.cub")], [Path("a.json"), Path("b.json")]
+    prefix.parent.mkdir(parents=True)
+    stale.write_text("")
+    os.utime(stale, (0, 0))
+    with pytest.raises(ToolError, match="no adjustment for 2 of 2 images"):
+        asp.bundle_adjust(images, prefix, cams)
+    written[:] = ["a", "b"]
+    assert asp.bundle_adjust(images, prefix, cams) == prefix
+
+
 def test_point2dem_output_name():
     with dry_run():
         assert asp.point2dem(Path("st/run-PC.tif")) == Path("st/run-DEM.tif")

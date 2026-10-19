@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from .tools import asp_options, gdal_options, is_dry_run, run
+from .tools import ToolError, asp_options, gdal_options, is_dry_run, run
 
 
 def _paths(items: Sequence[Any]) -> list[str]:
@@ -49,12 +50,30 @@ def bundle_adjust(
     *mapprojected* (same order as *images*) and the *dem* they were projected
     onto become ``--mapprojected-data``, which finds matches between images of
     very different illumination.  Returns *out_prefix*.
+
+    Raises :class:`~lunar_toolkit.tools.ToolError` when the run writes no fresh
+    ``.adjust`` file for some image: ASP exits 0 even when it finds nothing to
+    optimize ("No points to optimize ... Cannot continue").
     """
     _parent(out_prefix)
     if mapprojected is not None:
         options["mapprojected_data"] = " ".join(_paths([*mapprojected, *([dem] if dem else [])]))
     tool = "parallel_bundle_adjust" if parallel else "bundle_adjust"
+    start = time.time()
     run(tool, [*_paths(images), *_paths(cameras), *asp_options(options), "-o", out_prefix], cwd=cwd)
+    if not is_dry_run():
+        prefix = Path(cwd or ".") / out_prefix
+        cams: Sequence[Path | None] = cameras if len(cameras) == len(images) else [None] * len(images)
+        missing = [
+            p
+            for p in (bundle_adjust_file_name(prefix, im, cam) for im, cam in zip(images, cams))
+            if not p.is_file() or p.stat().st_mtime < start - 2
+        ]
+        if missing:
+            raise ToolError(
+                f"{tool} wrote no adjustment for {len(missing)} of {len(images)} images "
+                f"(e.g. {missing[0].name}); see {out_prefix}-log-bundle_adjust-*.txt"
+            )
     return Path(out_prefix)
 
 

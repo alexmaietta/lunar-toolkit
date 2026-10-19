@@ -242,7 +242,7 @@ def _effective(args: argparse.Namespace):
 
 def run(args: argparse.Namespace) -> int:
     from .. import config as cfgmod
-    from ..sfs import SfsPipeline, aoi_projwin, search_images
+    from ..sfs import PipelineError, SfsPipeline, aoi_projwin, search_images
     from ..tools import ToolError
     from ._utils import print_dry_run, resolve_images
 
@@ -310,7 +310,7 @@ def run(args: argparse.Namespace) -> int:
             print_dry_run(lambda: pipeline.run(images))
             return 0
         out = pipeline.run(images)
-    except ToolError as exc:
+    except (ToolError, PipelineError) as exc:
         print(exc, file=sys.stderr)
         return 1
     print(f"SfS DEM -> {out}")
