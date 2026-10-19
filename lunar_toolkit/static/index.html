@@ -191,10 +191,28 @@
     .map .frame { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
     .map .tick { fill: none; stroke: var(--plot-fg); stroke-width: 1; shape-rendering: crispEdges; }
     .map .grid { fill: none; stroke: var(--plot-grid); stroke-width: 1; }
-    .map .fp { fill: var(--fp); fill-opacity: 0.06; fill-rule: evenodd; stroke: var(--fp); stroke-opacity: 0.55; stroke-width: 0.8; cursor: pointer; }
-    .map .fp:hover { fill-opacity: 0.22; stroke-opacity: 0.9; stroke-width: 1.3; }
-    .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.25; stroke: var(--fp-sel); stroke-opacity: 1; stroke-width: 1.8; }
-    .mapbox.hide-fp .fp, .mapbox.hide-region .region { display: none; }
+    /* Fills share one group whose opacity applies once, so overlaps do not build up */
+    .map .fpfill { opacity: var(--fp-fill, 0.07); pointer-events: none; }
+    .map .fpfill path { fill: var(--fp-color, #3d8bfd); fill-rule: evenodd; stroke: none; }
+    .map .fp { fill: transparent; fill-rule: evenodd; stroke: var(--fp-color, #3d8bfd); stroke-opacity: var(--fp-line, 0.85); stroke-width: 0.9; stroke-dasharray: var(--fp-dash, 1.5 2.5); cursor: pointer; }
+    .map .fp:hover { stroke-opacity: 1; stroke-width: 1.5; stroke-dasharray: none; }
+    .map .fp.sel { fill: var(--fp-sel); fill-opacity: 0.2; stroke: var(--fp-sel); stroke-opacity: 1; stroke-width: 1.8; stroke-dasharray: none; }
+    .map .sketch { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 3; pointer-events: none; }
+    .map .sketch.pt { fill: var(--accent); fill-opacity: 1; stroke: #fff; stroke-dasharray: none; }
+    .mapcoord {
+      position: absolute; pointer-events: none; padding: 1px 5px; font: 11px "DejaVu Sans Mono", Consolas, monospace;
+      background: rgba(255, 255, 255, 0.85); border: 1px solid var(--border); color: #000; white-space: nowrap;
+    }
+    .mapcoord:empty { display: none; }
+    .panehead .tools { display: inline-flex; margin-right: 8px; }
+    .panehead .tools button { margin-right: -1px; }
+    .stylewrap { position: relative; }
+    .stylepop {
+      position: absolute; right: 0; top: 100%; z-index: 5; margin-top: 3px; padding: 6px 8px; display: grid;
+      grid-template-columns: auto auto; gap: 4px 8px; align-items: center; background: var(--window); border: 1px solid var(--border);
+    }
+    .stylepop select { width: auto; }
+    .mapbox.hide-fp .fp, .mapbox.hide-fp .fpfill, .mapbox.hide-region .region { display: none; }
     .panehead .toggle { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; white-space: nowrap; }
     .map .region { fill: none; fill-rule: evenodd; stroke: var(--region); stroke-width: 1.4; stroke-dasharray: 6 3; pointer-events: none; }
     .map text { fill: var(--plot-label); font-size: 11px; pointer-events: none; }
@@ -1189,6 +1207,10 @@
       };
     }
 
+    $('search-form').addEventListener('change', (e) => {
+      if (e.target.id === 's-mode' || e.target.closest('[data-mode]')) showFormRegion();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('map')._cancel?.(); });
     for (const p of ['s']) {
       const sync = () => {
         for (const node of $(`${p}-mode`).closest('fieldset').querySelectorAll('[data-mode]')) {
@@ -1236,6 +1258,67 @@
       return el('label', { class: 'toggle' }, box, ` ${label}`);
     }
 
+    const MAP_TOOLS = {
+      pan: ['Pan', 'Drag to pan, wheel to zoom, click a footprint for details'],
+      box: ['Box', 'Drag a box on the map to set the search region'],
+      circle: ['Circle', 'Drag from the centre to set a point and radius'],
+      poly: ['Polygon', 'Click the polygon vertices, then double click or click the first point (Esc cancels)'],
+    };
+    const FP_LINES = { dotted: '1.5 2.5', dashed: '5 3', solid: 'none', none: 'none' };
+    const FP_FILLS = { none: 0, light: 0.07, medium: 0.18 };
+    const FP_COLORS = { blue: '#3d8bfd', yellow: '#ffd43b', cyan: '#22d3ee', magenta: '#e64980', navy: '#1f4a8a', white: '#ffffff' };
+
+    function applyFootprintStyle(container) {
+      container.style.setProperty('--fp-dash', FP_LINES[mapPrefs.fpLine] ?? FP_LINES.dotted);
+      container.style.setProperty('--fp-line', mapPrefs.fpLine === 'none' ? '0' : '0.85');
+      container.style.setProperty('--fp-fill', String(FP_FILLS[mapPrefs.fpFill] ?? FP_FILLS.light));
+      container.style.setProperty('--fp-color', FP_COLORS[mapPrefs.fpColor] ?? FP_COLORS.blue);
+    }
+
+    // Footprint outline, fill and colour, in a small pop-up next to the Footprints toggle
+    function footprintStyle(container) {
+      applyFootprintStyle(container);
+      const field = (key, label, options) => {
+        const s = el('select', { 'aria-label': label }, ...Object.keys(options).map((o) => el('option', { value: o }, o)));
+        s.value = mapPrefs[key];
+        s.addEventListener('change', () => { mapPrefs[key] = s.value; saveMapPrefs(); applyFootprintStyle(container); });
+        return [el('span', {}, label), s];
+      };
+      const pop = el('div', { class: 'stylepop', hidden: '' },
+        ...field('fpLine', 'Outline', FP_LINES), ...field('fpFill', 'Fill', FP_FILLS), ...field('fpColor', 'Colour', FP_COLORS));
+      const button = el('button', { class: 'tool', type: 'button', title: 'Footprint outline, fill and colour' }, 'Style');
+      button.addEventListener('click', (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; });
+      pop.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', () => { pop.hidden = true; });
+      return el('span', { class: 'stylewrap' }, button, pop);
+    }
+
+    function greatCircleKm(lat1, lon1, lat2, lon2) {
+      const h = Math.sin(((lat2 - lat1) * RAD) / 2) ** 2
+        + Math.cos(lat1 * RAD) * Math.cos(lat2 * RAD) * Math.sin(((lon2 - lon1) * RAD) / 2) ** 2;
+      return 2 * MOON_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+
+    // Fill the search form's region from the map; its change event redraws the region
+    function setFormRegion(mode, v) {
+      const round = (x, d = 5) => String(Math.round(x * 10 ** d) / 10 ** d);
+      if (mode === 'point') { $('s-lat').value = round(v.lat); $('s-lon').value = round(mod(v.lon, 360)); $('s-radius').value = round(v.radius, 3); }
+      if (mode === 'box') for (const k of ['west', 'east', 'south', 'north']) $(`s-${k}`).value = round(v[k]);
+      if (mode === 'aoi') $('s-aoi').value = v.aoi;
+      $('s-mode').value = mode;
+      $('s-mode').dispatchEvent(new Event('change', { bubbles: true }));
+      setStatus('status', 'Search region set from the map | press Search');
+    }
+
+    // Show the form's search region on the map (before any search, or over the current results)
+    function showFormRegion() {
+      let sel;
+      try { sel = readRegion('s'); } catch { return; }
+      const map = $('map');
+      if (map._setRegion) map._setRegion(sel);
+      else renderMap(map, { hemi: mapHemi(sel.region, []), region: sel, items: [] });
+    }
+
     function renderMap(container, { hemi, region, items }) {
       container._resize?.disconnect();
       container._highlight = null;
@@ -1248,14 +1331,17 @@
       const cinfo = el('span', { class: 'info' });
       const pick = el('select', { 'aria-label': 'Basemap', title: 'Basemap under the footprints' });
       const cbox = el('input', { type: 'checkbox' });
+      const coord = el('div', { class: 'mapcoord' });
+      const tools = el('span', { class: 'tools' }, ...Object.entries(MAP_TOOLS).map(([t, [label, title]]) =>
+        el('button', { class: `tool${t === 'pan' ? ' on' : ''}`, type: 'button', 'data-tool': t, title }, label)));
       const bar = el('div', { class: 'panehead' },
         el('span', { class: 'title' }, 'Footprints'),
         el('span', { class: 'info' }, hemi ? `Polar stereographic (${hemi === 'S' ? 'south' : 'north'}), R = ${MOON_RADIUS_KM} km`
           : 'Lon/lat (equirectangular)', ` | ${items.length} footprint(s) | wheel zoom, drag pan`),
         cinfo, spin,
-        el('span', { class: 'right' }, pick, el('label', { class: 'toggle', title: 'Elevation contours (LOLA)' }, cbox, ' Contours'),
-          layerToggle(container, 'fp', 'Footprints'), layerToggle(container, 'region', 'Region'), reset));
-      container.replaceChildren(el('div', { class: 'map' }, bar, el('div', { class: 'plotarea' }, canvas, svg)));
+        el('span', { class: 'right' }, tools, pick, el('label', { class: 'toggle', title: 'Elevation contours (LOLA)' }, cbox, ' Contours'),
+          layerToggle(container, 'fp', 'Footprints'), footprintStyle(container), layerToggle(container, 'region', 'Region'), reset));
+      container.replaceChildren(el('div', { class: 'map' }, bar, el('div', { class: 'plotarea' }, canvas, svg, coord)));
       const clipId = `clip-${container.id}`;
       const M = MARGIN;
 
@@ -1263,11 +1349,12 @@
       const regionGeom = region ? region.shape(hemi) : [];
       let geoms = items.map((it) => it.geom);
       let kx = 1;
+      let recenter = (g) => g;
       if (!hemi) {
         const mids = [...regionGeom, ...geoms.flat()].map((P) => { const b = bboxOf([P[0]]); return (b[0] + b[1]) / 2; });
         const c = region ? (region.region.span < 360 ? region.region.west + region.region.span / 2 : 180)
           : Math.atan2(sumOf(mids.map((m) => Math.sin(m * RAD))), sumOf(mids.map((m) => Math.cos(m * RAD)))) * DEG;
-        const recenter = (g) => g.map((P) => { const b = bboxOf([P[0]]); return shiftX([P], -360 * Math.round(((b[0] + b[1]) / 2 - c) / 360))[0]; });
+        recenter = (g) => g.map((P) => { const b = bboxOf([P[0]]); return shiftX([P], -360 * Math.round(((b[0] + b[1]) / 2 - c) / 360))[0]; });
         geoms = geoms.map(recenter);
         const lats = [...regionGeom, ...geoms.flat()].flatMap((P) => P[0].map((p) => p[1]));
         kx = Math.max(0.2, Math.cos(((minOf(lats) + maxOf(lats)) / 2) * RAD));
@@ -1275,7 +1362,7 @@
       }
       // Data coordinates: x right, y down
       const toXY = (g) => g.map((P) => P.map((r) => r.map(([x, y]) => (hemi ? [x, -y] : [x * kx, -y]))));
-      const reg = toXY(regionGeom);
+      let reg = toXY(regionGeom);
       const fps = geoms.map(toXY);
       const all = [...reg, ...fps.flat()].flat();
       let [x0, x1, y0, y1] = all.length ? bboxOf(all) : [-1, 1, -1, 1];
@@ -1299,6 +1386,11 @@
       const sgn = hemi === 'S' ? 1 : -1;
       const rho = (la) => 2 * MOON_RADIUS_KM * 1000 * Math.tan(Math.PI / 4 + sgn * (la * RAD) / 2);
       const latOf = (r) => sgn * (2 * Math.atan(r / (2 * MOON_RADIUS_KM * 1000)) - Math.PI / 2) * DEG;
+      // Data coordinates (x right, y down) to [lon, lat]
+      const toLonLat = ([x, y]) => (hemi ? [mod(Math.atan2(x, -sgn * y) * DEG, 360), latOf(Math.hypot(x, y))] : [x / kx, -y]);
+      coord.style.left = `${M.l + 6}px`;
+      coord.style.bottom = `${M.b + 6}px`;
+      let tool = 'pan', sketch = null;
 
       // Grid lines (clipped), graticule labels inside the plot, ticks + tick labels on the frame
       function axes() {
@@ -1377,11 +1469,14 @@
         const a = axes();
         const order = fps.map((_, i) => i).filter((i) => i !== sel);
         if (sel >= 0) order.push(sel);
+        const ds = fps.map((g) => pathD(g));
         svg.innerHTML = `<defs><clipPath id="${clipId}"><rect width="${W}" height="${H}"/></clipPath></defs>`
           + `<g transform="translate(${M.l} ${M.t})"><rect class="plot" width="${W}" height="${H}"/>`
           + `<g clip-path="url(#${clipId})">${a.grid}<g class="cslot"/>`
-          + order.map((i) => `<path class="fp${i === sel ? ' sel' : ''}" data-i="${i}" d="${pathD(fps[i])}"><title>${esc(items[i].title)}</title></path>`).join('')
+          + `<g class="fpfill">${ds.map((d) => `<path d="${d}"/>`).join('')}</g>`
+          + order.map((i) => `<path class="fp${i === sel ? ' sel' : ''}" data-i="${i}" d="${ds[i]}"><title>${esc(items[i].title)}</title></path>`).join('')
           + (reg.length ? `<path class="region" d="${pathD(reg)}"/>` : '')
+          + sketchSvg()
           + `</g><rect class="frame" x="0.5" y="0.5" width="${W - 1}" height="${H - 1}"/>`
           + `<path class="tick" d="${a.ticks}"/>${a.labels}</g>`;
         svg.querySelector('.cslot').replaceWith(under.contours);
@@ -1401,9 +1496,58 @@
         view.cx = x - (mx - W / 2) / view.k; view.cy = y - (my - H / 2) / view.k;
         redraw();
       }, { passive: false });
+      const dataXY = (e) => { const [mx, my] = plotXY(e); return [view.cx + (mx - W / 2) / view.k, view.cy + (my - H / 2) / view.k]; };
+      const screenDist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]) * view.k;
+      // Drawn region in progress: box and circle while dragging, polygon vertices plus the pointer
+      function sketchSvg() {
+        if (!sketch) return '';
+        const P = ([x, y]) => `${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`;
+        if (sketch.tool === 'box') {
+          const [[ax, ay], [bx, by]] = [sketch.a, sketch.b];
+          return `<path class="sketch" d="M${P([ax, ay])}L${P([bx, ay])}L${P([bx, by])}L${P([ax, by])}Z"/>`;
+        }
+        if (sketch.tool === 'circle') {
+          const r = screenDist(sketch.a, sketch.b).toFixed(1);
+          return `<circle class="sketch" cx="${sx(sketch.a[0]).toFixed(1)}" cy="${sy(sketch.a[1]).toFixed(1)}" r="${r}"/>`;
+        }
+        const pts = [...sketch.pts, sketch.hover].filter(Boolean);
+        return `<path class="sketch" d="M${pts.map(P).join('L')}"/>`
+          + sketch.pts.map(([x, y]) => `<circle class="sketch pt" cx="${sx(x).toFixed(1)}" cy="${sy(y).toFixed(1)}" r="3"/>`).join('');
+      }
+      const setTool = (t) => {
+        tool = t; sketch = null;
+        for (const b of tools.children) b.classList.toggle('on', b.dataset.tool === t);
+        if (t !== 'pan') setStatus('status', MAP_TOOLS[t][1]);
+        redraw();
+      };
+      for (const b of tools.children) b.addEventListener('click', () => setTool(b.dataset.tool));
+      // Densified ring in data coordinates -> lon/lat, so edges follow the map's straight lines
+      const ringLonLat = (pts, n = hemi ? 16 : 1) => pts.flatMap((p, i) => {
+        const q = pts[(i + 1) % pts.length];
+        return Array.from({ length: n }, (_, j) => toLonLat([p[0] + ((q[0] - p[0]) * j) / n, p[1] + ((q[1] - p[1]) * j) / n]));
+      });
+      function finishSketch() {
+        const sk = sketch;
+        setTool('pan');
+        if (!sk) return;
+        if (sk.tool === 'circle') {
+          const [lon, lat] = toLonLat(sk.a), [lon2, lat2] = toLonLat(sk.b);
+          setFormRegion('point', { lat, lon, radius: greatCircleKm(lat, lon, lat2, lon2) });
+        } else if (sk.tool === 'box' && !hemi) {
+          const [[w, n], [e, s]] = [toLonLat([Math.min(sk.a[0], sk.b[0]), Math.min(sk.a[1], sk.b[1])]),
+            toLonLat([Math.max(sk.a[0], sk.b[0]), Math.max(sk.a[1], sk.b[1])])];
+          const full = e - w >= 360;
+          setFormRegion('box', { west: full ? 0 : mod(w, 360), east: full ? 360 : mod(e, 360), south: s, north: n });
+        } else {
+          const pts = sk.tool === 'box' ? [sk.a, [sk.b[0], sk.a[1]], sk.b, [sk.a[0], sk.b[1]]] : sk.pts;
+          const ring = ringLonLat(pts).map(([lon, lat]) => [mod(lon, 360), lat]);
+          setFormRegion('aoi', { aoi: `POLYGON((${[...ring, ring[0]].map(([lon, lat]) => `${lon.toFixed(5)} ${lat.toFixed(5)}`).join(', ')}))` });
+        }
+      }
+      container._cancel = () => { if (tool !== 'pan') setTool('pan'); };
       const showCursor = (e) => {
         const [mx, my] = plotXY(e);
-        if (mx < 0 || my < 0 || mx > W || my > H) { $('cursor').textContent = ''; return; }
+        if (mx < 0 || my < 0 || mx > W || my > H) { $('cursor').textContent = coord.textContent = ''; return; }
         const x = view.cx + (mx - W / 2) / view.k, y = -(view.cy + (my - H / 2) / view.k);
         let lat, lon, xy = '';
         if (hemi) {
@@ -1413,31 +1557,68 @@
         } else {
           [lat, lon] = [y, mod(x / kx, 360)];
         }
-        $('cursor').textContent = Math.abs(lat) > 90 ? ''
+        $('cursor').textContent = coord.textContent = Math.abs(lat) > 90 ? ''
           : `Lat ${lat.toFixed(4)}  Lon ${lon.toFixed(4)} E${xy}`;
       };
       let drag = null;
       svg.addEventListener('pointerdown', (e) => {
+        if (tool !== 'pan') {
+          if (e.button !== 0) return;
+          const p = dataXY(e);
+          if (tool !== 'poly') sketch = { tool, a: p, b: p, down: true };
+          else if (!sketch) sketch = { tool, pts: [p], hover: p };
+          else if (sketch.pts.length >= 3 && screenDist(sketch.pts[0], p) < 8) { finishSketch(); return; }
+          else sketch.pts.push(p);
+          try { svg.setPointerCapture(e.pointerId); } catch { /* synthetic event */ }
+          redraw();
+          return;
+        }
         drag = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, i: e.target.dataset?.i, moved: false };
         try { svg.setPointerCapture(e.pointerId); } catch { /* synthetic event */ }
       });
       svg.addEventListener('pointermove', (e) => {
         showCursor(e);
+        if (sketch) {
+          if (sketch.tool === 'poly') sketch.hover = dataXY(e);
+          else if (sketch.down) sketch.b = dataXY(e);
+          redraw();
+          return;
+        }
         if (!drag) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         if (Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('dragging'); }
         if (drag.moved) { touched = true; view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; redraw(); }
       });
-      svg.addEventListener('pointerleave', () => { if (!drag) $('cursor').textContent = ''; });
+      svg.addEventListener('pointerleave', () => { if (!drag) $('cursor').textContent = coord.textContent = ''; });
       svg.addEventListener('pointerup', () => {
+        if (sketch && sketch.tool !== 'poly') {
+          if (screenDist(sketch.a, sketch.b) < 4) { sketch = null; redraw(); } else finishSketch();
+          return;
+        }
         if (drag && !drag.moved && drag.i != null) items[Number(drag.i)].onclick();
         drag = null;
         svg.classList.remove('dragging');
       });
       const home0 = () => { view = null; touched = false; draw(); };
-      svg.addEventListener('dblclick', home0);
+      svg.addEventListener('dblclick', () => {
+        if (tool === 'poly' && sketch) {
+          // The double click's own clicks added the last point twice
+          sketch.pts = sketch.pts.filter((p, i, a) => !i || screenDist(p, a[i - 1]) > 3);
+          if (sketch.pts.length >= 3) finishSketch();
+          return;
+        }
+        if (tool === 'pan') home0();
+      });
       reset.addEventListener('click', home0);
       container._highlight = (row) => { sel = items.findIndex((it) => it.row === row); draw(); };
+      // A new search region from the form or the map, keeping the view and the results
+      container._setRegion = (next) => {
+        const h = mapHemi(next.region, []);
+        if (h !== hemi) { renderMap(container, { hemi: h, region: next, items }); return; }
+        region = next;
+        reg = toXY(hemi ? next.shape(hemi) : recenter(next.shape(hemi)));
+        redraw();
+      };
       let lastW = 0, lastH = 0;
       container._resize = new ResizeObserver(() => {
         const [w, h] = [svg.clientWidth, svg.clientHeight];
@@ -2657,7 +2838,11 @@
       N: ['lola_dem_north'],
     };
     const BM_STRETCH = { min: 0, max: 255, gamma: 1 };
-    const mapPrefs = { basemap: 'wac', contours: false };  // remembered across searches
+    // Map preferences, remembered across searches and (when storage works) sessions
+    const MAP_PREFS_KEY = 'lunar-toolkit-map';
+    const mapPrefs = { basemap: 'wac', contours: false, fpLine: 'dotted', fpFill: 'light', fpColor: 'blue' };
+    try { Object.assign(mapPrefs, JSON.parse(localStorage.getItem(MAP_PREFS_KEY) ?? '{}')); } catch { /* storage blocked */ }
+    const saveMapPrefs = () => { try { localStorage.setItem(MAP_PREFS_KEY, JSON.stringify(mapPrefs)); } catch { /* storage blocked */ } };
     const bmOpened = new Map();  // ref -> { promise, src, pending, failed }
     let bmManifest = null, bmNotify = null;
     const bmUrl = (file) => new URL(`basemaps/${file}`, window.location.href).href;
@@ -2760,12 +2945,14 @@
       container.classList.toggle('has-basemap', choice() !== 'none');
       pick.addEventListener('change', () => {
         mapPrefs.basemap = pick.value;
+        saveMapPrefs();
         container.classList.toggle('has-basemap', pick.value !== 'none');
         redraw();
       });
       cbox.checked = mapPrefs.contours;
       cbox.addEventListener('change', () => {
         mapPrefs.contours = cbox.checked;
+        saveMapPrefs();
         st.ckey = '';
         if (!cbox.checked) { st.gen++; st.cbusy = false; st.contour = null; paths.forEach((p) => p.removeAttribute('d')); cinfo.textContent = ''; }
         redraw();
@@ -3609,6 +3796,7 @@
 
     // Boot
     initSearchForm();
+    showFormRegion();
     initViewer();
     initImages();
     initSettings();

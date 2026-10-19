@@ -49,11 +49,13 @@ plugins:
 
 nav:
   - Home: index.md
+  - Changelog: changelog.md
   - Install: install.md
   - Getting started: getting-started.md
   - Desktop app and browser: app.md
   - DEMs with ISIS + ASP: dems.md
   - CLI: cli.md
+  - Coverage: https://alexmaietta.github.io/lunar-toolkit/coverage/
   - API:
       - Overview: api/index.md
       - Search and data access:
@@ -85,5 +87,3 @@ nav:
           - Reference data: api/reference.md
           - Constants: api/constants.md
   - References: references.md
-  - Changelog: changelog.md
-  - Coverage: https://alexmaietta.github.io/lunar-toolkit/coverage/

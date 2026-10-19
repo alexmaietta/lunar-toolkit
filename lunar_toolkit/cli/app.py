@@ -144,8 +144,22 @@ def choose_backend(requested: str = "auto", platform: str | None = None) -> tupl
     return "browser", None
 
 
+def _quiet_qt_exit() -> None:
+    """Drop Qt WebEngine's harmless "Release of profile requested" warning on window close."""
+    from qtpy.QtCore import qInstallMessageHandler
+
+    def handler(mode: Any, context: Any, message: str | None) -> None:
+        if message and "WebEnginePage still not deleted" not in message:
+            sys.stderr.write(message + "\n")
+
+    qInstallMessageHandler(handler)
+
+
 def _run_webview(url: str, gui: str) -> None:
     import webview
+
+    if gui == "qt":
+        _quiet_qt_exit()
 
     from ..constants import DEFAULT_CACHE_DIR
 
